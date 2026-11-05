@@ -1,0 +1,23 @@
+SANG LOC DANG CHAY - BAN WINDOWS (khong can cai Python)
+
+1. Giai nen ca thu muc nay ra o dia C hoac Desktop (dung chay truc tiep trong file zip).
+2. Cam camera DJI Action 3 che do webcam USB.
+3. Bam 2 lan vao start.bat. Cua so den hien ra, trinh duyet tu mo trang http://localhost:8765/
+   Neu Windows hien canh bao xanh "Windows protected your PC": bam More info -> Run anyway.
+   Neu tuong lua hoi: chon Allow / Cho phep (chi dung tren may nay).
+4. Trinh duyet hoi quyen camera: bam Cho phep. Chon dung camera DJI o o "Camera".
+5. Nhap thong tin -> Bat dau. Thu nhanh: them ?total=40&rec=8&clip=15 vao cuoi dia chi.
+6. Anh ket qua tu tai ve thu muc Downloads. Nut "Tai bang CSV" gom so lieu moi nguoi.
+7. Dung xong: dong cua so den (hoac Ctrl+C).
+
+Khoang tham chieu sua trong app\reference.js (mo bang Notepad, sua lo/hi).
+Dung Chrome hoac Edge. Mang chi can cho lan dau neu trinh duyet can; ban nay khong can Internet.
+
+BÁO CÁO 2 BẢN
+- Bản rút gọn: ảnh kết quả trên màn hình LED, nút "Lưu ảnh rút gọn" (PNG).
+- Bản chi tiết trả khách: nút "PDF chi tiết (trả khách)" gồm 4 trang: kết quả (có điểm), ý nghĩa các chỉ số, bảng số đo đầy đủ, điểm và bài tập gợi ý.
+- Excel tổng hợp có thêm các cột chỉ số mở rộng.
+
+VIDEO QUAY CHẬM (SLOW-MO)
+- Ở chế độ "Dùng video có sẵn" có ô "Video quay chậm?". Để "Tự nhận biết" là app tự đoán hệ số (x1, x2, x4, x8).
+- Nếu kết quả báo "Chưa đủ tin cậy" và nhịp chạy quá thấp, hãy chọn đúng hệ số quay chậm rồi phân tích lại.
