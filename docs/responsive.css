@@ -1,0 +1,83 @@
+/* Responsive cho tablet và mobile. Chỉ chứa @media; nạp sau khối <style> trong index.html. */
+
+/* ===== Tablet (<=1024px) ===== */
+@media (max-width:1024px){
+  #topnav{padding:0 12px}
+  #topnav button{padding:0 12px;font-size:14px}
+  /* màn Kết quả: hàng nút xuống dòng thứ hai của thanh trên */
+  body.onL3 #topnav{flex-wrap:wrap;height:auto;padding:8px 12px;row-gap:6px}
+  body.onL3.hasnav .layer{top:100px}
+  body.onL3 #l3acts{flex:1 0 100%;margin-left:0}
+  body.onL3 #l3acts .grp{flex:1;min-width:0}
+  #notedrawer{padding:14px}
+  #L1{flex-direction:column;overflow:auto}
+  .side{flex:none;max-width:none;padding:28px 32px;gap:18px}
+  .side h1{font-size:34px}
+  .main1{flex:none;overflow:visible;padding:24px 16px}
+  .card1{width:100%;max-width:640px}
+  #L3{padding:10px 12px}
+  #resbox{flex:none;max-height:none}
+  #detail{overflow-x:auto;max-width:100%}
+  #chip{font-size:24px;left:20px}
+  .cd{right:20px}
+  #count{font-size:72px}
+  #bar{padding:18px 20px 22px}
+  #ph{font-size:28px}
+  #L4>div{padding:20px 16px!important}
+}
+
+/* ===== Mobile (<=640px) ===== */
+@media (max-width:640px){
+  #topnav{gap:2px;padding:0 6px}
+  #topnav .logo{margin-right:2px}
+  #topnav .logo i{width:30px;height:30px;font-size:15px}
+  #topnav button{padding:0 8px;font-size:13px}
+  #listcnt{margin-left:4px;padding:0 6px}
+  #syncst{display:none!important}
+  body.onL3 #topnav{padding:6px}
+  body.onL3.hasnav .layer{top:96px}
+  body.onL3 #l3acts{gap:4px}
+  body.onL3 #l3acts .grp{flex-wrap:wrap;padding-left:4px}
+  #notedrawer{width:100vw}
+  .side{padding:20px 16px;gap:14px}
+  .side h1{font-size:28px}
+  .side .lead,.steps div{font-size:14px}
+  .camrow{flex-wrap:wrap}
+  .camrow select{flex:1 1 100%!important}
+  .main1{padding:16px 10px}
+  .card1{padding:20px 16px;border-radius:16px}
+  .card1 h2{font-size:22px}
+  .two{grid-template-columns:1fr}
+  #adv>div{grid-template-columns:1fr!important}
+  input[type=text],input[type=tel],input[type=number]{font-size:16px}
+  #chip{font-size:18px;left:12px;top:14px;gap:8px;flex-wrap:wrap;max-width:55%}
+  #chip small{font-size:12px}
+  .cd{right:12px;top:12px;padding:4px 14px 8px;border-radius:16px}
+  #count{font-size:44px}
+  #fpsb{left:12px;bottom:130px}
+  #bar{flex-wrap:wrap;padding:12px 12px 16px;gap:8px}
+  #ph{font-size:20px;flex:1 0 100%}
+  #early,#nowbtn{margin-left:0;flex:1;padding:0 8px;font-size:14px}
+  #cancel{flex:1 0 100%}
+  .guidet{bottom:140px}
+  #L4>div{padding:12px 10px!important}
+  #L4 h2{font-size:20px;flex:1 0 100%!important}
+  #listq{width:100%!important;flex:1 1 100%}
+  #listbody table{font-size:13px!important;min-width:560px}
+  #listbody td,#listbody th{white-space:nowrap}
+  #detail{padding:8px;font-size:13px}
+  #detail table{min-width:620px}
+  #detail .rcell{width:180px;min-width:180px}
+}
+
+/* ===== Mobile ngang (thấp) ===== */
+@media (max-height:480px) and (orientation:landscape){
+  #count{font-size:40px}
+  #chip{font-size:16px;top:8px}
+  .cd{top:6px;padding:2px 12px 4px}
+  #bar{flex-wrap:nowrap;padding:8px 12px 12px}
+  #ph{flex:1 1 auto;font-size:18px}
+  #cancel{flex:0 0 auto}
+  #fpsb{bottom:64px}
+  .guidet{display:none}
+}

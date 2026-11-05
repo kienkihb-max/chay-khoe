@@ -26,7 +26,13 @@
   };
   try { S.rows = JSON.parse(localStorage.getItem('gait_rows') || '[]'); S.nextId = S.rows.length + 1; } catch (e) { /* bỏ qua */ }
 
-  const show = (id) => { ['L1', 'L2', 'L3'].forEach((x) => $(x).classList.toggle('show', x === id)); };
+  const NAV_OF = { L1: '#/', L3: '#/list', L4: '#/list' };   // màn nào tô mục nào trên thanh điều hướng (L2 không có thanh)
+  const show = (id) => {
+    ['L1', 'L2', 'L3', 'L4'].forEach((x) => $(x).classList.toggle('show', x === id));
+    document.body.classList.toggle('hasnav', id !== 'L2'); document.body.classList.toggle('onL3', id === 'L3');
+    $('listcnt').textContent = S.rows.length; updateNoteBtn(); if (id !== 'L3') closeNote(true);
+    document.querySelectorAll('#topnav button[data-nav]').forEach((b) => b.classList.toggle('on', b.dataset.nav === NAV_OF[id]));
+  };
   const pad = (n) => String(n).padStart(2, '0');
   const idStr = () => 'A' + pad(S.nextId);
 
@@ -75,7 +81,6 @@
 
   // ---------- Lớp 1: form + camera ----------
   function refreshL1() {
-    $('xdl').textContent = 'Tải Excel (' + S.rows.length + ' người)';
     const hv = +$('height').value, miss = [];
     if (!$('name').value.trim()) miss.push('họ tên');
     if ($('height').value && !(hv >= 100 && hv <= 230)) miss.push('chiều cao 100–230 cm (hoặc để trống)');
@@ -115,10 +120,42 @@
   ['s_mode', 's_speed', 's_fps', 's_res', 's_clip', 's_rec', 's_total'].forEach((i) => $(i).addEventListener('change', () => applySettings(true, i)));
   ['name', 'phone', 'height', 'pain'].forEach((i) => $(i).addEventListener('input', refreshL1));
 
+  // Camera giả (mock): vẽ người que đang chạy lên canvas rồi lấy stream; dùng khi máy không có camera hoặc thêm ?mock=1
+  function mockStream(w, h, fps) {
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const g = cv.getContext('2d'); let t0 = performance.now();
+    const draw = () => {
+      const t = (performance.now() - t0) / 1000, ph = t * 2 * Math.PI * 2.8, s = h / 480;
+      g.fillStyle = '#20242b'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#343a44'; g.fillRect(0, h * 0.85, w, h * 0.15);
+      const cx = w / 2, hip = h * 0.5 + Math.abs(Math.sin(ph)) * -6 * s, L = 85 * s;
+      const leg = (a) => { const k = a + 0.6 + 0.5 * Math.sin(a - 0.5); const kx = cx + Math.sin(a) * L, ky = hip + Math.cos(a) * L; return [kx, ky, kx - Math.sin(a - Math.max(0, Math.sin(ph + (a > 0 ? 0 : Math.PI))) * 1.2) * L, ky + Math.cos(a - Math.max(0, Math.sin(ph + (a > 0 ? 0 : Math.PI))) * 1.2) * L]; };
+      g.strokeStyle = '#e8eaed'; g.lineWidth = 8 * s; g.lineCap = 'round';
+      const sh = [cx + 8 * s, hip - 130 * s];
+      g.beginPath(); g.moveTo(cx, hip); g.lineTo(sh[0], sh[1]); g.stroke();
+      g.beginPath(); g.arc(sh[0] + 6 * s, sh[1] - 26 * s, 20 * s, 0, 7); g.stroke();
+      [Math.sin(ph) * 0.8, Math.sin(ph + Math.PI) * 0.8].forEach((a) => { const p = leg(a); g.beginPath(); g.moveTo(cx, hip); g.lineTo(p[0], p[1]); g.lineTo(p[2], p[3]); g.stroke(); });
+      [Math.sin(ph + Math.PI) * 0.7, Math.sin(ph) * 0.7].forEach((a) => { g.beginPath(); g.moveTo(sh[0], sh[1]); g.lineTo(sh[0] + Math.sin(a) * 50 * s, sh[1] + 45 * s); g.lineTo(sh[0] + Math.sin(a) * 80 * s, sh[1] + 30 * s); g.stroke(); });
+      g.fillStyle = '#ffb020'; g.font = (16 * s) + 'px sans-serif'; g.fillText('CAMERA GIẢ (MOCK)', 12, 26 * s);
+    };
+    draw(); setInterval(draw, 1000 / Math.max(fps || 30, 10));
+    return cv.captureStream(fps || 30);
+  }
+
   async function startCamera(deviceId) {
     try {
       if (S.stream) S.stream.getTracks().forEach((t) => t.stop());
-      const o = $('orient').value, c = { audio: false, video: { width: { ideal: o === 'portrait' ? CFG.res * 9 / 16 : CFG.res * 16 / 9 }, height: { ideal: o === 'portrait' ? CFG.res * 16 / 9 : CFG.res }, frameRate: { ideal: CFG.fps } } };
+      const o = $('orient').value;
+      if (Q.get('mock') === '1' || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || !(await navigator.mediaDevices.enumerateDevices()).some((d) => d.kind === 'videoinput')) {
+        const mw = o === 'portrait' ? CFG.res * 9 / 16 : CFG.res * 16 / 9, mh = o === 'portrait' ? CFG.res * 16 / 9 : CFG.res;
+        S.stream = mockStream(Math.round(mw), Math.round(mh), CFG.fps);
+        $('v1').srcObject = S.stream; $('v2').srcObject = S.stream;
+        $('v1').play().catch(() => {}); $('v2').play().catch(() => {});
+        $('camst').textContent = 'Camera giả (mock) – máy không có camera thật · ' + Math.round(mw) + '×' + Math.round(mh);
+        $('camsel').innerHTML = '<option>Camera giả (mock)</option>';
+        S.camReady = true; refreshL1(); return;
+      }
+      const c ={ audio: false, video: { width: { ideal: o === 'portrait' ? CFG.res * 9 / 16 : CFG.res * 16 / 9 }, height: { ideal: o === 'portrait' ? CFG.res * 16 / 9 : CFG.res }, frameRate: { ideal: CFG.fps } } };
       if (deviceId) c.video.deviceId = { exact: deviceId };
       S.stream = await navigator.mediaDevices.getUserMedia(c);
       $('v1').srcObject = S.stream; $('v2').srcObject = S.stream;
@@ -246,7 +283,7 @@
     let recStarted = false, recDone = false, shown = false; S.endNow = false;
     S.recAt = $('s_auto').checked ? null : CFG.rec; S.hipBuf = []; S.lastChk = 0; S.curCad = 0;
     const latest = Math.max(20, CFG.total - CFG.clip - 3);
-    $('early').style.display = ''; $('early').disabled = true;
+    $('early').style.display = ''; $('early').disabled = true; $('nowbtn').style.display = ''; $('nowbtn').disabled = true;
 
     const timer = setInterval(() => {
       const el = performance.now() / 1000 - S.t0;
@@ -266,6 +303,7 @@
         else if (S.error) setPhase('Không đo được', 'wn');
       }
       $('early').disabled = !(S.result || S.error);
+      $('nowbtn').disabled = !(S.recAt == null || el < S.recAt);
       if ((el >= CFG.total || S.endNow) && (S.result || S.error) && !shown) { shown = true; finish(); }
       if (S.abort) { clearInterval(timer); }
     }, 100);
@@ -317,7 +355,7 @@
     const km = +$('vspeed').value || 10; SPEED = km / 3.6;
     S.sub = { id: idStr(), name: titleCase($('name').value), phone: $('phone').value.trim(), height: +$('height').value || 165, pain: $('pain').value.trim() };
     S.frames = []; S.late = []; S.result = null; S.error = null; S.computing = false; S.abort = false; S.running = true; S.photosReady = false;
-    show('L2'); layout(); $('early').style.display = 'none';
+    show('L2'); layout(); $('early').style.display = 'none'; $('nowbtn').style.display = 'none';
     $('who').textContent = S.sub.name; $('idl').textContent = '';
     document.querySelector('.cd em').textContent = 'TIẾN ĐỘ'; $('count').textContent = '0%'; $('progf').style.width = '0%'; $('fpsb').textContent = '';
     setPhase('Đang mở video...', 'wn');
@@ -378,7 +416,8 @@
     }
   }
   $('early').addEventListener('click', () => { S.endNow = true; });
-  $('cancel').addEventListener('click', () => { if (REC.mr) recStop(false); S.abort = true; S.running = false; clearInterval(S.timer); show('L1'); refreshL1(); });
+  $('nowbtn').addEventListener('click', () => { S.recAt = performance.now() / 1000 - S.t0; S.recWhy = 'đo ngay'; });
+  $('cancel').addEventListener('click', () => { if (!confirm('Dừng đo và không lưu kết quả của lần này?')) return; if (REC.mr) recStop(false); S.abort = true; S.running = false; clearInterval(S.timer); show('L1'); refreshL1(); });
   $('go').addEventListener('click', () => { $('msg1').textContent = ''; if (S.mode === 'file') startVideo(); else { SPEED = SPEED0; startRun(); } });
 
   // ---------- Phân tích ----------
@@ -448,7 +487,7 @@
       for (const k of Object.keys(Gait.IDX[s])) { const j = Gait.IDX[s][k]; lm[k] = [R.P.x[j][i], R.P.y[j][i]]; }
       const other = s === 'L' ? 'R' : 'L', lo = {};
       for (const k of Object.keys(Gait.IDX[other])) { const j = Gait.IDX[other][k]; lo[k] = [R.P.x[j][i], R.P.y[j][i]]; }
-      S.photos[s] = { bmp, sc: best.sc, lm, lo, vw: best.vw, vh: best.vh };
+      S.photos[s] = { bmp, blob: best.blob, sc: best.sc, lm, lo, vw: best.vw, vh: best.vh };
     }
   }
 
@@ -457,6 +496,22 @@
     const c = REF[k]; if (!c || c.lo == null || v == null || Number.isNaN(v)) return { txt: 'n/a', ok: true };
     const r = Gait.rateValue(v, c);
     return { txt: r, ok: r === 'trong khoảng' };
+  }
+  // Màu trạng thái dùng chung canvas (thẻ chỉ số) và bảng Chi tiết: Tốt = xanh, Thấp/Cao = hổ phách; thanh: giữa xanh, hai bên xám
+  const BAR_IN = '#5FCFA6', BAR_OUT = '#D5DCE1', BAR_PAD = 0.75;
+  const barScale = (ref) => { const pd = (ref.hi - ref.lo) * BAR_PAD; return [ref.lo - pd, ref.hi + pd]; };
+  function statInfo(k, v) {   // null = không có tham chiếu hoặc không đo được
+    const c = REF[k]; if (!c || c.lo == null || v == null || Number.isNaN(v)) return null;
+    const r = rating(k, v);
+    return { ok: r.ok, col: r.ok ? GREEN : AMBER, bg: r.ok ? '#DDF3EA' : '#FBEBCF', label: r.ok ? 'Tốt' : r.txt === 'cao' ? 'Cao' : 'Thấp' };
+  }
+  function barHTML(k, dots) {   // dots: [{v, leg: 'L'|'R'|null}]; ghim mép khi ngoài thang như canvas
+    const ref = REF[k]; if (!ref || ref.lo == null) return '';
+    const [s0, s1] = barScale(ref), p = (t) => Math.max(0, Math.min(1, (t - s0) / (s1 - s0))) * 100;
+    let h = '<div class="rbar" style="background:' + BAR_OUT + '"><i class="rin" style="left:' + p(ref.lo) + '%;width:' + (p(ref.hi) - p(ref.lo)) + '%;background:' + BAR_IN + '"></i>' +
+      '<span class="rlb" style="left:' + p(ref.lo) + '%">' + ref.lo + '</span><span class="rlb" style="left:' + p(ref.hi) + '%">' + ref.hi + '</span>';
+    for (const d of dots) { const st = statInfo(k, d.v); if (st) h += '<b class="rdot' + (d.leg ? ' ' + d.leg : '') + '" style="left:' + p(d.v) + '%;background:' + st.col + '" title="' + (d.leg === 'L' ? 'Trái ' : d.leg === 'R' ? 'Phải ' : '') + f1(d.v) + '"></b>'; }
+    return h + '</div>';
   }
   const f1 = (v) => (v == null || Number.isNaN(v) ? '–' : (Math.round(v * 10) / 10).toFixed(1));
   const f0 = (v) => (v == null || Number.isNaN(v) ? '–' : String(Math.round(v)));
@@ -475,10 +530,11 @@
   }
 
   // ---------- Vẽ ảnh kết quả ----------
-  function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  // r: số (bo đều) hoặc [trên-trái, trên-phải, dưới-phải, dưới-trái]
+  function rr(c, x, y, w, h, r) { const [a, b, d, e] = Array.isArray(r) ? r : [r, r, r, r]; c.beginPath(); c.moveTo(x + a, y); c.arcTo(x + w, y, x + w, y + h, b); c.arcTo(x + w, y + h, x, y + h, d); c.arcTo(x, y + h, x, y, e); c.arcTo(x, y, x + w, y, a); c.closePath(); }
 
-  function drawPhoto(c, ph, side, x, y, w, h, R) {
-    c.save(); rr(c, x, y, w, h, 24); c.clip();
+  function drawPhoto(c, ph, side, x, y, w, h, R, flatBottom) {   // flatBottom: đáy vuông để dính liền thẻ điểm bên dưới
+    c.save(); rr(c, x, y, w, h, flatBottom ? [22, 22, 0, 0] : 24); c.clip();
     c.fillStyle = '#1B2A34'; c.fillRect(x, y, w, h);
     const col = side === 'L' ? BLUE : ORANGE;
     if (ph) {
@@ -557,28 +613,6 @@
 
   // ---- báo cáo gọn: số to, vị trí đo trên ảnh, kết luận + lời khuyên ----
   const FFX = 'system-ui,"Segoe UI",Arial';
-  function tile(c, x, y, w, h, o) {
-    const q = o.key ? rating(o.key, o.v) : { ok: true, txt: '' }, col = q.ok ? GREEN : AMBER;
-    c.save(); c.shadowColor = 'rgba(14,36,51,.08)'; c.shadowBlur = 10; c.shadowOffsetY = 2; c.fillStyle = '#fff'; rr(c, x, y, w, h, 16); c.fill(); c.restore();
-    c.textAlign = 'left'; c.fillStyle = '#5B6B77'; c.font = '600 19px ' + FFX; c.fillText(o.label, x + 18, y + 30);
-    c.fillStyle = o.key ? col : '#14202B';
-    if (o.text) { c.font = '700 40px ' + FFX; c.fillText(o.text, x + 18, y + 86, w - 36); return; }
-    c.font = '700 56px ' + FFX; c.fillText(o.val, x + 18, y + 88); const vw = c.measureText(o.val).width;
-    c.fillStyle = '#6B7C88'; c.font = '22px ' + FFX; c.fillText(o.unit, x + 26 + vw, y + 88);
-    // nhãn trạng thái
-    const word = q.ok ? 'Tốt' : q.txt === 'cao' ? 'Cao' : 'Thấp';
-    c.font = '700 18px ' + FFX; const tw = c.measureText(word).width + 26;
-    c.fillStyle = q.ok ? '#DDF3EA' : '#FBEBCF'; rr(c, x + w - 18 - tw, y + 12, tw, 30, 15); c.fill();
-    c.fillStyle = col; c.textAlign = 'center'; c.fillText(word, x + w - 18 - tw / 2, y + 33); c.textAlign = 'left';
-    // thanh + khoảng bình thường
-    const ref = o.ref, span = ref.hi - ref.lo, mn = ref.lo - span * 0.9, mx = ref.hi + span * 0.9, bx = x + 18, bw = w - 36, by = y + h - 30;
-    const pos = (v) => bx + Math.max(0, Math.min(1, (v - mn) / (mx - mn))) * bw;
-    c.fillStyle = '#E3EAEE'; rr(c, bx, by, bw, 10, 5); c.fill();
-    c.fillStyle = '#BDE8D7'; c.fillRect(pos(ref.lo), by, pos(ref.hi) - pos(ref.lo), 10);
-    c.fillStyle = '#fff'; c.beginPath(); c.arc(pos(o.v), by + 5, 11, 0, 7); c.fill();
-    c.fillStyle = col; c.beginPath(); c.arc(pos(o.v), by + 5, 8, 0, 7); c.fill();
-    c.fillStyle = '#7A8791'; c.font = '16px ' + FFX; c.textAlign = 'right'; c.fillText('Bình thường ' + ref.lo + '–' + ref.hi, x + w - 18, y + 64); c.textAlign = 'left';
-  }
   // kết luận + lời khuyên theo quy tắc đơn giản (bác sĩ nên rà lại nội dung)
   // ---------- Điểm dáng chạy (0-100) và bài tập gợi ý ----------
   // Điểm mỗi chỉ số = 100 nếu trong khoảng bình thường, giảm dần theo độ lệch (hết điểm khi lệch bằng một bề rộng khoảng). Chỉ tính 9 chỉ số chính.
@@ -600,7 +634,17 @@
     if (t.length) out.total = Math.round(t.reduce((x, y) => x + y, 0) / t.length);
     return out;
   }
-  const scoreCol = (v) => (v >= 80 ? GREEN : v >= 60 ? AMBER : '#D9503F');
+  // Hạng theo điểm tổng. BÁC SĨ CẦN RÀ ngưỡng; sửa tại đây là đủ: màu điểm (scoreCol), huy hiệu ở ảnh kết quả
+  // và câu giải thích ở PDF trang 4 đều đọc từ bảng này. Màu lấy theo :root (--teal, --teal2, --amber, --red).
+  const TIERS = [
+    { min: 85, label: 'XUẤT SẮC', col: GREEN },
+    { min: 70, label: 'TỐT', col: '#12A07A' },
+    { min: 55, label: 'KHÁ', col: AMBER },
+    { min: 0, label: 'CẦN CẢI THIỆN', col: '#D9503F' },
+  ];
+  const tierOf = (v) => TIERS.find((t) => v >= t.min) || TIERS[TIERS.length - 1];
+  const scoreCol = (v) => tierOf(v).col;
+  const tierText = () => TIERS.map((t, i) => (i === 0 ? t.min + '+ ' : t.min === 0 ? 'dưới ' + TIERS[i - 1].min + ' ' : t.min + '–' + (TIERS[i - 1].min - 1) + ' ') + t.label.toLowerCase()).join(', ');
   // Bài tập gợi ý (bản nháp, bác sĩ cần duyệt/chỉnh nội dung)
   const EXER = {
     cadence_low: ['Tăng nhịp bước (Cadence training)', 'Chạy nhẹ theo máy gõ nhịp (Metronome) 170–175 bước/phút, 3 buổi mỗi tuần, mỗi buổi 5–10 phút trong buổi chạy nhẹ. Tăng dần khoảng 5% mỗi tuần.'],
@@ -616,7 +660,7 @@
     asym: ['Cân bằng hai chân (Single-leg training)', 'Đứng một chân giữ thăng bằng (Single-leg balance) 3 x 30 giây, Single-leg glute bridge 3 x 10, Step-up 3 x 10 mỗi bên. Nên kiểm tra thêm sức mạnh và linh hoạt hai bên.'],
   };
   function exercises(R) {
-    const out = [], seen = new Set(), push = (key, why) => { if (EXER[key] && !seen.has(key)) { seen.add(key); out.push({ t: EXER[key][0], h: EXER[key][1], why }); } };
+    const out = [], seen = new Set(), push = (key, why) => { if (EXER[key] && !seen.has(key)) { seen.add(key); out.push({ key, t: EXER[key][0], h: EXER[key][1], why }); } };
     const cm = R.comb.common, rs = (k, v) => rating(k, v).txt;
     const avg = (k) => { const v = ['L', 'R'].filter((s) => R.res[s]).map((s) => R.res[s].metrics[k]); return v.reduce((x, y) => x + y, 0) / v.length; };
     if (rs('cadence', cm.cadence) === 'thấp') push('cadence_low', 'Nhịp chạy ' + f0(cm.cadence) + ' bước/phút, thấp hơn khoảng bình thường');
@@ -658,82 +702,116 @@
     if (pain) out.push('Bạn đang có đau (' + pain + '): nên được bác sĩ thăm khám trực tiếp.');
     return { text, adv: out, bad: flags.length };
   }
+  // ---- Ảnh kết quả (chiếu TV, người chạy chụp lại): 3 tầng chính/phụ ----
+  // Việc nên cải thiện nhất, giọng tích cực; khóa = khóa EXER (lấy mục đầu của exercises(R)). Bản nháp, BÁC SĨ CẦN RÀ.
+  const IMPROVE = {
+    overstride_high: 'Bước ngắn lại một chút, đặt chân gần dưới hông sẽ nhẹ gối hơn',
+    vert_osc_high: 'Đẩy người về phía trước thay vì nảy lên sẽ chạy êm và đỡ mệt hơn',
+    trunk_low: 'Nghiêng nhẹ cả người về trước từ cổ chân sẽ giúp bước chạy trôi hơn',
+    trunk_high: 'Giữ thân thẳng hơn một chút, gồng bụng nhẹ sẽ giúp lưng thoải mái hơn',
+    knee_ic_low: 'Giữ gối hơi mềm khi chạm đất sẽ giảm sốc cho khớp',
+    knee_ic_high: 'Tập thêm sức mạnh đùi và mông sẽ giúp gối vững hơn khi tiếp đất',
+    hip_ext_low: 'Giãn cơ gập hông đều đặn sẽ giúp sải chân ra sau thoải mái hơn',
+    knee_mid_low: 'Tập hạ người chậm trên một chân sẽ giúp gối nhún chịu lực tốt hơn',
+    knee_swing_low: 'Tập gót chạm mông nhẹ nhàng sẽ giúp vung chân gọn và nhanh hơn',
+    asym: 'Tập thêm bài một chân sẽ giúp hai chân đều nhau hơn',
+  };
+  const legVals = (R, k) => ['L', 'R'].filter((s) => R.res[s]).map((s) => R.res[s].metrics[k]);
+  const mainVal = (R, k) => { const v = Gait.COMMON.includes(k) ? [R.comb.common[k]] : legVals(R, k), a = v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; return a == null || Number.isNaN(a) ? null : a; };   // NaN = không đo được: hiện "–", không gắn nhãn
+  function improveTip(R) {
+    if (R.q && R.q.bad) return 'Đo lại với camera đặt ngang, thấy rõ cả người để có kết quả chính xác hơn';
+    const ex = exercises(R), k = ex.length ? ex[0].key : null;
+    if (k === 'cadence_low') return 'Tăng nhịp lên khoảng ' + Math.min(180, Math.round(R.comb.common.cadence * 1.05)) + ' bước/phút sẽ giúp chạy nhẹ nhàng hơn';
+    return (k && IMPROVE[k]) || 'Giữ phong độ này! Tập sức mạnh 2 buổi mỗi tuần và đo lại sau 4–6 tuần';
+  }
   function drawResult(R) {
-    const cv = $('res'), c = cv.getContext('2d');
+    const cv = $('res'), c = cv.getContext('2d'), INK = '#14202B', MUT = '#5B6B77';
+    const font = (w, s) => { c.font = w + ' ' + s + 'px ' + FFX; };
+    const fit = (txt, w, s, min, maxW) => { font(w, s); while (s > min && c.measureText(txt).width > maxW) { s -= 2; font(w, s); } };
+    const card = (x, y, w, h) => { c.save(); c.shadowColor = 'rgba(14,36,51,.10)'; c.shadowBlur = 14; c.shadowOffsetY = 3; c.fillStyle = '#fff'; rr(c, x, y, w, h, 22); c.fill(); c.restore(); };
+    const pill = (txt, x, y, h, bg, fg, size) => { font('700', size); const w = c.measureText(txt).width + h * 0.9; c.fillStyle = bg; rr(c, x, y, w, h, h / 2); c.fill(); c.fillStyle = fg; c.textBaseline = 'middle'; c.fillText(txt, x + h * 0.45, y + h / 2 + 1); c.textBaseline = 'alphabetic'; return w; };
     c.textBaseline = 'alphabetic'; c.textAlign = 'left';
     c.fillStyle = '#EEF2F4'; c.fillRect(0, 0, 1920, 1080);
+    // ---- đầu trang: logo, ngày đo, bacsikien.com ----
     const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, '#0E2433'); g.addColorStop(1, '#0d4a46');
-    c.fillStyle = g; c.fillRect(0, 0, 1920, 96);
-    const sub = R.sub, d = new Date();
-    c.fillStyle = '#fff'; c.font = '700 42px ' + FFX; c.fillText(sub.name, 48, 52);
-    c.fillStyle = '#9fc7d6'; c.font = '20px ' + FFX;
-    c.fillText('cao ' + sub.height + ' cm  ·  ' + (SPEED * 3.6).toFixed(0) + ' km/h  ·  ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(), 48, 80);
-    c.textAlign = 'right'; c.fillStyle = '#7fe3c3'; c.font = '700 22px ' + FFX; c.fillText('CHẠY BỘ CÙNG BÁC SĨ KIÊN', 1872, 46);
-    c.fillStyle = '#9fc7d6'; c.font = '19px ' + FFX; c.fillText('bacsikien.com', 1872, 76); c.textAlign = 'left';
-    const sc = scores(R);
-    // ---- khối điểm: to nhất, ngay dưới tiêu đề ----
-    const card = (x, w, fill) => { c.save(); c.shadowColor = 'rgba(14,36,51,.10)'; c.shadowBlur = 14; c.shadowOffsetY = 3; c.fillStyle = fill || '#fff'; rr(c, x, 106, w, 190, 22); c.fill(); c.restore(); };
-    const verdict = (v) => (v >= 90 ? 'Rất tốt' : v >= 80 ? 'Tốt' : v >= 60 ? 'Cần chỉnh một số điểm' : 'Nên được tư vấn trực tiếp');
-    card(48, 720);
-    if (sc.total != null) {
-      c.fillStyle = scoreCol(sc.total); rr(c, 48, 106, 12, 190, 6); c.fill();
-      c.fillStyle = '#5B6B77'; c.font = '700 22px ' + FFX; c.fillText('ĐIỂM DÁNG CHẠY', 90, 146);
-      c.fillStyle = scoreCol(sc.total); c.font = '700 150px ' + FFX; c.fillText(String(sc.total), 86, 270);
-      const nw = c.measureText(String(sc.total)).width;
-      c.fillStyle = '#7A8791'; c.font = '700 40px ' + FFX; c.fillText('/100', 96 + nw, 270);
-      c.fillStyle = scoreCol(sc.total); c.font = '700 30px ' + FFX; c.textAlign = 'right'; c.fillText(verdict(sc.total), 744, 146, 330); c.textAlign = 'left';
-    } else {
-      c.fillStyle = AMBER; rr(c, 48, 106, 12, 190, 6); c.fill();
-      c.fillStyle = '#5B6B77'; c.font = '700 22px ' + FFX; c.fillText('ĐIỂM DÁNG CHẠY', 90, 146);
-      c.fillStyle = AMBER; c.font = '700 46px ' + FFX; c.fillText('Chưa đủ tin cậy', 90, 210);
-      c.fillStyle = '#5B6B77'; c.font = '20px ' + FFX; c.fillText('Xem lý do ở phần kết luận bên dưới', 90, 250);
-    }
-    [['L', 780, 'CHÂN TRÁI', BLUE], ['R', 1332, 'CHÂN PHẢI', ORANGE]].forEach(([s, x, lb, col]) => {
-      card(x, 540);
-      c.fillStyle = col; c.beginPath(); c.arc(x + 36, 146, 10, 0, 7); c.fill();
-      c.fillStyle = '#5B6B77'; c.font = '700 22px ' + FFX; c.fillText('ĐIỂM ' + lb, x + 56, 154);
+    c.fillStyle = g; c.fillRect(0, 0, 1920, 100);
+    const lg = c.createLinearGradient(48, 18, 112, 82); lg.addColorStop(0, '#12A07A'); lg.addColorStop(1, '#7fe3c3');
+    c.fillStyle = lg; rr(c, 48, 18, 64, 64, 14); c.fill();
+    c.fillStyle = '#06352a'; font('800', 38); c.textAlign = 'center'; c.fillText('K', 80, 64); c.textAlign = 'left';
+    c.fillStyle = '#bfe9dc'; font('700', 30); c.fillText('CHẠY BỘ CÙNG BÁC SĨ KIÊN', 132, 62);
+    const d = R.when ? new Date(R.when) : new Date();   // mở lại người cũ: giữ ngày đo
+    c.textAlign = 'right'; c.fillStyle = '#fff'; font('700', 30); c.fillText('Ngày đo ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(), 1872, 50);
+    c.fillStyle = '#7fe3c3'; font('600', 24); c.fillText('bacsikien.com', 1872, 84); c.textAlign = 'left';
+
+    // ---- tầng 1: tên, điểm tổng, hạng ----
+    const sc = scores(R), sub = R.sub;
+    card(48, 124, 600, 592);
+    c.fillStyle = INK; fit(sub.name, '700', 60, 36, 536); c.fillText(sub.name, 80, 246, 536);
+    c.fillStyle = MUT; font('400', 26); c.fillText('Cao ' + sub.height + ' cm  ·  ' + ((R.speed || SPEED) * 3.6).toFixed(0) + ' km/h', 80, 290);
+    font('700', 26); c.fillText('ĐIỂM DÁNG CHẠY', 80, 356);
+    const tt = sc.total != null ? tierOf(sc.total) : { label: 'CHƯA ĐỦ TIN CẬY', col: AMBER };
+    c.fillStyle = sc.total != null ? tt.col : '#8A97A1'; font('700', 220); const st = sc.total != null ? String(sc.total) : '–';
+    c.fillText(st, 72, 538); const nw = c.measureText(st).width;
+    if (sc.total != null) { c.fillStyle = '#7A8791'; font('700', 52); c.fillText('/100', 84 + nw, 538); }
+    pill(tt.label, 80, 562, 68, tt.col, '#fff', 36);
+
+    // ---- tầng 2: hai ảnh 4:3 (khung xương + góc gối), điểm từng chân bên dưới ----
+    [['L', 680, 'CHÂN TRÁI', BLUE], ['R', 1288, 'CHÂN PHẢI', ORANGE]].forEach(([s, x, lb, col]) => {
+      card(x, 124, 584, 592);   // một khối liền: ảnh (bo góc trên) + thẻ điểm (bo góc dưới), chung viền và bóng
+      drawPhoto(c, S.photos && S.photos[s], s, x, 124, 584, 438, R, true);
+      c.fillStyle = col; c.beginPath(); c.arc(x + 40, 614, 11, 0, 7); c.fill();
+      c.fillStyle = MUT; font('700', 26); c.fillText('ĐIỂM ' + lb, x + 62, 623);
       const v = sc[s];
-      c.fillStyle = v == null ? '#8A97A1' : scoreCol(v); c.font = '700 100px ' + FFX; c.fillText(v == null ? '–' : String(v), x + 28, 262);
-      if (v != null) { const w2 = c.measureText(String(v)).width; c.fillStyle = '#7A8791'; c.font = '700 30px ' + FFX; c.fillText('/100', x + 38 + w2, 262); c.fillStyle = scoreCol(v); c.font = '600 22px ' + FFX; c.textAlign = 'right'; c.fillText(verdict(v), x + 520, 262, 240); c.textAlign = 'left'; }
+      if (v == null) { c.fillStyle = '#8A97A1'; font('600', 28); c.fillText(R.res[s] ? 'Chưa đủ tin cậy' : 'Không đo được chân này', x + 30, 690); return; }
+      c.fillStyle = scoreCol(v); font('700', 72); c.fillText(String(v), x + 28, 698); const w2 = c.measureText(String(v)).width;
+      c.fillStyle = '#7A8791'; font('700', 30); c.fillText('/100', x + 36 + w2, 698);
+      c.fillStyle = scoreCol(v); font('700', 30); c.textAlign = 'right'; c.fillText(tierOf(v).label, x + 556, 698); c.textAlign = 'left';
     });
-    const colX = { L: 48, R: 972 }, cw = 900;
-    for (const s of ['L', 'R']) {
-      const x = colX[s], m = R.res[s] && R.res[s].metrics;
-      drawPhoto(c, S.photos && S.photos[s], s, x, 306, cw, 296, R);
-      const tw = (cw - 24) / 3;
-      if (m) {
-        tile(c, x, 612, tw, 124, { label: 'Gối gập', key: 'knee_ic', v: m.knee_ic, val: f0(m.knee_ic), unit: '°', ref: REF.knee_ic });
-        tile(c, x + tw + 12, 612, tw, 124, { label: 'Chân trước hông', key: 'overstride', v: m.overstride, val: f0(m.overstride), unit: 'cm', ref: REF.overstride });
-        tile(c, x + 2 * (tw + 12), 612, tw, 124, { label: 'Kiểu tiếp đất', text: R.res[s].extra.strike });
-      } else { c.fillStyle = '#8A97A1'; c.font = '22px ' + FFX; c.fillText('Không đo được chân này', x, 672); }
-    }
-    const cm = R.comb.common, tw3 = (1824 - 24) / 3;
-    tile(c, 48, 746, tw3, 124, { label: 'Nhịp chạy', key: 'cadence', v: cm.cadence, val: f0(cm.cadence), unit: 'bước/phút', ref: REF.cadence });
-    tile(c, 48 + tw3 + 12, 746, tw3, 124, { label: 'Nảy lên xuống', key: 'vert_osc', v: cm.vert_osc, val: f1(cm.vert_osc), unit: 'cm', ref: REF.vert_osc });
-    tile(c, 48 + 2 * (tw3 + 12), 746, tw3, 124, { label: 'Nghiêng thân', key: 'trunk', v: cm.trunk, val: f1(cm.trunk), unit: '°', ref: REF.trunk });
-    // kết luận + nên làm
-    const cc = conclusion(R), good = cc.bad === 0;
-    c.fillStyle = '#fff'; rr(c, 48, 880, 1824, 156, 18); c.fill();
-    c.fillStyle = good ? GREEN : AMBER; rr(c, 48, 880, 10, 156, 5); c.fill();
-    c.fillStyle = GREEN; c.font = '700 17px ' + FFX; c.fillText('KẾT LUẬN', 84, 912);
-    c.fillStyle = '#14202B'; c.font = '700 26px ' + FFX; wrap(c, cc.text, 84, 948, 760, 34);
-    c.fillStyle = GREEN; c.font = '700 17px ' + FFX; c.fillText('NÊN LÀM', 940, 912);
-    c.font = '20px ' + FFX; let yy = 942;
-    cc.adv.slice(0, 2).forEach((t, i) => {
-      c.fillStyle = GREEN; c.beginPath(); c.arc(956, yy - 6, 12, 0, 7); c.fill();
-      c.fillStyle = '#fff'; c.font = '700 15px ' + FFX; c.textAlign = 'center'; c.fillText(String(i + 1), 956, yy - 1); c.textAlign = 'left';
-      c.fillStyle = '#14202B'; c.font = '20px ' + FFX; yy = wrap(c, t, 982, yy, 860, 25) + 8;
+
+    // ---- tầng 3: 3 chỉ số chính + 1 việc nên cải thiện nhất ----
+    const MAIN = [
+      ['cadence', 'Nhịp chạy', 'bước/phút'],
+      ['overstride', 'Chân đặt trước hông', 'cm'],
+      ['knee_ic', 'Gối lúc chạm đất', '°'],
+    ];
+    MAIN.forEach(([k, lb, unit], i) => {
+      const x = 48 + i * 444, y = 740, w = 420, h = 260, v = mainVal(R, k), q = v == null ? { ok: true, txt: '' } : rating(k, v);
+      const col = v == null ? '#8A97A1' : q.ok ? GREEN : AMBER;
+      card(x, y, w, h); c.fillStyle = col; rr(c, x, y, 12, h, 6); c.fill();
+      c.fillStyle = MUT; font('700', 30); c.fillText(lb, x + 36, y + 46, w - 60);
+      const val = v == null ? '–' : f0(v);
+      c.fillStyle = col; font('700', 96); c.fillText(val, x + 34, y + 136); const vw = c.measureText(val).width;
+      c.fillStyle = MUT; font('600', 30); c.fillText(unit, x + 44 + vw, y + 136);
+      if (v == null) return;   // không đo được: không chip, không thanh, không chấm
+      const pw = pill(q.ok ? 'Tốt' : q.txt === 'cao' ? 'Cao' : 'Thấp', x + 36, y + 148, 42, q.ok ? '#DDF3EA' : '#FBEBCF', col, 26);
+      // thanh vị trí: giữa = vùng bình thường (xanh), hai bên = ngoài vùng (xám); chấm (màu trạng thái) = giá trị đo, ghim ở mép nếu ngoài thang
+      const ref = REF[k], bx = x + 36 + pw + 24, bw = x + w - 44 - bx, by = y + 169 - 9, bh = 18, [s0, s1] = barScale(ref);
+      const px = (t) => bx + bw * Math.max(0, Math.min(1, (t - s0) / (s1 - s0)));
+      c.save(); rr(c, bx, by, bw, bh, bh / 2); c.clip();
+      c.fillStyle = BAR_OUT; c.fillRect(bx, by, bw, bh);
+      c.fillStyle = BAR_IN; c.fillRect(px(ref.lo), by, px(ref.hi) - px(ref.lo), bh);
+      c.restore();
+      c.fillStyle = MUT; font('600', 22); c.textAlign = 'center';
+      c.fillText(String(ref.lo), px(ref.lo), by + bh + 26); c.fillText(String(ref.hi), px(ref.hi), by + bh + 26); c.textAlign = 'left';
+      const dx = px(v), dy = by + bh / 2;
+      c.save(); c.shadowColor = 'rgba(14,36,51,.35)'; c.shadowBlur = 6; c.shadowOffsetY = 2;
+      c.fillStyle = '#fff'; c.beginPath(); c.arc(dx, dy, 17, 0, 7); c.fill(); c.restore();
+      c.fillStyle = col; c.beginPath(); c.arc(dx, dy, 11, 0, 7); c.fill();
     });
-    c.fillStyle = '#7A8791'; c.font = '15px ' + FFX;
-    c.fillText('Thanh xanh = khoảng bình thường. Sàng lọc 2D bằng AI, không thay thế khám lâm sàng. Chân xa camera kém tin cậy hơn.', 48, 1068);
+    card(1380, 740, 492, 260); c.fillStyle = GREEN; rr(c, 1380, 740, 12, 260, 6); c.fill();
+    c.fillStyle = GREEN; font('700', 26); c.fillText('NÊN CẢI THIỆN', 1416, 790);
+    c.fillStyle = INK; font('700', 28); wrap(c, improveTip(R), 1416, 836, 428, 36);
+    if ((sub.pain || '').trim()) { c.fillStyle = '#D9503F'; font('600', 24); c.fillText('Có đau khi chạy: nên được bác sĩ khám trực tiếp', 1416, 986, 428); }
+    c.fillStyle = MUT; font('400', 22);
+    c.fillText('Sàng lọc 2D bằng AI, chỉ mang tính tham khảo, không thay thế khám lâm sàng. Chân xa camera kém tin cậy hơn.', 48, 1052);
   }
 
   function extraRows(R) {
     const out = [], ex = R.ex; if (!ex) return out;
-    const one = (k, fmt) => { const c = REF[k]; const v = ex.common[k]; out.push({ label: c.label, unit: c.unit, a: v == null || Number.isNaN(v) ? '–' : fmt(v), b: '', ref: c.lo != null ? c.lo + '–' + c.hi : '', st: c.lo != null ? rating(k, v).txt : '', ok: rating(k, v).ok, common: true }); };
+    const one = (k, fmt) => { const c = REF[k]; const v = ex.common[k]; out.push({ label: c.label, unit: c.unit, a: v == null || Number.isNaN(v) ? '–' : fmt(v), b: '', ref: c.lo != null ? c.lo + '–' + c.hi : '', st: c.lo != null ? rating(k, v).txt : '', ok: rating(k, v).ok, common: true, k, n: { c: v } }); };
     const two = (k, fmt) => { const c = REF[k]; const g = (s) => (ex.per[s] && ex.per[s][k] != null && !Number.isNaN(ex.per[s][k]) ? ex.per[s][k] : NaN);
       const l = g('L'), r = g('R'); const sl = rating(k, l), sr = rating(k, r);
-      out.push({ label: c.label, unit: c.unit, a: Number.isNaN(l) ? '–' : fmt(l), b: Number.isNaN(r) ? '–' : fmt(r), ref: c.lo != null ? c.lo + '–' + c.hi : '', st: c.lo != null ? sl.txt + ' / ' + sr.txt : '', ok: sl.ok && sr.ok }); };
+      out.push({ label: c.label, unit: c.unit, a: Number.isNaN(l) ? '–' : fmt(l), b: Number.isNaN(r) ? '–' : fmt(r), ref: c.lo != null ? c.lo + '–' + c.hi : '', st: c.lo != null ? sl.txt + ' / ' + sr.txt : '', ok: sl.ok && sr.ok, k, n: { L: l, R: r } }); };
     two('contact_ms', f0); one('flight_ms', f0); one('duty', f1); one('step_cv', f1); one('step_asym', f1); one('contact_asym', f1);
     two('hip_flex', f0); two('heel_kick', f1); two('arm_swing', f0); two('elbow', f0); two('head_fwd', f1);
     if (R.fat) {
@@ -749,21 +827,41 @@
     const q = R.q ? '<p style="margin:0 0 8px;color:#5B6B77">Chẩn đoán: ' + R.q.fps + ' khung/giây phân tích · nhận diện ' + Math.round(R.q.det * 100) + '% khung hình (' + R.q.frames + ' khung)' + (R.q.slow > 1 ? ' · video quay chậm gấp ' + R.q.slow : '') + (R.q.bad ? ' · <b style="color:#D9503F">KHÔNG ĐÁNG TIN: ' + R.q.why.join('; ') + '</b>' : ' · đạt kiểm tra độ tin cậy') + '</p>' : '';
     const sc3 = scores(R);
     let h = '<p style="margin:0 0 8px;font-weight:700">Điểm: chung ' + (sc3.total != null ? sc3.total : '–') + ' · trái ' + (sc3.L != null ? sc3.L : '–') + ' · phải ' + (sc3.R != null ? sc3.R : '–') + ' (/100, tham khảo)</p>' + q + '<table><tr><th>Chỉ số</th><th>Trái</th><th>Phải</th><th>Tham chiếu</th><th>Đánh giá</th></tr>';
+    // một dòng: n = số thực {c | L,R}; a/b = chữ hiện ở cột Trái/Phải; có tham chiếu thì tô màu số, vẽ thanh + chấm, chip Đánh giá
+    const row = (label, k, n, a, b) => {
+      const num = (txt, v, bold) => { const st = statInfo(k, v); return st ? '<span class="dv" style="color:' + st.col + ';background:' + st.bg + '">' + txt + '</span>' : (bold ? '<b>' + txt + '</b>' : txt); };
+      const legs = n.c !== undefined ? [{ s: 'c', v: n.c }] : ['L', 'R'].filter((s) => !Number.isNaN(n[s]) && n[s] != null).map((s) => ({ s, v: n[s] }));
+      const chips = legs.map((d) => { const st = statInfo(k, d.v); return st ? '<span class="chip" style="color:' + st.col + ';background:' + st.bg + '">' + (d.s === 'c' ? '' : (d.s === 'L' ? 'Trái ' : 'Phải ') ) + st.label + '</span>' : ''; }).join('');
+      const bar = barHTML(k, legs.map((d) => ({ v: d.v, leg: d.s === 'c' ? null : d.s })));
+      return '<tr><td>' + label + '</td><td>' + (n.c !== undefined ? num(a, n.c, true) : num(a, n.L)) + '</td><td>' + (n.c !== undefined ? b : num(b, n.R)) + '</td><td class="rcell">' + bar + '</td><td>' + chips + '</td></tr>';
+    };
+    let anyTwo = false;
     for (const k of keys) {
       const c = REF[k] || { label: k, unit: '' }, common = Gait.COMMON.includes(k);
       const L = R.res.L ? R.res.L.metrics[k] : NaN, Rr = R.res.R ? R.res.R.metrics[k] : NaN;
-      const val = common ? R.comb.common[k] : null;
-      const cell = (v) => f1(v);
-      const rt = common ? rating(k, val).txt : ['L', 'R'].map((s) => (R.res[s] ? rating(k, R.res[s].metrics[k]).txt : '–')).join(' / ');
-      h += '<tr><td>' + c.label + ' (' + c.unit + ')</td><td>' + (common ? '<b>' + cell(val) + '</b>' : cell(L)) + '</td><td>' + (common ? '' : cell(Rr)) + '</td><td>' + (c.lo != null ? c.lo + '–' + c.hi : '') + '</td><td>' + rt + '</td></tr>';
+      if (!common) anyTwo = true;
+      h += row(c.label + ' (' + c.unit + ')', k, common ? { c: R.comb.common[k] } : { L, R: Rr }, common ? f1(R.comb.common[k]) : f1(L), common ? '' : f1(Rr));
     }
-    for (const x of extraRows(R)) h += '<tr><td>' + x.label + (x.unit ? ' (' + x.unit + ')' : '') + '</td><td>' + x.a + '</td><td>' + x.b + '</td><td>' + x.ref + '</td><td>' + x.st + '</td></tr>';
+    for (const x of extraRows(R)) {
+      const lbl = x.label + (x.unit ? ' (' + x.unit + ')' : '');
+      if (x.k && x.n.L !== undefined) anyTwo = true;
+      h += x.k ? row(lbl, x.k, x.n, x.a, x.b) : '<tr><td>' + lbl + '</td><td>' + x.a + '</td><td>' + x.b + '</td><td></td><td><span class="chip" style="color:' + (x.ok ? GREEN : AMBER) + ';background:' + (x.ok ? '#DDF3EA' : '#FBEBCF') + '">' + x.st + '</span></td></tr>';
+    }
     for (const s of ['L', 'R']) if (R.res[s]) h += '<tr><td>Chân ' + (s === 'L' ? 'trái' : 'phải') + ': số bước · độ tin cậy</td><td colspan="4">' + R.res[s].extra.nSteps + ' bước · vis ' + R.res[s].extra.vis.toFixed(2) + (R.res[s].extra.vis < 0.6 ? ' (thấp)' : '') + '</td></tr>';
-    return h + '</table>';
+    return h + '</table>' + (anyTwo ? '<p class="rleg"><b class="rdot L"></b> chân trái · <b class="rdot R"></b> chân phải · chấm tô màu theo đánh giá (xanh = tốt, vàng = thấp/cao) · thanh xám = ngoài khoảng bình thường</p>' : '');
   }
+  // Chi tiết là một "màn" riêng: mở thì ẩn ảnh tổng quan, nút đổi thành "Tổng quan" để quay về
+  function setDetail(open) {
+    const d = $('detail'), b = $('tgdetail'), box = $('resbox');
+    d.style.display = open ? 'block' : 'none';
+    if (box) box.style.display = open ? 'none' : '';
+    b.textContent = open ? 'Tổng quan' : 'Chi tiết (bác sĩ)';
+    const sc = d.parentElement; if (sc) sc.scrollTop = 0; window.scrollTo(0, 0);
+  }
+  function resetDetail(R) { $('detail').innerHTML = detailHTML(R); setDetail(false); }
 
   // ---------- Lớp 3 ----------
-  async function finish() {
+  async function finish(seed) {   // seed = true: nạp dữ liệu mẫu, chỉ lưu vào danh sách và IndexedDB, không đổi màn, không gửi Sheet
     if (REC.mr) await recStop(true, S.sub && S.sub.name);
     S.running = false; clearInterval(S.timer);
     if (S.error) {
@@ -778,12 +876,16 @@
         R.fat = Gait.fatigue(R, { comb: Gait.combine(bb.res, SPEED) });
       }
     } catch (e) { R.fat = null; }
-    drawResult(R);
-    $('detail').innerHTML = detailHTML(R); $('detail').style.display = 'none';
-    show('L3');
-    // ghi dòng vào bảng Excel
-    const nowd = new Date();
-    const row = { id: R.sub.id, time: pad(nowd.getDate()) + '/' + pad(nowd.getMonth() + 1) + '/' + nowd.getFullYear() + ' ' + pad(nowd.getHours()) + ':' + pad(nowd.getMinutes()), name: R.sub.name, phone: R.sub.phone, height_cm: R.sub.height, pain: R.sub.pain };
+    R.when = Date.now(); R.speed = SPEED;
+    $('note').value = '';   // người mới: không mang ghi chú của kết quả vừa mở lại từ Danh sách
+    if (!seed) {
+      drawResult(R);
+      resetDetail(R);
+      show('L3');
+    }
+    // dòng dữ liệu (danh sách + Google Sheet)
+    const nowd = new Date(R.when);
+    const row = { id: R.sub.id, time: pad(nowd.getDate()) + '/' + pad(nowd.getMonth() + 1) + '/' + nowd.getFullYear() + ' ' + pad(nowd.getHours()) + ':' + pad(nowd.getMinutes()), name: R.sub.name, phone: R.sub.phone, height_cm: R.sub.height, pain: R.sub.pain, note: '' };
     for (const k of Gait.COMMON) row[k] = +R.comb.common[k].toFixed(2);
     for (const k of Gait.PERLEG) for (const s of ['L', 'R']) row[k + '_' + s] = R.res[s] ? +R.res[s].metrics[k].toFixed(2) : '';
     for (const s of ['L', 'R']) row['foot_strike_' + s] = R.res[s] ? R.res[s].extra.strike : '';
@@ -797,15 +899,114 @@
     const cc = conclusion(R); row.conclusion = cc.text; row.advice = cc.adv.join(' | ');
     S.rows.push(row); S.nextId++;
     try { localStorage.setItem('gait_rows', JSON.stringify(S.rows)); } catch (e) { /* bỏ qua */ }
-    saveXlsx(true);
-    if ($('autosave').checked) savePng();
+    await saveDetail(row, R, S.photos || {});
+    if (seed) return;
+    sendRow(row);
+    go('#/result/' + encodeURIComponent(R.sub.id));
   }
 
-  function savePng() {
-    const a = document.createElement('a'); const R = S.result;
-    a.download = (R ? R.sub.id + '_' + R.sub.name.replace(/\s+/g, '_') : 'ketqua') + '.png';
-    a.href = $('res').toDataURL('image/png'); a.click();
+  // ---------- Lưu kết quả chi tiết từng người (IndexedDB, theo mã người) để mở lại từ Danh sách ----------
+  // Chỉ lưu phần cần để vẽ lại (drawResult, detailHTML, PDF, điểm, kết luận); bỏ R.P và res[s].arrays (rất nặng).
+  // IndexedDB giữ nguyên NaN/Infinity và Blob (không qua JSON), nên chỉ số NaN vẫn hiện '–' như lúc vừa đo.
+  const DB = { name: 'gait', store: 'results' };
+  function idbOpen() {
+    return new Promise((ok, no) => {
+      if (!window.indexedDB) { no(new Error('Trình duyệt không có IndexedDB')); return; }
+      const q = indexedDB.open(DB.name, 1);
+      q.onupgradeneeded = () => q.result.createObjectStore(DB.store);
+      q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error);
+    });
   }
+  async function idbDo(mode, fn) {
+    const db = await idbOpen();
+    try {
+      return await new Promise((ok, no) => {
+        const tx = db.transaction(DB.store, mode), rq = fn(tx.objectStore(DB.store));
+        tx.oncomplete = () => ok(rq.result); tx.onerror = () => no(tx.error); tx.onabort = () => no(tx.error);
+      });
+    } finally { db.close(); }
+  }
+  async function saveDetail(row, R, ph) {
+    try {
+      const res = {};
+      for (const s of Object.keys(R.res)) res[s] = R.res[s] ? { metrics: R.res[s].metrics, extra: R.res[s].extra } : R.res[s];
+      const photos = {};
+      for (const s of ['L', 'R']) { const p = ph[s]; if (p && p.blob) photos[s] = { blob: p.blob, sc: p.sc, lm: p.lm, lo: p.lo, vw: p.vw, vh: p.vh }; }
+      const note = S.result === R ? $('note').value : '';
+      const rec = { id: row.id, time: row.time, name: row.name, note, photos, R: { res, comb: R.comb, sub: R.sub, ex: R.ex, fat: R.fat, q: R.q, when: R.when, speed: R.speed } };
+      await idbDo('readwrite', (st) => st.put(rec, row.id));
+    } catch (e) { console.warn('Không lưu được kết quả chi tiết để mở lại:', e); }
+  }
+  async function openResult(id) {
+    const row = S.rows.find((r) => r.id === id), want = location.hash;
+    let rec = null;
+    if (row) { try { rec = await idbDo('readonly', (st) => st.get(id)); } catch (e) { rec = null; } }
+    if (location.hash !== want) return;   // trong lúc đọc, người dùng đã chuyển màn khác
+    // bản ghi phải khớp đúng dòng (cùng giờ đo, cùng tên): tránh mở nhầm người khi danh sách bị xoá rồi đánh mã lại
+    if (!rec || !rec.R || rec.time !== row.time || rec.name !== row.name) {
+      history.replaceState(null, '', '#/list');
+      $('listq').value = ''; renderList(); show('L4');
+      listMsg(row ? 'Không có dữ liệu chi tiết của ' + row.id + ' · ' + row.name + ' (người này đo trước khi app lưu kết quả chi tiết), nên không mở lại được màn kết quả. Thông tin tóm tắt vẫn có trong danh sách và Google Sheet.' : 'Không tìm thấy mã ' + id + ' trong danh sách.');
+      return;
+    }
+    const photos = {};
+    for (const s of ['L', 'R']) {
+      const p = rec.photos && rec.photos[s];
+      if (p && p.blob) { try { photos[s] = Object.assign({}, p, { bmp: await createImageBitmap(p.blob) }); } catch (e) { /* ảnh hỏng: ô ảnh để nền tối như khi không có ảnh */ } }
+    }
+    if (location.hash !== want) return;
+    S.result = rec.R; S.photos = photos; S.photosReady = true;
+    drawResult(S.result);
+    resetDetail(S.result);
+    $('note').value = rec.note || '';
+    show('L3');
+  }
+  // Ghi chú bác sĩ: lưu cùng kết quả mỗi khi gõ (người dùng chọn), mở lại thấy ghi chú cũ và PDF in giống lần đầu
+  async function saveNote(id, v) {
+    try {
+      await idbDo('readwrite', (st) => { const g = st.get(id); g.onsuccess = () => { if (g.result) st.put(Object.assign(g.result, { note: v }), id); }; return g; });
+    } catch (e) { console.warn('Không lưu được ghi chú:', e); }
+  }
+  // Ghi chú bác sĩ: #note (input ẩn) giữ bản ĐÃ LƯU; sửa trong drawer (#notetxt), bấm Lưu mới ghi + gửi lại cả dòng + PDF (cùng Mã nên Sheet ghi đè đúng dòng)
+  const noteDirty = () => $('notetxt').value !== $('note').value;
+  function updateNoteBtn() { $('notebtn').textContent = ($('note').value || '').trim() ? 'Sửa ghi chú' : 'Thêm ghi chú'; }
+  function noteAsk(on) { $('noteask').style.display = on ? 'flex' : 'none'; }
+  function openNote() {
+    const R = S.result; if (!R) return;
+    $('notetitle').textContent = 'Ghi chú bác sĩ · ' + R.sub.name;
+    $('notetxt').value = $('note').value; $('notemsg').textContent = ''; noteAsk(false);
+    $('notedrawer').classList.add('open'); $('notedrawer').setAttribute('aria-hidden', 'false'); $('notetxt').focus();
+  }
+  function closeNote(force) {
+    if (!$('notedrawer').classList.contains('open')) return;
+    if (!force && noteDirty()) { noteAsk(true); return; }   // chưa lưu: hỏi ngay trong drawer
+    noteAsk(false); $('notedrawer').classList.remove('open'); $('notedrawer').setAttribute('aria-hidden', 'true'); $('notebtn').focus();
+  }
+  let noteSaving = false;
+  async function saveNoteNow() {
+    const R = S.result; if (!R || noteSaving) return;
+    noteSaving = true; $('notesave').disabled = true;
+    try {
+      const id = R.sub.id, v = $('notetxt').value, row = S.rows.find((r) => r.id === id);
+      $('note').value = v; updateNoteBtn();
+      if (row) { row.note = v; try { localStorage.setItem('gait_rows', JSON.stringify(S.rows)); } catch (e) { /* bỏ qua */ } }
+      const pdf = row ? makePdf(R) : null;
+      await saveNote(id, v);
+      let r = 'Đã lưu';
+      if (row) r = await Promise.race([sendRow(row, pdf), new Promise((ok) => setTimeout(() => ok('Chờ gửi'), 4000))]);
+      $('notemsg').textContent = r; noteAsk(false);
+      await new Promise((ok) => setTimeout(ok, 800));
+      closeNote(true);
+    } finally { noteSaving = false; $('notesave').disabled = false; }
+  }
+  $('notebtn').addEventListener('click', openNote);
+  $('notesave').addEventListener('click', saveNoteNow);
+  $('noteclose').addEventListener('click', () => closeNote(false));
+  $('notebg').addEventListener('click', () => closeNote(false));
+  $('notekeep').addEventListener('click', () => { noteAsk(false); $('notetxt').focus(); });
+  $('notediscard').addEventListener('click', () => closeNote(true));
+  $('notetxt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveNoteNow(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('notedrawer').classList.contains('open')) closeNote(false); });
 
   // ---------- PDF trả khách (2 trang: kết quả + giải thích) ----------
   const MEANING = {
@@ -931,7 +1132,7 @@
     };
     box(48, 'ĐIỂM CHUNG', sc.total, true); box(596, 'CHÂN TRÁI', sc.L); box(1024, 'CHÂN PHẢI', sc.R);
     c.fillStyle = '#5B6B77'; c.font = '17px ' + FF;
-    wrap(c, 'Điểm cho biết bao nhiêu chỉ số chính nằm trong khoảng bình thường (90+ rất tốt, 80–89 tốt, 60–79 cần chỉnh một số điểm, dưới 60 nên được tư vấn trực tiếp). Đây là điểm tham khảo, không phải chẩn đoán.', 1460, 160, 410, 23);
+    wrap(c, 'Điểm cho biết bao nhiêu chỉ số chính nằm trong khoảng bình thường (' + tierText() + '). Đây là điểm tham khảo, không phải chẩn đoán.', 1460, 160, 410, 23);
     c.fillStyle = '#14202B'; c.font = '700 26px ' + FF; c.fillText('Bài tập gợi ý cho bạn', 48, 340);
     const ex = exercises(R).slice(0, 6);
     if (!ex.length) { c.fillStyle = '#4a5a65'; c.font = '24px ' + FF; wrap(c, 'Các chỉ số chính đều nằm trong khoảng bình thường. Hãy giữ kỹ thuật hiện tại, tập sức mạnh 2 buổi mỗi tuần và đo lại sau 4–6 tuần.', 48, 390, 1700, 34); }
@@ -972,105 +1173,104 @@
     push(x + 'trailer\n<< /Size ' + n + ' /Root 1 0 R >>\nstartxref\n' + xr + '\n%%EOF');
     return new Blob(parts, { type: 'application/pdf' });
   }
-  function savePdf() {
-    const R = S.result; if (!R) return;
-    const p2 = drawPage2(R);
-    const blob = buildPdf([{ jpg: jpegBytes($('res')), w: 1920, h: 1080 }, { jpg: jpegBytes(p2), w: 1920, h: 1080 }, { jpg: jpegBytes(drawPage3(R)), w: 1920, h: 1080 }, { jpg: jpegBytes(drawPage4(R)), w: 1920, h: 1080 }]);
-    const a = document.createElement('a'); a.download = R.sub.id + '_' + R.sub.name.replace(/\s+/g, '_') + '_chitiet.pdf';
-    a.href = URL.createObjectURL(blob); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  function makePdf(R) {
+    return buildPdf([{ jpg: jpegBytes($('res')), w: 1920, h: 1080 }, { jpg: jpegBytes(drawPage2(R)), w: 1920, h: 1080 }, { jpg: jpegBytes(drawPage3(R)), w: 1920, h: 1080 }, { jpg: jpegBytes(drawPage4(R)), w: 1920, h: 1080 }]);
   }
-  $('savepdf').addEventListener('click', savePdf);
-  $('savepng').addEventListener('click', savePng);
-  $('tgdetail').addEventListener('click', () => { const d = $('detail'); d.style.display = d.style.display === 'block' ? 'none' : 'block'; });
-  $('next').addEventListener('click', () => {
-    ['name', 'phone', 'height', 'pain', 'note'].forEach((i) => ($(i).value = ''));
-    $('msg1').textContent = ''; show('L1'); refreshL1();
-  });
-
-  // ---------- Xuất Excel (.xlsx) tự viết, không cần thư viện ----------
-  const XCOLS = [
-    ['id', 'Mã'], ['time', 'Thời gian'], ['name', 'Họ tên'], ['phone', 'SĐT/Zalo'], ['height_cm', 'Chiều cao (cm)'], ['pain', 'Đau/chấn thương'],
-    ['cadence', 'Nhịp chạy (bước/phút)'], ['vert_osc', 'Nảy lên xuống (cm)'], ['trunk', 'Nghiêng thân (°)'],
-    ['knee_ic_L', 'Gối lúc chạm - Trái (°)'], ['knee_ic_R', 'Gối lúc chạm - Phải (°)'],
-    ['overstride_L', 'Chân trước hông - Trái (cm)'], ['overstride_R', 'Chân trước hông - Phải (cm)'],
-    ['foot_strike_L', 'Kiểu tiếp đất - Trái'], ['foot_strike_R', 'Kiểu tiếp đất - Phải'],
-    ['shank_ic_L', 'Góc cẳng chân - Trái (°)'], ['shank_ic_R', 'Góc cẳng chân - Phải (°)'],
-    ['knee_mid_L', 'Gối tối đa lúc đứng - Trái (°)'], ['knee_mid_R', 'Gối tối đa lúc đứng - Phải (°)'],
-    ['hip_ext_L', 'Duỗi hông - Trái (°)'], ['hip_ext_R', 'Duỗi hông - Phải (°)'],
-    ['knee_swing_L', 'Gối tối đa lúc đưa chân - Trái (°)'], ['knee_swing_R', 'Gối tối đa lúc đưa chân - Phải (°)'],
-    ['contact_ms_L', 'Thời gian chạm đất - Trái (ms)'], ['contact_ms_R', 'Thời gian chạm đất - Phải (ms)'], ['flight_ms', 'Thời gian bay (ms)'], ['duty', 'Tỉ lệ chạm đất (%)'],
-    ['step_cv', 'Độ dao động nhịp bước (%)'], ['step_asym', 'Lệch nhịp trái-phải (%)'], ['contact_asym', 'Lệch chạm đất trái-phải (%)'],
-    ['hip_flex_L', 'Nâng đùi - Trái (°)'], ['hip_flex_R', 'Nâng đùi - Phải (°)'], ['heel_kick_L', 'Gót hất sau - Trái (cm)'], ['heel_kick_R', 'Gót hất sau - Phải (cm)'],
-    ['arm_swing_L', 'Vung tay - Trái (°)'], ['arm_swing_R', 'Vung tay - Phải (°)'], ['elbow_L', 'Gập khuỷu - Trái (°)'], ['elbow_R', 'Gập khuỷu - Phải (°)'],
-    ['head_fwd_L', 'Đầu nghiêng trước - Trái (°)'], ['head_fwd_R', 'Đầu nghiêng trước - Phải (°)'],
-    ['fat_cad', 'Mệt mỏi: đổi nhịp cuối buổi (bước/phút)'], ['fat_vert', 'Mệt mỏi: đổi nhấp nhô cuối buổi (cm)'],
-    ['score_total', 'Điểm chung (/100)'], ['score_L', 'Điểm chân trái'], ['score_R', 'Điểm chân phải'],
-    ['steps_L', 'Số bước - Trái'], ['steps_R', 'Số bước - Phải'], ['conclusion', 'Kết luận'], ['advice', 'Nên làm'],
-  ];
-  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
-  const crc32 = (u) => { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
-  function zipStore(files) {
-    const enc = new TextEncoder(), parts = [], cd = []; let off = 0;
-    const u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255], u16 = (v) => [v & 255, (v >>> 8) & 255];
-    for (const f of files) {
-      const name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
-      const lh = new Uint8Array([0x50, 0x4b, 3, 4, ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(name.length), ...u16(0)]);
-      parts.push(lh, name, data);
-      cd.push(new Uint8Array([0x50, 0x4b, 1, 2, ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), name);
-      off += lh.length + name.length + data.length;
-    }
-    let cdl = 0; cd.forEach((p) => { cdl += p.length; });
-    const end = new Uint8Array([0x50, 0x4b, 5, 6, 0, 0, 0, 0, ...u16(files.length), ...u16(files.length), ...u32(cdl), ...u32(off), 0, 0]);
-    return new Blob([...parts, ...cd, end], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  }
-  function xlsxBlob(rows) {
-    const esc = (v) => String(v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const colName = (i) => { let n = '', k = i; do { n = String.fromCharCode(65 + (k % 26)) + n; k = Math.floor(k / 26) - 1; } while (k >= 0); return n; };
-    const cell = (ri, ci, v, st) => {
-      const ref = colName(ci) + (ri + 1);
-      if (typeof v === 'number' && isFinite(v)) return '<c r="' + ref + '"' + (st ? ' s="' + st + '"' : '') + '><v>' + v + '</v></c>';
-      if (v === '' || v == null) return '';
-      return '<c r="' + ref + '" t="inlineStr"' + (st ? ' s="' + st + '"' : '') + '><is><t xml:space="preserve">' + esc(v) + '</t></is></c>';
-    };
-    let sd = '<row r="1">' + XCOLS.map((c, i) => cell(0, i, c[1], 1)).join('') + '</row>';
-    rows.forEach((r, ri) => { sd += '<row r="' + (ri + 2) + '">' + XCOLS.map((c, i) => cell(ri + 1, i, r[c[0]], 0)).join('') + '</row>'; });
-    const widths = XCOLS.map((c, i) => '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + (c[0] === 'conclusion' || c[0] === 'advice' ? 60 : c[0] === 'name' || c[0] === 'pain' ? 24 : 18) + '" customWidth="1"/>').join('');
-    const X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
-    return zipStore([
-      { name: '[Content_Types].xml', text: X + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>' },
-      { name: '_rels/.rels', text: X + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
-      { name: 'xl/workbook.xml', text: X + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Ket qua" sheetId="1" r:id="rId1"/></sheets></workbook>' },
-      { name: 'xl/_rels/workbook.xml.rels', text: X + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
-      { name: 'xl/styles.xml', text: X + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0B7A5C"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment wrapText="1" vertical="center"/></xf></cellXfs></styleSheet>' },
-      { name: 'xl/worksheets/sheet1.xml', text: X + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane xSplit="3" ySplit="1" topLeftCell="D2" activePane="bottomRight" state="frozen"/></sheetView></sheetViews><cols>' + widths + '</cols><sheetData>' + sd + '</sheetData></worksheet>' },
-    ]);
-  }
-  const xstat = (t, bad) => { const e = $('xstat'); e.textContent = t; e.style.color = bad ? '#A3281A' : '#0B7A5C'; };
-  function downloadXlsx() {
-    const a = document.createElement('a'); a.download = 'tong_hop_workshop.xlsx'; a.href = URL.createObjectURL(xlsxBlob(S.rows)); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  }
-  async function saveXlsx(auto) {
-    if (!S.rows.length) return;
-    if (S.fh) {
-      try { const w = await S.fh.createWritable(); await w.write(xlsxBlob(S.rows)); await w.close(); xstat('Đã lưu ' + S.rows.length + ' người vào file ' + S.fh.name + '.'); return; }
-      catch (e) { xstat('Không ghi được file Excel (đang mở trong Excel?). Hãy đóng file rồi bấm "Tải Excel". Dữ liệu vẫn được giữ trong app.', true); return; }
-    }
-    if (auto && !window.showSaveFilePicker) { downloadXlsx(); xstat('Đã tải file Excel về thư mục Downloads (' + S.rows.length + ' người).'); }
-    else if (auto) xstat('Chưa chọn file Excel nên chưa lưu tự động. Bấm "Chọn file Excel để lưu" hoặc "Tải Excel".', true);
-  }
-  $('xpick').addEventListener('click', async () => {
-    if (!window.showSaveFilePicker) { xstat('Trình duyệt này không cho chọn file cố định. Dùng Chrome hoặc Edge, hoặc bấm "Tải Excel".', true); return; }
+  // Gửi một người lên Google Sheet + Drive (PDF 4 trang + ảnh kết quả). Không lưu gì về máy.
+  async function sendRow(row, pdf) {
     try {
-      S.fh = await window.showSaveFilePicker({ suggestedName: 'tong_hop_workshop.xlsx', types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }] });
-      if (S.rows.length) await saveXlsx(false); else { const w = await S.fh.createWritable(); await w.write(xlsxBlob([])); await w.close(); xstat('Sẽ tự ghi vào file ' + S.fh.name + ' sau mỗi người.'); }
-    } catch (e) { /* người dùng bỏ qua */ }
-  });
-  $('xdl').addEventListener('click', downloadXlsx);
+      const R = S.result;
+      pdf = pdf || (R ? makePdf(R) : null);
+      const pngBlob = await new Promise((ok) => $('res').toBlob(ok, 'image/png'));
+      const files = [];
+      if (pdf) files.push({ name: row.id + '.pdf', mime: 'application/pdf', blob: pdf });
+      if (pngBlob) files.push({ name: row.id + '.png', mime: 'image/png', blob: pngBlob });
+      const p = Sync.push(SHEET_COLS.map((c) => c[0]), SHEET_COLS.map((c) => c[1](row) ?? ''), files);
+      showSync(); await p;
+    } catch (e) { console.warn('Chưa gửi được lên Google Sheet:', e); }
+    showSync();
+    return Sync.pending() > 0 ? 'Chờ gửi' : 'Đã gửi';
+  }
+  function showSync() {
+    const n = Sync.pending(), e = $('syncst');
+    e.style.display = n ? '' : 'none';
+    e.textContent = n ? 'Chưa gửi ' + n + ' người · tự gửi lại' : '';
+  }
+  setInterval(showSync, 3000);
+  $('datalink').addEventListener('click', () => window.open(SHEET_URL, '_blank', 'noopener'));
+  $('tgdetail').addEventListener('click', () => setDetail($('detail').style.display !== 'block'));
+
+  // ---------- Cột gửi lên Google Sheet ----------
+  const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1HbknKhSQ1VpO6J11HzoLZMF1TYDDXtCsnUzV2dYw-0U/edit';
+  // Code.gs tự thêm cột PDF và Ảnh kết quả ở cuối. Mã phải đứng đầu: là khóa ghi đè dòng.
+  // Thời gian/Điểm/Kết luận lấy đúng trường như renderList; Hạng theo tierOf(điểm chung) như huy hiệu canvas Kết quả.
+  const SHEET_COLS = [
+    ['Mã', (r) => r.id], ['Thời gian', (r) => r.time], ['Họ tên', (r) => r.name], ['SĐT/Zalo', (r) => r.phone],
+    ['Điểm', (r) => r.score_total], ['Hạng', (r) => (r.score_total === '' || r.score_total == null ? '' : tierOf(r.score_total).label)],
+    ['Điểm trái', (r) => r.score_L], ['Điểm phải', (r) => r.score_R], ['Đau/chấn thương', (r) => r.pain],
+    ['Kết luận', (r) => r.conclusion], ['Ghi chú bác sĩ', (r) => r.note],
+  ];
+  // ---------- Màn danh sách người đã đo ----------
+  function renderList() {
+    const q = $('listq').value.trim().toLowerCase(), esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const rows = S.rows.slice().reverse().filter((r) => !q || (String(r.name) + ' ' + r.phone).toLowerCase().includes(q));
+    const th = 'style="text-align:left;padding:10px 12px;border-bottom:1px solid #DCE4E8;background:#F6F9FA;position:sticky;top:0"', td = 'style="padding:10px 12px;border-bottom:1px solid #EEF2F4;vertical-align:top"';
+    $('listbody').innerHTML = rows.length ? '<table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th ' + th + '>Mã</th><th ' + th + '>Thời gian</th><th ' + th + '>Họ tên</th><th ' + th + '>SĐT/Zalo</th><th ' + th + '>Điểm</th><th ' + th + '>Kết luận</th></tr>' +
+      rows.map((r) => '<tr data-id="' + esc(r.id) + '" style="cursor:pointer"><td ' + td + '>' + esc(r.id) + '</td><td ' + td + '>' + esc(r.time) + '</td><td ' + td + '><b>' + esc(r.name) + '</b></td><td ' + td + '>' + esc(r.phone) + '</td><td ' + td + '><b>' + esc(r.score_total) + '</b></td><td ' + td + '>' + esc(r.conclusion) + '</td></tr>').join('') + '</table>'
+      : '<div style="padding:40px;text-align:center;color:#5B6B77">' + (S.rows.length ? 'Không có kết quả khớp.' : 'Chưa có ai được đo.') + '</div>';
+  }
+  const listMsg = (t) => { const e = $('listmsg'); e.textContent = t; e.style.display = t ? 'block' : 'none'; };
+  $('tolist').addEventListener('click', () => go('#/list'));
+  document.querySelectorAll('#topnav button[data-nav]').forEach((b) => b.addEventListener('click', () => {
+    // Từ màn Kết quả bấm "Đo mới": xoá form người trước (việc trước đây của nút "Đo người tiếp theo")
+    if (b.dataset.nav === '#/' && $('L3').classList.contains('show')) { ['name', 'phone', 'height', 'pain', 'note'].forEach((i) => ($(i).value = '')); $('msg1').textContent = ''; }
+    go(b.dataset.nav);
+  }));
+  $('listbody').addEventListener('click', (e) => { const tr = e.target.closest('tr[data-id]'); if (tr) go('#/result/' + encodeURIComponent(tr.dataset.id)); });
+
+  // ---------- Đường dẫn (hash): #/ trang chính · #/list danh sách · #/result/<mã> kết quả một người ----------
+  // Màn đang đo (L2) không có đường dẫn: tải lại giữa lúc đo thì về trang chính.
+  function route() {
+    if (S.running) return;   // đang đo: bỏ qua Back/Forward, đo xong sẽ tự sang #/result/<mã>
+    const h = location.hash, m = /^#\/result\/([^/]+)$/.exec(h);
+    if (m) {
+      const id = decodeURIComponent(m[1]);
+      if (S.result && S.result.sub.id === id && $('L3').classList.contains('show')) return;   // vừa đo xong, đã vẽ sẵn
+      openResult(id); return;
+    }
+    if (h === '#/list') { listMsg(''); $('listq').value = ''; renderList(); show('L4'); return; }
+    show('L1'); refreshL1();
+  }
+  function go(h) { if (location.hash === h) route(); else location.hash = h; }
+  window.addEventListener('hashchange', route);
+  $('listq').addEventListener('input', renderList);
+
+  // ---------- Dữ liệu mẫu (chỉ khi ?mock=1): chạy đúng đường tính như lúc đo thật trên chuỗi người que sinh sẵn ----------
+  if (Q.get('mock') === '1' && window.MockData) {
+    // Không còn nút trên giao diện; test gọi từ console: await window.__seed()
+    window.__seed = async () => {
+      if (S.running) return;
+      const keep = { mode: S.mode, sp: SPEED };
+      try {
+        S.running = true; S.mode = 'file'; S.slow = 1; SPEED = SPEED0;   // 'file': bỏ kiểm tra tốc độ khung hình của camera
+        for (let i = 0; i < MockData.PEOPLE.length; i++) {
+          const p = MockData.PEOPLE[i];
+          S.sub = { id: idStr(), name: p.name, phone: p.phone, height: p.height, pain: p.pain };
+          S.frames = await MockData.frames(p, CFG.clip, CFG.fps); S.late = []; S.result = null; S.error = null; S.photosReady = false;
+          analyse();
+          let g = 0; while (!S.result && !S.error && g++ < 600) await new Promise((r) => setTimeout(r, 100));
+          if (S.error) { alert('Không tạo được ' + p.name + ': ' + S.error); break; }
+          await finish(true);
+        }
+      } finally { S.running = false; S.mode = keep.mode; SPEED = keep.sp; S.result = null; }
+      go('#/list');
+    };
+  }
 
   // thử nghiệm: window.__gait cho kiểm tra tự động
-  window.__gait = { S, CFG, drawResult, xlsxBlob };
+  window.__gait = { S, CFG, drawResult };
 
-  show('L1'); refreshL1();
+  route();
   applySettings(false);
   startCamera();
   initPose();
