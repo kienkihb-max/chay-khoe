@@ -8,6 +8,16 @@
     L: { sh: 11, hip: 23, knee: 25, ank: 27, heel: 29, toe: 31 },
     R: { sh: 12, hip: 24, knee: 26, ank: 28, heel: 30, toe: 32 },
   };
+  // Ngưỡng tin cậy điểm khớp (visibility 0..1): dưới mức này điểm bị coi là mờ, khung đó bỏ khỏi tính; chỉnh ở đây.
+  const VIS_MIN = 0.6;
+  const BAD_FRAC_MAX = 0.3;   // quá tỉ lệ khung bị bỏ này thì báo 'Khung hình kém'
+  const MIN_STEPS = 4;        // ít bước hơn mức này thì báo 'Khung hình kém'
+  // tỉ lệ khung có ít nhất một điểm trong `ids` dưới ngưỡng
+  function badFrac(P, ids, N) {
+    let b = 0;
+    for (let i = 0; i < N; i++) { for (const j of ids) if (!(P.v[j][i] >= VIS_MIN)) { b++; break; } }
+    return N ? b / N : 1;
+  }
   const RATIO = 0.245 + 0.246; // Winter: đùi + cẳng chân / chiều cao
   const COMMON = ['cadence', 'vert_osc', 'trunk'];
   const PERLEG = ['knee_ic', 'shank_ic', 'overstride', 'knee_mid', 'hip_ext', 'knee_swing'];
@@ -136,7 +146,7 @@
     const masked = (j) => {
       const xs = new Float64Array(N), ys = new Float64Array(N);
       for (let i = 0; i < N; i++) {
-        const bad = !(P.v[j][i] >= 0.3);
+        const bad = !(P.v[j][i] >= VIS_MIN);
         xs[i] = bad ? NaN : P.x[j][i];
         ys[i] = bad ? NaN : P.y[j][i];
       }
@@ -240,7 +250,7 @@
       shank_ic: median(shankIc), overstride: median(over), knee_mid: median(kneeMid),
       hip_ext: median(hipExt), knee_swing: median(kneeSwing),
     };
-    const extra = { side, vis, strike, fsa: fsaMed, nSteps: ic.length, cadIC, cadFFT, pxcm, d };
+    const extra = { side, vis, strike, fsa: fsaMed, nSteps: ic.length, badFrac: badFrac(P, keys.map((k) => ids[k]), N), cadIC, cadFFT, pxcm, d };
     const arrays = { S, ic, to, kneeFlex, trunk, d, rel, pxcm };
     return { metrics, extra, arrays };
   }
@@ -270,7 +280,7 @@
     const ids = IDX[side], xi = XIDX[side], deg = (q) => (q * 180) / Math.PI;
     const get = (j) => {
       const xs = new Float64Array(N), ys = new Float64Array(N); let vs = 0;
-      for (let i = 0; i < N; i++) { const bad = !(P.v[j][i] >= 0.3); xs[i] = bad ? NaN : P.x[j][i]; ys[i] = bad ? NaN : P.y[j][i]; vs += P.v[j][i]; }
+      for (let i = 0; i < N; i++) { const bad = !(P.v[j][i] >= VIS_MIN); xs[i] = bad ? NaN : P.x[j][i]; ys[i] = bad ? NaN : P.y[j][i]; vs += P.v[j][i]; }
       return { x: smooth(interpNaN(xs), fps), y: smooth(interpNaN(ys), fps), vis: vs / N };
     };
     const out = {};
@@ -305,7 +315,7 @@
     // tay: biên độ vung vai–khuỷu, góc gập khuỷu
     try {
       const E = get(xi.elb), W = get(xi.wri);
-      if (E.vis < 0.4 || W.vis < 0.4) throw new Error('arm');
+      if (E.vis < VIS_MIN || W.vis < VIS_MIN) throw new Error('arm');
       const sw = [], el = [];
       for (let t = 0; t + 1 < ic.length; t++) {
         const a = ic[t], b = ic[t + 1]; if (b - a < 4) continue;
@@ -324,7 +334,7 @@
     // đầu: tai lệch ra trước vai (độ nghiêng đường vai–tai so với phương thẳng đứng)
     try {
       const H = get(xi.ear);
-      if (H.vis < 0.4) throw new Error('ear');
+      if (H.vis < VIS_MIN) throw new Error('ear');
       const a = new Float64Array(N);
       for (let i = 0; i < N; i++) a[i] = deg(Math.atan2(d * (H.x[i] - S.sh.x[i]), -(H.y[i] - S.sh.y[i])));
       out.head_fwd = median(a);
@@ -381,7 +391,7 @@
     const N = P.x[0].length, deg = (r) => (r * 180) / Math.PI;
     const ser = (j) => {
       const xs = new Float64Array(N), ys = new Float64Array(N); let vs = 0;
-      for (let i = 0; i < N; i++) { const bad = !(P.v[j][i] >= 0.3); xs[i] = bad ? NaN : P.x[j][i]; ys[i] = bad ? NaN : P.y[j][i]; vs += P.v[j][i]; }
+      for (let i = 0; i < N; i++) { const bad = !(P.v[j][i] >= VIS_MIN); xs[i] = bad ? NaN : P.x[j][i]; ys[i] = bad ? NaN : P.y[j][i]; vs += P.v[j][i]; }
       return { x: smooth(interpNaN(xs), fps), y: smooth(interpNaN(ys), fps), vis: vs / N };
     };
     const S = {};
@@ -454,7 +464,7 @@
       lt.push(mx - mn);
     }
     const common = { step_width: sw.length >= 2 ? median(sw) : NaN, lat_trunk: lt.length ? median(lt) : NaN };
-    return { per, common, errs, extra: { vis, pxcm, steps, tilt0 }, arrays: { ev, dy, tilt, lean, midX, own } };
+    return { per, common, errs, extra: { vis, pxcm, steps, tilt0, badFrac: badFrac(P, ['L', 'R'].flatMap((s) => ['hip', 'knee', 'ank'].map((k) => IDX[s][k])), N) }, arrays: { ev, dy, tilt, lean, midX, own } };
   }
 
   function rateValue(v, cfg) {
@@ -489,7 +499,7 @@
     return { P, N, t0 };
   }
 
-  const api = { IDX, COMMON, PERLEG, ASYM, median, percentile, smooth, filtfilt, findPeaks,
+  const api = { VIS_MIN, BAD_FRAC_MAX, MIN_STEPS, badFrac, IDX, COMMON, PERLEG, ASYM, median, percentile, smooth, filtfilt, findPeaks,
     computeSide, computeBoth, combine, computeExtra, BACK_PERLEG, BACK_COMMON, computeBack, fatigue, rateValue, resample };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Gait = api;

@@ -79,6 +79,8 @@
 #rv .rvn[data-lv="ok"]{border-left-color:var(--moss2)}#rv .rvn[data-lv="ok"] b{color:var(--moss2)}
 #rv .rvn[data-lv="mid"]{border-left-color:var(--amber)}#rv .rvn[data-lv="mid"] b{color:var(--amber)}
 #rv .rvn[data-lv="bad"]{border-left-color:var(--red)}#rv .rvn[data-lv="bad"] b{color:var(--red)}
+/* cảnh báo 'Khung hình kém' (màn xem lại + bảng Chi tiết) */
+.poorframe{margin:0 0 8px;padding:8px 12px;border-left:4px solid var(--amber);border-radius:8px;background:var(--leaf-pale);color:var(--amber);font-size:13px;font-weight:600}
 #rv .rvw{font-size:13px;font-weight:600;color:var(--amber)}
 #rv .rvbtn{display:flex;gap:10px;justify-content:flex-end}
 #rv .rvbtn .go{height:48px;font-size:16px;padding:0 24px}
