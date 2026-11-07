@@ -1,5 +1,5 @@
 /* Logic điểm dáng chạy (0-100), thuần JS, không DOM. Chạy trong trình duyệt (window.Score) và Node (module.exports).
- * Điểm mỗi chỉ số = 100 nếu trong khoảng bình thường, giảm dần theo độ lệch (hết điểm khi lệch bằng một bề rộng khoảng).
+ * Điểm mỗi chỉ số = 100 nếu trong khoảng bình thường (hoặc lệch phía không bị phạt: ref.side = low/high), giảm dần theo độ lệch (hết điểm khi lệch bằng một bề rộng khoảng).
  * Cần: window.GAIT_REF (reference.js) và window.Gait (gait.js) khi chạy trong trình duyệt; trong Node dùng Score.setRef(...) hoặc global.GAIT_REF.
  * Chỉ đo 1 góc (ngang hoặc sau): tính riêng. Đo cả hai: trung bình 50/50 điểm ngang và điểm sau, áp cho trái/phải/tổng. */
 (function (root) {
@@ -17,7 +17,8 @@
 
   function mScore(k, v) {
     const c = getRef()[k]; if (!c || c.lo == null || v == null || Number.isNaN(v)) return null;
-    const w = c.hi - c.lo, dist = v < c.lo ? c.lo - v : v > c.hi ? v - c.hi : 0;
+    const w = c.hi - c.lo, sd = c.side || 'both';
+    const dist = v < c.lo && sd !== 'high' ? c.lo - v : v > c.hi && sd !== 'low' ? v - c.hi : 0;
     return Math.round(100 * (1 - Math.min(1, dist / w)));
   }
   // Điểm góc ngang: R = kết quả Gait.computeBoth ({res:{L,R}, comb:{common}, q}). Giống hệt logic cũ của app.js.

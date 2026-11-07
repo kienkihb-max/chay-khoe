@@ -8,7 +8,7 @@
     rec: +(Q.get('rec') || 50),        // thời điểm bắt đầu thu
     clip: Math.max(+(Q.get('clip') || 15), 6), // độ dài đoạn thu
     pace: +(Q.get('pace') || 6),       // phút/km
-    cx: +(Q.get('cx') || 1),           // độ phức tạp mô hình (0,1,2)
+    cx: +(Q.get('cx') || 1),           // ?cx= ép mô hình: 0 lite, 1 full, 2 heavy (không có ?cx: video Heavy, trực tiếp Full)
     fps: 30,
     res: 720,
   };
@@ -229,6 +229,7 @@
     $('subt').textContent = m === 'file' ? 'Phân tích video quay sẵn: chọn file, chọn đoạn chạy ổn định rồi bấm phân tích.' : 'Phân tích chuyển động bằng AI, đánh giá cân bằng hai chân. Có kết quả sau ' + Math.round(CFG.total / 60 * 10) / 10 + ' phút chạy.';
     mockWarn(m === 'file' && Q.get('mock') === '1');
     refreshL1();
+    initPose();   // video tải lên dùng Heavy, quay trực tiếp dùng Full
   }
   $('mLive').addEventListener('click', () => setMode('live'));
   $('mFile').addEventListener('click', () => setMode('file'));
@@ -256,21 +257,74 @@
   try { localStorage.removeItem('gait_orient'); } catch (e) { /* bỏ qua */ }   // dọn lựa chọn hướng cũ (đã bỏ ô chọn)
 
   // ---------- MediaPipe ----------
+  // Pose Landmarker (@mediapipe/tasks-vision 1.2.2, tự host ở vendor/tasks-vision; xem VERSION.txt trong đó).
+  // Video tải lên dùng mô hình Heavy (chính xác hơn, chậm hơn); quay trực tiếp dùng Full (đủ nhanh cho thời gian thực).
+  // ?cx=0/1/2 ép một mô hình cho cả hai chế độ: lite/full/heavy.
+  // ?mock=1 (mock_pose.js) và stub của test định nghĩa window.Pose kiểu @mediapipe/pose cũ: có window.Pose thì đi đường cũ.
+  const PL_DIR = 'vendor/tasks-vision/', PL_VAR = ['lite', 'full', 'heavy'];
+  const plVariant = (m) => (Q.get('cx') != null && PL_VAR[CFG.cx]) ? PL_VAR[CFG.cx] : m === 'file' ? 'heavy' : 'full';
+  const PL = {};        // tên mô hình -> Promise<{ lm, v, delegate, last, off }>, tải một lần, lỗi thì lần sau tải lại
+  let plFiles = null;   // Promise bộ wasm dùng chung cho mọi mô hình
+  // Tạo một bộ nhận diện mới (GPU, máy không có WebGL2 thì CPU). only = chỉ thử đúng delegate đó.
+  async function plCreate(v, only) {
+    const V = window.Vision;
+    if (!plFiles) { plFiles = V.FilesetResolver.forVisionTasks(new URL(PL_DIR + 'wasm', location.href).href); plFiles.catch(() => { plFiles = null; }); }
+    const fs = await plFiles;
+    const opt = (d) => ({ baseOptions: { modelAssetPath: PL_DIR + 'models/pose_landmarker_' + v + '.task', delegate: d }, runningMode: 'VIDEO', numPoses: 1,
+      minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5, outputSegmentationMasks: false });
+    const mk = async (d) => ({ lm: await V.PoseLandmarker.createFromOptions(fs, opt(d)), v, delegate: d, last: -Infinity, off: 0 });
+    if (only) return mk(only);
+    try { return await mk('GPU'); } catch (e) { return mk('CPU'); }
+  }
+  function plLoad(v) {
+    if (!PL[v]) { PL[v] = plCreate(v); PL[v].catch(() => { delete PL[v]; }); }
+    return PL[v];
+  }
+  // Video tải lên: bộ nhận diện chế độ VIDEO nhớ khung trước (làm mượt, bám người), nên trước lượt đoán quay chậm và trước
+  // lượt phân tích chính thay bằng bộ MỚI, mốc thời gian bắt đầu lại từ 0 -> cùng video luôn ra cùng kết quả.
+  async function plFresh() {
+    const old = S.pl; if (!old) return;
+    const p = await plCreate(old.v, old.delegate);
+    if (S.pl !== old) { p.lm.close(); return; }   // trong lúc tạo đã đổi chế độ
+    S.pl = p; PL[old.v] = Promise.resolve(p);
+    try { old.lm.close(); } catch (e) { /* bỏ qua */ }
+  }
   let poseWait = null;
+  // Gọi lúc mở trang và mỗi lần đổi chế độ quay trực tiếp / video: nạp đúng mô hình của chế độ đang chọn (S.pl), xong mới bật nút đo.
   async function initPose() {
+    if (S.pose) return;   // đường cũ đã sẵn sàng
     try {
-      const pose = new Pose({ locateFile: (f) => 'vendor/pose/' + f });
-      pose.setOptions({ modelComplexity: CFG.cx, smoothLandmarks: true, enableSegmentation: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
-      pose.onResults((r) => { if (poseWait) { const w = poseWait; poseWait = null; w(r); } });
-      await pose.initialize();
-      S.pose = pose; S.poseReady = true;
+      if (typeof window.Pose === 'function') {
+        const pose = new Pose({ locateFile: (f) => 'vendor/pose/' + f });
+        pose.setOptions({ modelComplexity: CFG.cx, smoothLandmarks: true, enableSegmentation: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+        pose.onResults((r) => { if (poseWait) { const w = poseWait; poseWait = null; w(r); } });
+        await pose.initialize();
+        S.pose = pose; S.poseReady = true; S.poseInfo = 'mock';
+      } else {
+        if (!window.Vision) throw new Error('thiếu vendor/tasks-vision/vision_bundle.js');
+        const v = plVariant(S.mode);
+        if (S.pl && S.pl.v === v) return;
+        S.pl = null; S.poseReady = false; refreshL1();
+        const p = await plLoad(v);
+        if (plVariant(S.mode) !== v) return;   // trong lúc tải đã đổi chế độ: lần gọi mới lo
+        S.pl = p; S.poseReady = true; S.poseInfo = v + '/' + p.delegate;
+      }
     } catch (e) {
       $('msg1').textContent = 'Không tải được mô hình nhận diện: ' + e.message;
     }
     refreshL1();
   }
-  function detect(video) {
-    return new Promise((res) => { poseWait = res; S.pose.send({ image: video }).catch(() => res(null)); });
+  // Trả về { poseLandmarks } giống @mediapipe/pose cũ (x, y chuẩn hóa 0..1, visibility) để phần tính chỉ số không phải đổi.
+  // tMs: mốc thời gian của khung (ms; video tải lên = thời điểm tính từ điểm bắt đầu, bộ mới nên bắt đầu từ 0; quay trực tiếp = đồng hồ máy).
+  // Pose Landmarker bắt buộc mốc tăng dần: khi mốc lùi lại (phòng hờ) thì cộng bù để cách khung trước 1 giây.
+  function detect(video, tMs) {
+    if (S.pose) return new Promise((res) => { poseWait = res; S.pose.send({ image: video }).catch(() => res(null)); });
+    const p = S.pl; if (!p) return Promise.resolve(null);
+    let ts = (tMs == null ? performance.now() : tMs) + p.off;
+    if (ts <= p.last) { p.off += p.last + 1000 - ts; ts = p.last + 1000; }
+    p.last = ts;
+    try { const r = p.lm.detectForVideo(video, ts); return Promise.resolve({ poseLandmarks: r.landmarks && r.landmarks[0] }); }
+    catch (e) { return Promise.resolve(null); }
   }
 
   // ---------- Lớp 2: chạy + thu ----------
@@ -603,19 +657,20 @@
       const dur = v2.duration, vw = v2.videoWidth, vh = v2.videoHeight;
       const start = Math.max(0, Math.min(+$('vstart').value || 0, dur - 8));
       const sc = Math.min(1, 1280 / vw);
+      // Tua tới t; trả false nếu sau 3 giây vẫn chưa tua xong (khung đó coi là lỗi, không lấy khung đang hiện).
       const seek = (t) => new Promise((res) => {
-        if (Math.abs(v2.currentTime - t) < 1e-3) return res();
-        let done = false; const fin = () => { if (!done) { done = true; v2.removeEventListener('seeked', fin); res(); } };
-        v2.addEventListener('seeked', fin); setTimeout(fin, 3000); v2.currentTime = t;
+        if (Math.abs(v2.currentTime - t) < 1e-3) return res(true);
+        let done = false; const fin = (ok) => { if (!done) { done = true; v2.removeEventListener('seeked', onOk); res(ok); } }, onOk = () => fin(true);
+        v2.addEventListener('seeked', onOk); setTimeout(() => fin(false), 3000); v2.currentTime = t;
       });
       // Hệ số quay chậm k: 1 giây thực tế = k giây video
       let k = $('vslow').value === 'auto' ? 0 : +$('vslow').value;
       if (!k) {
         setPhase('Đang nhận biết video có quay chậm không...', 'wn');
         const np = Math.min(240, Math.floor((dur - start) * 20)), ys = [];
+        await plFresh();
         for (let i = 0; i < np && !S.abort; i++) {
-          await seek(start + i / 20);
-          const r = await detect(v2), lm = r && r.poseLandmarks;
+          const r = (await seek(start + i / 20)) ? await detect(v2, i * 50) : null, lm = r && r.poseLandmarks;
           ys.push(lm ? (lm[23].y + lm[24].y) / 2 : NaN);
           $('count').textContent = Math.round((i + 1) / np * 100) + '%'; $('progf').style.width = Math.round((i + 1) / np * 100) / 2 + '%';
         }
@@ -626,10 +681,10 @@
       const vclip = Math.min(needVid, avail);
       if (vclip / k < 6) throw new Error('Video quá ngắn: cần ít nhất ' + Math.ceil(6 * k) + ' giây video (= 6 giây thực tế) sau điểm bắt đầu' + (k > 1 ? ' vì video quay chậm gấp ' + k : '') + '.');
       const n = Math.floor(vclip / k * CFG.fps);
+      await plFresh();
       const t0 = performance.now();
       for (let i = 0; i < n && !S.abort; i++) {
-        await seek(start + i * k / CFG.fps);
-        const r = await detect(v2);
+        const r = (await seek(start + i * k / CFG.fps)) ? await detect(v2, i * k * 1000 / CFG.fps) : null;
         const lm0 = r && r.poseLandmarks ? r.poseLandmarks : null, lm = S.take === 'back' ? fixLR(lm0) : lm0;
         S.lastLm = lm; lvFeed(i / CFG.fps, lm); drawLive(lm);
         const rec = { t: i / CFG.fps, lm: lm ? lm.map((q) => ({ x: q.x * vw, y: q.y * vh, v: q.visibility == null ? 1 : q.visibility })) : null, vw, vh, blob: null, sc };

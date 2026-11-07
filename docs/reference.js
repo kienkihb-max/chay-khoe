@@ -1,4 +1,5 @@
 /* Khoảng tham chiếu thực hành ở ~10 km/h. Bác sĩ chỉnh lo/hi và nhận xét tại đây.
+ * "side": chỉ phạt điểm phía nào: "low" (chỉ khi thấp hơn lo), "high" (chỉ khi cao hơn hi), mặc định "both".
  * Các chỉ số GÓC SAU LƯNG ở cuối (có "tam": true) là ngưỡng tạm, CHỜ BÁC SĨ DUYỆT. */
 window.GAIT_REF = {
   "metrics": {
@@ -7,7 +8,8 @@ window.GAIT_REF = {
       "unit": "bước/phút",
       "lo": 165,
       "hi": 180,
-      "src": "Heiderscheit 2011; Garmin/Polar running dynamics",
+      "side": "low",
+      "src": "Heiderscheit 2011, Med Sci Sports Exerc, doi:10.1249/MSS.0b013e3181ebedf4",
       "low": "Cadence thấp: bước dài, thường kèm tiếp đất xa trước thân. Tăng 5-10% có thể giảm tải khớp gối/hông.",
       "high": "Cadence cao hơn khoảng thông thường: thường không đáng lo, xem cùng độ dài bước."
     },
@@ -16,7 +18,8 @@ window.GAIT_REF = {
       "unit": "cm",
       "lo": 6.0,
       "hi": 10.0,
-      "src": "Garmin running dynamics; Cavanagh 1985",
+      "side": "high",
+      "src": "Folland 2017, Med Sci Sports Exerc 49(7):1412-1423",
       "low": "Nhấp nhô thấp: dáng chạy 'phẳng', thường tốt.",
       "high": "Nhấp nhô cao: tốn năng lượng nâng cơ thể, tăng lực va chạm mỗi bước."
     },
@@ -52,7 +55,8 @@ window.GAIT_REF = {
       "unit": "cm",
       "lo": -5,
       "hi": 10,
-      "src": "Ước lượng thực hành",
+      "side": "high",
+      "src": "Heiderscheit 2011, Med Sci Sports Exerc, doi:10.1249/MSS.0b013e3181ebedf4; Souza 2016, PM&R Clin N Am, doi:10.1016/j.pmr.2015.08.006",
       "low": "Chạm đất sau/ngay dưới hông.",
       "high": "Chạm đất xa phía trước hông: overstride, giảm cadence thường giúp cải thiện."
     },

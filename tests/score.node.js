@@ -6,7 +6,7 @@ const Score = require('../docs/score.js'); Score.setRef(REF);
 const Gait = require('../docs/gait.js');
 // logic cũ chép nguyên từ app.js để so khớp
 const KEYS = ['cadence', 'vert_osc', 'trunk', 'knee_ic', 'shank_ic', 'overstride', 'knee_mid', 'hip_ext', 'knee_swing'];
-function mOld(k, v) { const c = REF[k]; if (!c || c.lo == null || v == null || Number.isNaN(v)) return null; const w = c.hi - c.lo, d = v < c.lo ? c.lo - v : v > c.hi ? v - c.hi : 0; return Math.round(100 * (1 - Math.min(1, d / w))); }
+function mOld(k, v) { if (['cadence','vert_osc','overstride'].includes(k) && v != null && !Number.isNaN(v)) { const c = REF[k], w = c.hi - c.lo, d = c.side === 'low' ? Math.max(0, c.lo - v) : Math.max(0, v - c.hi); return Math.round(100 * (1 - Math.min(1, d / w))); } const c = REF[k]; if (!c || c.lo == null || v == null || Number.isNaN(v)) return null; const w = c.hi - c.lo, d = v < c.lo ? c.lo - v : v > c.hi ? v - c.hi : 0; return Math.round(100 * (1 - Math.min(1, d / w))); }
 function oldScores(R) {
   const out = { L: null, R: null, total: null }; if (R.q && R.q.bad) return out;
   for (const s of ['L', 'R']) { if (!R.res[s]) continue;
@@ -29,6 +29,13 @@ cases.forEach((R, i) => assert.deepStrictEqual(Score.side(R), oldScores(R), 'sid
 assert.deepStrictEqual(Score.side(cases[4]), { L: null, R: null, total: null });
 assert.strictEqual(Score.side(cases[0]).total, 100);
 assert.deepStrictEqual(Score.side(sideR({}, null, { cadence: NaN, vert_osc: NaN, trunk: NaN })), { L: null, R: null, total: null });
+
+// phạt một phía (câu 54): cadence chỉ thấp, vert_osc/overstride chỉ cao
+assert.strictEqual(REF.cadence.side, 'low'); assert.strictEqual(REF.vert_osc.side, 'high'); assert.strictEqual(REF.overstride.side, 'high');
+assert.strictEqual(Score.mScore('cadence', 190), 100); assert.ok(Score.mScore('cadence', 160) < 100);
+assert.strictEqual(Score.mScore('vert_osc', 5), 100); assert.ok(Score.mScore('vert_osc', 11) < 100);
+assert.strictEqual(Score.mScore('overstride', -3), 100); assert.strictEqual(Score.mScore('overstride', -20), 100); assert.ok(Score.mScore('overstride', 12) < 100);
+assert.ok(Score.mScore('trunk', 1) < 100 && Score.mScore('trunk', 14) < 100);
 
 // góc sau
 const bOk = { per: { L: { pelvic_drop: 2, knee_valgus: 3, foot_mid: 5 }, R: { pelvic_drop: 12, knee_valgus: 3, foot_mid: 5 } }, common: { step_width: 8, lat_trunk: 4 } };

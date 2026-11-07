@@ -1,0 +1,8 @@
+@mediapipe/tasks-vision 1.2.2 (npm, Apache-2.0), chép nguyên:
+  vision_bundle.js                (bản IIFE, tạo biến toàn cục window.Vision)
+  wasm/vision_wasm_internal.js + .wasm
+Mô hình (float16, tải 07/11/2026 từ https://storage.googleapis.com/mediapipe-models/pose_landmarker/<tên>/float16/latest/):
+  models/pose_landmarker_lite.task   (?cx=0)
+  models/pose_landmarker_full.task   (quay trực tiếp, ?cx=1)
+  models/pose_landmarker_heavy.task  (video tải lên, ?cx=2)
+Nâng phiên bản: thay cả bundle lẫn wasm cùng một phiên bản npm.
