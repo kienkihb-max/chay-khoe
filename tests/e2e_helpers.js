@@ -1,16 +1,15 @@
 // Hàm dùng chung cho result_tv.spec.js, sync.spec.js, data_link.spec.js.
 // Mỗi test Playwright chạy trong context mới => localStorage + IndexedDB riêng, không chung state.
 //
-// ===== TODO selector / hook (fe chưa có trong code lúc viết spec, 05/11/2026) =====
-// Sửa đúng một chỗ ở đây khi fe chốt tên.
+// ===== Selector / hook (cập nhật 07/11/2026 theo giao diện mới) =====
+// Sửa đúng một chỗ ở đây khi giao diện đổi.
 const TODO = {
-  // Nơi hiện trạng thái đồng bộ (vd "Còn 1 kết quả chưa gửi"). TODO: fe sync chưa có phần tử này.
-  syncStatus: '#syncstat',
-  // Cờ làm sheet giả báo lỗi ở ?mock=1. TODO: fe sync chưa chốt tên cờ.
+  syncStatus: '#syncst',                 // chỗ báo "còn N kết quả chưa gửi" (app.js đặt chữ khi Sync.pending() > 0)
+  // TODO: cờ làm sheet giả báo lỗi CHƯA có trong docs/sync.js (send() ở ?mock=1 luôn thành công). Các ca cần lỗi mạng để test.fixme tới khi có cờ.
   mockFailFlag: '__mockSyncFail',
-  // Nút tạo dữ liệu mẫu (trước nằm ở màn #/data, màn này sẽ bỏ). TODO: vị trí mới chưa chốt.
-  seedBtn: '#seedbtn',
 };
+// 11 cột Sheet = SHEET_COLS trong docs/app.js (Code.gs tự thêm cột PDF + Ảnh kết quả ở cuối)
+const SHEET_HEADERS = ['Mã', 'Thời gian', 'Họ tên', 'SĐT/Zalo', 'Điểm', 'Hạng', 'Điểm trái', 'Điểm phải', 'Đau/chấn thương', 'Kết luận', 'Ghi chú bác sĩ'];
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1HbknKhSQ1VpO6J11HzoLZMF1TYDDXtCsnUzV2dYw-0U';
 
 // Ghi lại mọi chữ/ảnh vẽ lên canvas (ảnh kết quả #res là canvas nên không đọc được bằng DOM).
@@ -66,16 +65,36 @@ async function openApp(page, hash = '#/') {
 }
 
 // Đo một người bằng camera giả, chờ tới màn Kết quả.
+// Luồng mới: Bắt đầu đo -> màn xem lại (#rvok "Chốt góc này") -> #done "Quay xong" -> Kết quả. Mặc định góc đang chọn sẵn (không viết ca chọn góc Ngang/Sau lưng).
+// p.name === '' => để trống tên (họ tên không còn bắt buộc, app đặt "Khách <Mã>").
 async function measureOne(page, p = {}) {
   if (!(await page.locator('#L1.show').count())) await page.goto(page.url().replace(/#.*$/, '') + '#/');
-  await page.fill('#name', p.name || 'Nguyễn Văn Hùng');
+  const name = p.name === undefined ? 'Nguyễn Văn Hùng' : p.name;
+  await page.fill('#name', name);
   if (p.height !== '') await page.fill('#height', String(p.height || 172));
   if (p.pain) await page.fill('#pain', p.pain);
   await page.click('#go');
-  await page.waitForSelector('#L3.show', { timeout: 120000 });
-  await page.waitForFunction(() => /^#\/result\//.test(location.hash));
+  await page.locator('#rvok').waitFor({ state: 'visible', timeout: 120000 });
+  await page.click('#rvok');
+  await page.waitForFunction(() => !document.getElementById('done').disabled, null, { timeout: 30000 });
+  await page.click('#done');
+  await page.waitForSelector('#L3.show', { timeout: 60000 });
+  await page.waitForFunction(() => location.hash.startsWith('#/result/') || /^#\/result\//.test(location.hash));
   return page.evaluate(() => window.__gait.S.result.sub.id);
 }
+
+// Ghi chú bác sĩ: nút #notebtn mở drawer #notedrawer; gõ ở #notetxt; "Lưu" (#notesave) mới ghi. #note chỉ là input ẩn giữ bản đã lưu.
+async function openNoteDrawer(page) { await page.click('#notebtn'); await page.waitForSelector('#notedrawer.open'); }
+async function setNote(page, text) {
+  await openNoteDrawer(page);
+  await page.fill('#notetxt', text);
+  await page.click('#notesave');
+  await page.waitForFunction(() => !document.getElementById('notedrawer').classList.contains('open'), null, { timeout: 15000 });
+}
+// Bản ghi ghi chú đã lưu (input ẩn #note)
+const savedNote = (page) => page.locator('#note').inputValue();
+// Về màn Đo mới bằng nút "Đo mới" trên #topnav (ở màn Kết quả thì xoá form người trước)
+async function newMeasure(page) { await page.click('#topnav button[data-nav="#/"]'); await page.waitForSelector('#L1.show'); }
 
 // Vẽ lại ảnh kết quả với dữ liệu hiện tại và trả về đúng các nét của lần vẽ đó.
 async function redrawRes(page) {
@@ -93,20 +112,25 @@ async function setMockFail(page, on) {
   await page.evaluate(([k, v]) => { window[k] = v; }, [TODO.mockFailFlag, on]);
 }
 
-// Đọc sheet giả thành các dòng { 'Mã': ..., 'Ghi chú': ..., ... }.
-// Chấp nhận cả hai dạng window.__mockSheet: mảng object dòng (cũ, pushSheet) hoặc mảng payload {headers, rows, files}.
-// Sheet giả phải mô phỏng Sheet thật: cập nhật theo Mã thì __mockSheet chỉ còn MỘT dòng mỗi mã (TODO fe sync: chốt dạng).
+// Đọc sheet giả thành các dòng { 'Mã': ..., 'Ghi chú bác sĩ': ..., ... }.
+// docs/sync.js ở ?mock=1 nối thêm MẢNG GIÁ TRỊ (it.row, 11 cột theo SHEET_HEADERS) vào window.__mockSheet; không giữ headers và không ghi đè theo Mã.
+// Sheet thật (Code.gs) ghi đè dòng theo Mã => ở đây lấy dòng CUỐI của mỗi Mã (giữ thứ tự xuất hiện lần đầu) để mô phỏng. Nhận cả dạng object/payload.
 async function mockSheetRows(page) {
-  return page.evaluate(() => {
-    const out = [];
-    for (const e of window.__mockSheet || []) {
-      if (e && Array.isArray(e.rows) && Array.isArray(e.headers)) {
-        for (const r of e.rows) { const o = {}; e.headers.forEach((h, i) => { o[h] = r[i]; }); o.__files = (e.files || []).length; out.push(o); }
-      } else if (e && typeof e === 'object') out.push(Object.assign({ 'Mã': e.id, 'Họ tên': e.name, 'Ghi chú': e.note }, e));
-    }
-    return out;
-  });
+  const raw = await page.evaluate(() => (window.__mockSheet || []).map((e) => (Array.isArray(e) ? { arr: e } : { obj: e })));
+  const by = new Map();
+  for (const e of raw) {
+    let o;
+    if (e.arr) { o = {}; SHEET_HEADERS.forEach((h, i) => { o[h] = e.arr[i]; }); }
+    else o = Object.assign({ 'Mã': e.obj.id }, e.obj);
+    by.set(o['Mã'], o);   // Map giữ vị trí lần đầu, giá trị lần cuối
+  }
+  return [...by.values()];
 }
-const NOTE_COL = 'Ghi chú';   // TODO: tên cột ghi chú trên Sheet (fe sync chốt)
+// Số lần sheet giả nhận (chưa gộp theo Mã) - để kiểm "không đẩy thừa"
+const mockSheetCount = (page) => page.evaluate(() => (window.__mockSheet || []).length);
+const NOTE_COL = 'Ghi chú bác sĩ';
 
-module.exports = { TODO, SHEET_URL, NOTE_COL, installSpies, openApp, measureOne, redrawRes, lastRow, setMockFail, mockSheetRows };
+// Tạo dữ liệu mẫu bằng hook console (nút #seedbtn đã bỏ)
+const seed = (page) => page.evaluate(() => window.__seed());
+
+module.exports = { TODO, SHEET_URL, SHEET_HEADERS, NOTE_COL, installSpies, openApp, measureOne, openNoteDrawer, setNote, savedNote, newMeasure, redrawRes, lastRow, setMockFail, mockSheetRows, mockSheetCount, seed };

@@ -137,6 +137,8 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 #detail .rdot.L{box-shadow:0 0 0 2px #2F6FEB}
 #detail .rdot.R{box-shadow:0 0 0 2px #E8890C}
 #detail .rleg{margin:10px 0 0;font-size:12px;color:var(--mut)}
+#detail .dsec{margin:16px 0 4px;font-size:15px;font-weight:700;color:var(--moss)}
+#detail .dtemp{margin-left:8px;font-size:12px;font-weight:600;color:var(--amber)}
 #detail .rleg .rdot{position:static;display:inline-block;transform:none;vertical-align:middle;background:#fff}
 .modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--leaf-soft);border-radius:14px;padding:5px}
 .modes button{height:44px;background:transparent;color:var(--mut);font-size:15px;border-radius:10px}
@@ -177,7 +179,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
     </div>
     <div class="camwrap">
       <div style="position:relative"><video id="v1" autoplay muted playsinline style="display:block;width:100%"></video><div class="guide" style="opacity:.3"></div></div>
-      <div class="camrow"><select id="camsel"></select><select id="orient" title="Hướng video" style="flex:0 0 150px"><option value="auto">Hướng: Tự động</option><option value="portrait">Video dọc</option><option value="landscape">Video ngang</option></select></div>
+      <div class="camrow"><select id="camsel"></select></div>
       <div id="recrow" class="camrow">
         <button id="recbtn" class="recb">● Ghi hình</button>
         <label class="autorec"><input type="checkbox" id="autorec">Lưu video cả buổi chạy</label>
@@ -259,6 +261,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 <script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="mock_data.js"><\/script>');</script>
 <script src="reference.js"></script>
 <script src="gait.js"></script>
+<script src="score.js"></script>
 <script src="sync.js"></script>
 <script src="app.js"></script>
 </body>
