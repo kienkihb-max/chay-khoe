@@ -818,21 +818,61 @@
     const r = rating(k, v);
     return { ok: r.ok, col: r.ok ? GREEN : AMBER, bg: r.ok ? '#E3F1DC' : '#FBEBCF', label: r.ok ? 'Tốt' : r.txt === 'cao' ? 'Cao' : 'Thấp' };
   }
-  function barHTML(k, dots) {   // dots: [{v, leg: 'L'|'R'|null}]; ghim mép khi ngoài thang như canvas
+  function barHTML(k, dots, R) {   // dots: [{v, leg: 'L'|'R'|null}]; ghim mép khi ngoài thang như canvas
     const ref = REF[k]; if (!ref || ref.lo == null) return '';
     const [s0, s1] = barScale(ref), p = (t) => Math.max(0, Math.min(1, (t - s0) / (s1 - s0))) * 100;
     let h = '<div class="rbar" style="background:' + BAR_OUT + '"><i class="rin" style="left:' + p(ref.lo) + '%;width:' + (p(ref.hi) - p(ref.lo)) + '%;background:' + BAR_IN + '"></i>' +
       '<span class="rlb" style="left:' + p(ref.lo) + '%">' + ref.lo + '</span><span class="rlb" style="left:' + p(ref.hi) + '%">' + ref.hi + '</span>';
-    for (const d of dots) { const st = statInfo(k, d.v); if (st) h += '<b class="rdot' + (d.leg ? ' ' + d.leg : '') + '" style="left:' + p(d.v) + '%;background:' + st.col + '" title="' + (d.leg === 'L' ? 'Trái ' : d.leg === 'R' ? 'Phải ' : '') + f1(d.v) + '"></b>'; }
+    for (const d of dots) { const st = statInfo(k, d.v); if (st) h += '<b class="rdot' + (d.leg ? ' ' + d.leg : '') + '" style="left:' + p(d.v) + '%;background:' + st.col + (R && flagged(R, k, d.leg || 'c') ? ';opacity:.45' : '') + '" title="' + (d.leg === 'L' ? 'Trái ' : d.leg === 'R' ? 'Phải ' : '') + f1(d.v) + '"></b>'; }
     return h + '</div>';
   }
   const f1 = (v) => (v == null || Number.isNaN(v) ? '–' : (Math.round(v * 10) / 10).toFixed(1));
   const f0 = (v) => (v == null || Number.isNaN(v) ? '–' : String(Math.round(v)));
 
+  // ---------- Cờ tin cậy: "Dưới ngưỡng tin cậy ±X" và "Nghi bắt sai mốc" (đọc qua Score.flagOf, chịu được trường thiếu) ----------
+  // Chỉ số có cờ thì KHÔNG tính vào điểm (khi COUNT_LOWCONF = false, xem Score.skipped); số vẫn hiện, chip/chấm/thẻ mờ đi cho khớp.
+  // Chỉ áp cho chỉ số góc ngang (R.res); chỉ số góc sau không có cờ.
+  const SPREAD_TIP = '±X là độ dao động giữa các bước (nửa khoảng tứ phân vị), không phải sai số đã kiểm chứng.';
+  function flagList(R, k) {   // [{s: 'L'|'R', f: {lowConf, conf, spread, suspect, reason}}] chỉ các chân có cờ
+    if (!R || !R.res || BACK_DETAIL.includes(k)) return [];
+    return ['L', 'R'].filter((s) => R.res[s]).map((s) => ({ s, f: Score.flagOf(R.res[s], k) })).filter((x) => x.f.lowConf || x.f.suspect);
+  }
+  // Chỉ số bị bỏ khỏi lời kết luận/gợi ý/bài tập: có cờ và COUNT_LOWCONF=false (cùng quy tắc Score.skipped, dùng chung Score.countLow)
+  // Luật theo chân ở Score.usableLegs: chỉ số riêng chân có cờ ở một chân thì dùng chân còn lại; hai chân đều có cờ mới bỏ hẳn.
+  const excluded = (R, k) => !Score.usableLegs(R, k).length;
+  const legName = (s) => (s === 'L' ? 'trái' : 'phải');
+  const legNote = (R, k) => { const u = Score.usableLegs(R, k), n = ['L', 'R'].filter((s) => R.res[s]); return u.length && u.length < n.length ? ' (dựa trên chân ' + legName(u[0]) + '; chân ' + legName(n.find((s) => !u.includes(s))) + ' chưa đủ tin cậy)' : ''; };
+  // Giá trị chỉ số chung HIỂN THỊ = giá trị dùng để tính điểm (Score.commonVal); cả hai chân có cờ (bị bỏ khỏi điểm) thì hiện số ghép hai chân, mờ.
+  const cval = (R, k) => { const v = Score.commonVal(R, k); return v == null ? R.comb.common[k] : v; };
+  const cvals = (R) => ({ cadence: cval(R, 'cadence'), vert_osc: cval(R, 'vert_osc'), trunk: cval(R, 'trunk') });
+  // s = 'c' (chỉ số chung): chỉ mờ khi không còn chân nào dùng được; đã dùng chân không cờ thì không mờ (ghi "dựa trên chân X")
+  const flagged = (R, k, s) => flagList(R, k).some((x) => (s === 'c' ? !Score.usableLegs(R, k).length : x.s === s));
+  // Các dòng cờ để hiện: [{kind: 'low'|'sus', text, tip}]. common = chỉ số chung hai chân (không ghi tên chân).
+  function flagItems(R, k, common) {
+    const fl = flagList(R, k), unit = (REF[k] && REF[k].unit) || '', out = [];
+    if (!fl.length) return out;
+    const note = common && legNote(R, k).trim().slice(1, -1);   // bỏ cặp ngoặc đơn của legNote
+    if (note) { const t = note; return [{ kind: 'note', short: t, text: t.charAt(0).toUpperCase() + t.slice(1), tip: 'Chân có cờ tin cậy không được tính vào chỉ số này.' }]; }
+    const skip = Score.countLow() ? '' : ' Chỉ số này không được tính vào điểm.';
+    const groups = common ? [{ pre: '', xs: fl }] : fl.map((x) => ({ pre: (x.s === 'L' ? 'Trái' : 'Phải') + ': ', xs: [x] }));
+    for (const g of groups) {
+      const low = g.xs.filter((x) => x.f.lowConf), sus = g.xs.filter((x) => x.f.suspect);
+      if (low.length) {
+        const sp = low.map((x) => x.f.spread).filter((v) => v != null), cf = low.map((x) => x.f.conf).filter((v) => v != null);
+        const base = g.pre + 'Dưới ngưỡng tin cậy' + (sp.length ? ' ±' + f1(Math.max(...sp)) + (unit ? ' ' + unit : '') : '');
+        out.push({ kind: 'low', short: base, text: base + (cf.length ? ' · tin cậy ' + Math.round(Math.min(...cf) * 100) + '%' : ''), tip: SPREAD_TIP + skip });
+      }
+      if (sus.length) out.push({ kind: 'sus', short: g.pre + 'Nghi bắt sai mốc', text: g.pre + 'Nghi bắt sai mốc', tip: sus[0].f.reason + '.' + skip, reason: sus[0].f.reason });
+    }
+    return out;
+  }
+  const escA = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const flagHTML = (R, k, common) => flagItems(R, k, common).map((it) => '<div class="tflag" title="' + escA(it.tip) + '"><span class="chip">' + escA(it.text) + '</span>' + (it.kind === 'sus' ? ' <span class="why">' + escA(it.reason) + '</span>' : '') + '</div>').join('');
+
   function summary(R) {
     const bad = [];
     const nm = { cadence: 'Cadence', vert_osc: 'Nhấp nhô', trunk: 'Nghiêng thân', overstride: 'Tiếp đất trước thân', knee_ic: 'Gối lúc chạm đất' };
-    for (const k of ['cadence', 'vert_osc', 'trunk']) { const r = rating(k, R.comb.common[k]); if (!r.ok) bad.push(nm[k] + ' ' + r.txt); }
+    for (const k of ['cadence', 'vert_osc', 'trunk']) { const r = rating(k, cval(R, k)); if (!r.ok) bad.push(nm[k] + ' ' + r.txt); }
     for (const k of ['overstride', 'knee_ic']) {
       const parts = [];
       for (const s of ['L', 'R']) if (R.res[s]) { const r = rating(k, R.res[s].metrics[k]); if (!r.ok) parts.push((s === 'L' ? 'trái ' : 'phải ') + r.txt); }
@@ -911,7 +951,7 @@
   }
 
   function cardData(R) {
-    const cm = R.comb.common, r = R.res;
+    const cm = cvals(R), r = R.res;
     const two = (k, fmt) => ['L', 'R'].map((s) => (r[s] ? { v: fmt(r[s].metrics[k]), ok: rating(k, r[s].metrics[k]).ok, t: rating(k, r[s].metrics[k]).txt } : { v: '–', ok: true, t: '' }));
     const cd = (k) => { const q = rating(k, cm[k]); return { v: k === 'cadence' ? f0(cm[k]) : f1(cm[k]), ok: q.ok, t: q.txt }; };
     return [
@@ -962,35 +1002,42 @@
     asym: ['Cân bằng hai chân (Single-leg training)', 'Đứng một chân giữ thăng bằng (Single-leg balance) 3 x 30 giây, Single-leg glute bridge 3 x 10, Step-up 3 x 10 mỗi bên. Nên kiểm tra thêm sức mạnh và linh hoạt hai bên.'],
   };
   function exercises(R) {
-    const out = [], seen = new Set(), push = (key, why) => { if (EXER[key] && !seen.has(key)) { seen.add(key); out.push({ key, t: EXER[key][0], h: EXER[key][1], why }); } };
-    const cm = R.comb.common, rs = (k, v) => rating(k, v).txt;
-    const avg = (k) => { const v = ['L', 'R'].filter((s) => R.res[s]).map((s) => R.res[s].metrics[k]); return v.reduce((x, y) => x + y, 0) / v.length; };
-    if (rs('cadence', cm.cadence) === 'thấp') push('cadence_low', 'Nhịp chạy ' + f0(cm.cadence) + ' bước/phút, thấp hơn khoảng bình thường');
-    if (rs('overstride', avg('overstride')) === 'cao') push('overstride_high', 'Chân đặt trước hông ' + f0(avg('overstride')) + ' cm, xa hơn bình thường');
-    if (rs('vert_osc', cm.vert_osc) === 'cao') push('vert_osc_high', 'Nảy lên xuống ' + f1(cm.vert_osc) + ' cm, cao hơn bình thường');
-    if (rs('trunk', cm.trunk) === 'thấp') push('trunk_low', 'Thân nghiêng ' + f1(cm.trunk) + '°, thẳng hơn bình thường');
-    if (rs('trunk', cm.trunk) === 'cao') push('trunk_high', 'Thân nghiêng ' + f1(cm.trunk) + '°, gập nhiều hơn bình thường');
-    const kn = avg('knee_ic'); if (rs('knee_ic', kn) === 'thấp') push('knee_ic_low', 'Gối gập ' + f0(kn) + '° lúc chạm đất, gần thẳng'); else if (rs('knee_ic', kn) === 'cao') push('knee_ic_high', 'Gối gập ' + f0(kn) + '° lúc chạm đất, nhiều hơn bình thường');
-    if (rs('hip_ext', avg('hip_ext')) === 'thấp') push('hip_ext_low', 'Duỗi hông ' + f0(avg('hip_ext')) + '°, hạn chế');
-    if (rs('knee_mid', avg('knee_mid')) === 'thấp') push('knee_mid_low', 'Gối gập tối đa lúc đứng ' + f0(avg('knee_mid')) + '°, ít hơn bình thường');
-    if (rs('knee_swing', avg('knee_swing')) === 'thấp') push('knee_swing_low', 'Gối gập tối đa lúc đưa chân ' + f0(avg('knee_swing')) + '°, thấp hơn bình thường');
-    if (R.res.L && R.res.R && ['knee_ic', 'overstride'].some((k) => Math.abs(R.res.L.metrics[k] - R.res.R.metrics[k]) >= Gait.ASYM[k])) push('asym', 'Hai chân khác nhau rõ ở gối hoặc vị trí đặt chân');
+    const out = [], seen = new Set(), push = (key, why, mk) => { if (EXER[key] && !seen.has(key)) { seen.add(key); out.push({ key, t: EXER[key][0], h: EXER[key][1], why: why + (mk ? legNote(R, mk) : ''), note: mk ? legNote(R, mk) : '' }); } };
+    const cm = { cadence: Score.commonVal(R, 'cadence'), vert_osc: Score.commonVal(R, 'vert_osc'), trunk: Score.commonVal(R, 'trunk') }, rs = (k, v) => (excluded(R, k) ? '' : rating(k, v).txt);
+    const avg = (k) => { const v = Score.usableLegs(R, k).map((s) => R.res[s].metrics[k]); return v.reduce((x, y) => x + y, 0) / v.length; };   // chỉ lấy chân đủ tin cậy
+    if (rs('cadence', cm.cadence) === 'thấp') push('cadence_low', 'Nhịp chạy ' + f0(cm.cadence) + ' bước/phút, thấp hơn khoảng bình thường', 'cadence');
+    if (rs('overstride', avg('overstride')) === 'cao') push('overstride_high', 'Chân đặt trước hông ' + f0(avg('overstride')) + ' cm, xa hơn bình thường', 'overstride');
+    if (rs('vert_osc', cm.vert_osc) === 'cao') push('vert_osc_high', 'Nảy lên xuống ' + f1(cm.vert_osc) + ' cm, cao hơn bình thường', 'vert_osc');
+    if (rs('trunk', cm.trunk) === 'thấp') push('trunk_low', 'Thân nghiêng ' + f1(cm.trunk) + '°, thẳng hơn bình thường', 'trunk');
+    if (rs('trunk', cm.trunk) === 'cao') push('trunk_high', 'Thân nghiêng ' + f1(cm.trunk) + '°, gập nhiều hơn bình thường', 'trunk');
+    const kn = avg('knee_ic'); if (rs('knee_ic', kn) === 'thấp') push('knee_ic_low', 'Gối gập ' + f0(kn) + '° lúc chạm đất, gần thẳng', 'knee_ic'); else if (rs('knee_ic', kn) === 'cao') push('knee_ic_high', 'Gối gập ' + f0(kn) + '° lúc chạm đất, nhiều hơn bình thường', 'knee_ic');
+    if (rs('hip_ext', avg('hip_ext')) === 'thấp') push('hip_ext_low', 'Duỗi hông ' + f0(avg('hip_ext')) + '°, hạn chế', 'hip_ext');
+    if (rs('knee_mid', avg('knee_mid')) === 'thấp') push('knee_mid_low', 'Gối gập tối đa lúc đứng ' + f0(avg('knee_mid')) + '°, ít hơn bình thường', 'knee_mid');
+    if (rs('knee_swing', avg('knee_swing')) === 'thấp') push('knee_swing_low', 'Gối gập tối đa lúc đưa chân ' + f0(avg('knee_swing')) + '°, thấp hơn bình thường', 'knee_swing');
+    if (R.res.L && R.res.R && ['knee_ic', 'overstride'].some((k) => Score.usableLegs(R, k).length === 2 && Math.abs(R.res.L.metrics[k] - R.res.R.metrics[k]) >= Gait.ASYM[k])) push('asym', 'Hai chân khác nhau rõ ở gối hoặc vị trí đặt chân');
     return out;
   }
+  const OK_PARTIAL = (n) => 'Các chỉ số đủ tin cậy nằm trong khoảng bình thường (' + n + ' chỉ số có cờ tin cậy, không đưa vào kết luận).';
   function conclusion(R) {
     if (R.q && R.q.bad) return { text: 'Chưa đủ tin cậy để kết luận.', adv: ['Lý do: ' + R.q.why.join('; ') + '.', 'Hãy đo lại: camera đặt ngang vuông góc, thấy cả người từ đầu đến chân, đủ sáng, và dòng "Nhận diện … khung/giây" khi đo nên từ 20 trở lên.'], bad: 1, unreliable: true };
-    const cm = R.comb.common, r = R.res, flags = [], adv = [];
-    const avg = (k) => { const v = ['L', 'R'].filter((s) => r[s]).map((s) => r[s].metrics[k]); return v.reduce((a, b) => a + b, 0) / v.length; };
-    const st = { cadence: rating('cadence', cm.cadence).txt, vert_osc: rating('vert_osc', cm.vert_osc).txt, trunk: rating('trunk', cm.trunk).txt, overstride: rating('overstride', avg('overstride')).txt, knee_ic: rating('knee_ic', avg('knee_ic')).txt };
-    const target = Math.min(180, Math.round(cm.cadence * 1.05));
+    const cm = { cadence: Score.commonVal(R, 'cadence'), vert_osc: Score.commonVal(R, 'vert_osc'), trunk: Score.commonVal(R, 'trunk') }, r = R.res, flags = [], adv = [];
+    const avg = (k) => { const v = Score.usableLegs(R, k).map((s) => r[s].metrics[k]); return v.reduce((a, b) => a + b, 0) / v.length; };
+    const rt = (k, v) => (excluded(R, k) ? '' : rating(k, v).txt);   // chỉ số có cờ: không đưa vào kết luận/lời khuyên
+    const st = { cadence: rt('cadence', cm.cadence), vert_osc: rt('vert_osc', cm.vert_osc), trunk: rt('trunk', cm.trunk), overstride: rt('overstride', avg('overstride')), knee_ic: rt('knee_ic', avg('knee_ic')) };
+    const target = Math.min(180, Math.round((cm.cadence != null ? cm.cadence : R.comb.common.cadence) * 1.05));
     if (st.cadence === 'thấp') { flags.push('nhịp chạy chậm'); }
     if (st.overstride === 'cao') flags.push('đặt chân xa trước hông');
     if (st.vert_osc === 'cao') flags.push('nảy lên xuống nhiều');
     if (st.trunk === 'thấp') flags.push('thân quá thẳng hoặc ngả sau'); else if (st.trunk === 'cao') flags.push('thân gập trước nhiều');
     if (st.knee_ic === 'cao') flags.push('gối gập nhiều lúc chạm đất'); else if (st.knee_ic === 'thấp') flags.push('gối gần thẳng lúc chạm đất');
-    const asy = []; for (const k of ['knee_ic', 'overstride']) if (r.L && r.R && Math.abs(r.L.metrics[k] - r.R.metrics[k]) >= Gait.ASYM[k]) asy.push(k);
+    const asy = []; for (const k of ['knee_ic', 'overstride']) if (Score.usableLegs(R, k).length === 2 && r.L && r.R && Math.abs(r.L.metrics[k] - r.R.metrics[k]) >= Gait.ASYM[k]) asy.push(k);
     if (asy.length) flags.push('hai chân không đều');
-    const text = flags.length ? 'Cần chỉnh: ' + flags.join('; ') + '.' : 'Dáng chạy tốt: các chỉ số chính nằm trong khoảng bình thường.';
+    const part = ['L', 'R'].map((miss) => {   // gom một câu theo chân: "Chân trái chưa đủ tin cậy: N chỉ số dựa trên chân phải"
+      const n = ['cadence', 'vert_osc', 'trunk', 'overstride', 'knee_ic'].filter((k) => { const u = Score.usableLegs(R, k); return u.length === 1 && u[0] !== miss && R.res[miss]; }).length;
+      return n ? 'Chân ' + legName(miss) + ' chưa đủ tin cậy: ' + n + ' chỉ số dựa trên chân ' + legName(miss === 'L' ? 'R' : 'L') : '';
+    }).filter(Boolean).join('; ');
+    const nEx = ['cadence', 'vert_osc', 'trunk', 'overstride', 'knee_ic'].filter((k) => excluded(R, k)).length;   // chỉ số có cờ bị bỏ: không khẳng định "tốt" cho chúng
+    const text = flags.length ? 'Cần chỉnh: ' + flags.join('; ') + '.' : nEx ? OK_PARTIAL(nEx) : 'Dáng chạy tốt: các chỉ số chính nằm trong khoảng bình thường.';
     if (st.cadence === 'thấp' || st.overstride === 'cao') adv.push('Tăng nhịp chạy khoảng 5% (khoảng ' + target + ' bước/phút), bước ngắn lại và đặt chân gần dưới thân người.');
     if (st.vert_osc === 'cao') adv.push('Chạy "êm" hơn: đẩy người về phía trước thay vì nảy lên, giữ nhịp nhanh và bước nhẹ.');
     if (st.trunk === 'thấp') adv.push('Nghiêng nhẹ cả người về trước từ cổ chân (không gập lưng), mắt nhìn xa phía trước.');
@@ -1001,6 +1048,7 @@
     if (!adv.length) adv.push('Giữ kỹ thuật hiện tại, tập sức mạnh 2 buổi mỗi tuần và đo lại sau 4–6 tuần.');
     const pain = (R.sub.pain || '').trim();
     const out = adv.slice(0, pain ? 2 : 3);
+    if (part) out.push('Lưu ý: ' + part + '.');
     if (pain) out.push('Bạn đang có đau (' + pain + '): nên được bác sĩ thăm khám trực tiếp.');
     return { text, adv: out, bad: flags.length };
   }
@@ -1018,15 +1066,16 @@
     knee_swing_low: 'Tập gót chạm mông nhẹ nhàng sẽ giúp vung chân gọn và nhanh hơn',
     asym: 'Tập thêm bài một chân sẽ giúp hai chân đều nhau hơn',
   };
-  const legVals = (R, k) => ['L', 'R'].filter((s) => R.res[s]).map((s) => R.res[s].metrics[k]);
-  const mainVal = (R, k) => { const v = Gait.COMMON.includes(k) ? [R.comb.common[k]] : legVals(R, k), a = v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; return a == null || Number.isNaN(a) ? null : a; };   // NaN = không đo được: hiện "–", không gắn nhãn
+  const legVals = (R, k) => { const u = Score.usableLegs(R, k); return (u.length ? u : ['L', 'R'].filter((s) => R.res[s])).map((s) => R.res[s].metrics[k]); };   // chỉ lấy chân dùng được (cùng số với điểm); không chân nào thì lấy cả hai, thẻ mờ
+  const mainVal = (R, k) => { const v = Gait.COMMON.includes(k) ? [cval(R, k)] : legVals(R, k), a = v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; return a == null || Number.isNaN(a) ? null : a; };   // NaN = không đo được: hiện "–", không gắn nhãn
   // Chỉ số góc sau: chỉ số từng chân lấy trung bình hai chân (như mainVal), chỉ số chung lấy thẳng
   const backVal = (B, k) => { const v = Score.BACK_PERLEG.includes(k) ? ['L', 'R'].filter((s) => B.per && B.per[s]).map((s) => B.per[s][k]) : [B.common ? B.common[k] : null]; const ok = v.filter((x) => x != null && !Number.isNaN(x)); return ok.length ? ok.reduce((x, y) => x + y, 0) / ok.length : null; };
   function improveTip(R) {
     if (R.q && R.q.bad) return 'Đo lại với camera đặt ngang, thấy rõ cả người để có kết quả chính xác hơn';
     const ex = exercises(R), k = ex.length ? ex[0].key : null;
-    if (k === 'cadence_low') return 'Tăng nhịp lên khoảng ' + Math.min(180, Math.round(R.comb.common.cadence * 1.05)) + ' bước/phút sẽ giúp chạy nhẹ nhàng hơn';
-    return (k && IMPROVE[k]) || 'Giữ phong độ này! Tập sức mạnh 2 buổi mỗi tuần và đo lại sau 4–6 tuần';
+    if (k === 'cadence_low') return 'Tăng nhịp lên khoảng ' + Math.min(180, Math.round(Score.commonVal(R, 'cadence') * 1.05)) + ' bước/phút sẽ giúp chạy nhẹ nhàng hơn';
+    if (k) return IMPROVE[k] + ex[0].note;
+    return 'Giữ phong độ này! Tập sức mạnh 2 buổi mỗi tuần và đo lại sau 4–6 tuần';
   }
   function drawResult(R) {
     const cv = $('res'), c = cv.getContext('2d'), INK = '#1B1F1C', MUT = '#5C685F';
@@ -1106,15 +1155,17 @@
     }
 
     // ---- tầng 3: 3 chỉ số chính + 1 thẻ việc nên cải thiện / ghi chú ----
+    let cardFlags = false;   // có thẻ mang cờ tin cậy (để ghi chú ở chân ảnh)
     const metricCard = (k, lb, unit, i, v, fmt) => {
       const x = 48 + i * 444, y = 740, w = 420, h = 260, q = v == null ? { ok: true, txt: '' } : rating(k, v);
       const col = v == null ? '#8A97A1' : q.ok ? GREEN : AMBER;
       card(x, y, w, h); c.fillStyle = col; rr(c, x, y, 12, h, 6); c.fill();
       c.fillStyle = MUT; font('700', 30); c.fillText(lb, x + 36, y + 46, w - 60);
-      const val = v == null ? '–' : fmt(v);
+      const val = v == null ? '–' : fmt(v), fl = v == null ? [] : flagItems(R, k, Gait.COMMON.includes(k)), dim = fl.some((it) => it.kind !== 'note'); if (dim) cardFlags = true;
       c.fillStyle = col; font('700', 96); c.fillText(val, x + 34, y + 136); const vw = c.measureText(val).width;
       c.fillStyle = MUT; font('600', 30); c.fillText(unit, x + 44 + vw, y + 136);
       if (v == null) return;   // không đo được: không chip, không thanh, không chấm
+      if (dim) c.globalAlpha = 0.5;   // có cờ tin cậy: chip + thanh + chấm mờ, khớp bảng Chi tiết
       const pw = pill(q.ok ? 'Tốt' : q.txt === 'cao' ? 'Cao' : 'Thấp', x + 36, y + 148, 42, q.ok ? '#E3F1DC' : '#FBEBCF', col, 26);
       // thanh vị trí: giữa = vùng bình thường (xanh), hai bên = ngoài vùng (xám); chấm (màu trạng thái) = giá trị đo, ghim ở mép nếu ngoài thang
       const ref = REF[k], bx = x + 36 + pw + 24, bw = x + w - 44 - bx, by = y + 169 - 9, bh = 18, [s0, s1] = barScale(ref);
@@ -1129,6 +1180,8 @@
       c.save(); c.shadowColor = 'rgba(31,77,43,.35)'; c.shadowBlur = 6; c.shadowOffsetY = 2;
       c.fillStyle = '#fff'; c.beginPath(); c.arc(dx, dy, 17, 0, 7); c.fill(); c.restore();
       c.fillStyle = col; c.beginPath(); c.arc(dx, dy, 11, 0, 7); c.fill();
+      c.globalAlpha = 1;
+      fl.slice(0, 2).forEach((it, j) => { c.fillStyle = AMBER; font('600', 22); c.fillText(it.short, x + 36, y + 228 + j * 24, w - 60); });
     };
     const tipCard = (head, col, text) => {
       card(1380, 740, 492, 260); c.fillStyle = col; rr(c, 1380, 740, 12, 260, 6); c.fill();
@@ -1145,7 +1198,7 @@
       tipCard('GHI CHÚ', AMBER, 'Ngưỡng góc sau lưng đang tạm, chờ bác sĩ duyệt. Quay thêm góc ngang để có đánh giá đầy đủ.');
     }
     c.fillStyle = MUT; font('400', 22);
-    c.fillText('Sàng lọc 2D bằng AI, chỉ mang tính tham khảo, không thay thế khám lâm sàng.' + (hasSide ? ' Chân xa camera kém tin cậy hơn.' : '') + (hasBack ? ' Ngưỡng góc sau lưng đang tạm, chờ bác sĩ duyệt.' : ''), 48, 1052, 1824);
+    c.fillText('Sàng lọc 2D bằng AI, chỉ mang tính tham khảo, không thay thế khám lâm sàng.' + (hasSide ? ' Chân xa camera kém tin cậy hơn.' + (cardFlags && !Score.countLow() ? ' Chân có cờ tin cậy không được tính vào điểm ở chỉ số đó.' : '') : '') + (hasBack ? ' Ngưỡng góc sau lưng đang tạm, chờ bác sĩ duyệt.' : ''), 48, 1052, 1824);
   }
 
   function extraRows(R) {
@@ -1188,9 +1241,10 @@
     const row = (label, k, n, a, b) => {
       const num = (txt, v, bold) => { const st = statInfo(k, v); return st ? '<span class="dv" style="color:' + st.col + ';background:' + st.bg + '">' + txt + '</span>' : (bold ? '<b>' + txt + '</b>' : txt); };
       const legs = n.c !== undefined ? [{ s: 'c', v: n.c }] : ['L', 'R'].filter((s) => !Number.isNaN(n[s]) && n[s] != null).map((s) => ({ s, v: n[s] }));
-      const chips = legs.map((d) => { const st = statInfo(k, d.v); return st ? '<span class="chip" style="color:' + st.col + ';background:' + st.bg + '">' + (d.s === 'c' ? '' : (d.s === 'L' ? 'Trái ' : 'Phải ') ) + st.label + '</span>' : ''; }).join('');
-      const bar = barHTML(k, legs.map((d) => ({ v: d.v, leg: d.s === 'c' ? null : d.s })));
-      return '<tr><td>' + label + '</td><td>' + (n.c !== undefined ? num(a, n.c, true) : num(a, n.L)) + '</td><td>' + (n.c !== undefined ? b : num(b, n.R)) + '</td><td class="rcell">' + bar + '</td><td>' + chips + '</td></tr>';
+      const chips = legs.map((d) => { const st = statInfo(k, d.v); return st ? '<span class="chip' + (flagged(R, k, d.s) ? ' lowc' : '') + '" style="color:' + st.col + ';background:' + st.bg + '">' + (d.s === 'c' ? '' : (d.s === 'L' ? 'Trái ' : 'Phải ') ) + st.label + '</span>' : ''; }).join('');
+      const bar = barHTML(k, legs.map((d) => ({ v: d.v, leg: d.s === 'c' ? null : d.s })), R);
+      const src = REF[k] && REF[k].src;   // nguồn tham chiếu, chữ nhỏ dưới tên chỉ số
+      return '<tr><td>' + label + (src ? '<div class="hint">' + String(src).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>' : '') + flagHTML(R, k, n.c !== undefined) + '</td><td>' + (n.c !== undefined ? num(a, n.c, true) : num(a, n.L)) + '</td><td>' + (n.c !== undefined ? b : num(b, n.R)) + '</td><td class="rcell">' + bar + '</td><td>' + chips + '</td></tr>';
     };
     let anyTwo = false;
     if (R.comb) {
@@ -1200,7 +1254,7 @@
         const c = REF[k] || { label: k, unit: '' }, common = Gait.COMMON.includes(k);
         const L = R.res.L ? R.res.L.metrics[k] : NaN, Rr = R.res.R ? R.res.R.metrics[k] : NaN;
         if (!common) anyTwo = true;
-        h += row(c.label + ' (' + c.unit + ')', k, common ? { c: R.comb.common[k] } : { L, R: Rr }, common ? f1(R.comb.common[k]) : f1(L), common ? '' : f1(Rr));
+        h += row(c.label + ' (' + c.unit + ')', k, common ? { c: cval(R, k) } : { L, R: Rr }, common ? f1(cval(R, k)) : f1(L), common ? '' : f1(Rr));
       }
       for (const x of extraRows(R)) {
         const lbl = x.label + (x.unit ? ' (' + x.unit + ')' : '');
@@ -1224,6 +1278,8 @@
       if (errs.length) h += '<tr><td>Lưu ý</td><td colspan="4">' + errs.join('; ') + '</td></tr>';
       h += '</table>';
     }
+    const anyFlag = R.comb && [...keys, ...extraRows(R).map((x) => x.k).filter(Boolean)].some((k) => flagList(R, k).length);
+    if (anyFlag) h += '<p class="rleg">' + SPREAD_TIP + (Score.countLow() ? '' : ' Chỉ số có cờ không được tính vào điểm; chip và chấm của chỉ số đó được làm mờ.') + '</p>';
     return h + (anyTwo ? '<p class="rleg"><b class="rdot L"></b> chân trái · <b class="rdot R"></b> chân phải · chấm tô màu theo đánh giá (xanh = tốt, vàng = thấp/cao) · thanh xám = ngoài khoảng bình thường</p>' : '');
   }
   // Chi tiết là một "màn" riêng: mở thì ẩn ảnh tổng quan, nút đổi thành "Tổng quan" để quay về
@@ -1274,7 +1330,7 @@
     // dòng dữ liệu (danh sách + Google Sheet)
     const nowd = new Date(R.when);
     const row = { id: R.sub.id, time: pad(nowd.getDate()) + '/' + pad(nowd.getMonth() + 1) + '/' + nowd.getFullYear() + ' ' + pad(nowd.getHours()) + ':' + pad(nowd.getMinutes()), name: R.sub.name, phone: R.sub.phone, height_cm: R.sub.height, pain: R.sub.pain, note: '' };
-    for (const k of Gait.COMMON) row[k] = R.comb ? +R.comb.common[k].toFixed(2) : '';
+    for (const k of Gait.COMMON) row[k] = R.comb ? +cval(R, k).toFixed(2) : '';
     for (const k of Gait.PERLEG) for (const s of ['L', 'R']) row[k + '_' + s] = R.res[s] ? +R.res[s].metrics[k].toFixed(2) : '';
     for (const s of ['L', 'R']) row['foot_strike_' + s] = R.res[s] ? R.res[s].extra.strike : '';
     if (R.ex) {
@@ -1293,6 +1349,14 @@
     }
     if (R.fat) { row.fat_cad = +R.fat.d_cadence.toFixed(1); row.fat_vert = +R.fat.d_vert.toFixed(2); }
     for (const s of ['L', 'R']) row['steps_' + s] = R.res[s] ? R.res[s].extra.nSteps : '';
+    { // cột cờ tin cậy: mỗi chỉ số có cờ một đoạn "Tên: Dưới ngưỡng tin cậy ±X / Nghi bắt sai mốc: lý do"; trống nếu không có cờ
+      const parts = [];
+      for (const k of Gait.COMMON.concat(Gait.PERLEG)) {
+        const common = Gait.COMMON.includes(k);
+        for (const it of flagItems(R, k, common)) parts.push(((REF[k] && REF[k].label) || k) + ' · ' + it.short + (it.kind === 'sus' ? ': ' + it.reason : ''));
+      }
+      row.flags = parts.join(' | ');
+    }
     const cc = R.comb ? conclusion(R) : { text: '', adv: [] }; row.conclusion = cc.text; row.advice = cc.adv.join(' | ');
     S.rows.push(row); S.nextId++;
     try { localStorage.setItem('gait_rows', JSON.stringify(S.rows)); } catch (e) { /* bỏ qua */ }
@@ -1304,7 +1368,7 @@
   // Số và nhãn dùng đúng bộ thẻ của lớp số trực tiếp (LV_CARDS / LV_CARDS_BACK), màu theo lvLevel như thẻ live.
   function reviewVal(R, k, s) {
     if (R.angle === 'back') return s ? (R.back.per[s] ? R.back.per[s][k] : NaN) : R.back.common[k];
-    return s ? (R.res[s] ? R.res[s].metrics[k] : NaN) : R.comb.common[k];
+    return s ? (R.res[s] ? R.res[s].metrics[k] : NaN) : cval(R, k);
   }
   function openReview(R, photos) {
     let el = $('rv');
@@ -1533,7 +1597,7 @@
       { k: 'cadence', t: 'Cadence (nhịp chạy)' }, { k: 'vert_osc', t: 'Nhấp nhô' }, { k: 'trunk', t: 'Nghiêng thân' },
       { k: 'overstride', t: 'Tiếp đất trước thân', per: true }, { k: 'knee_ic', t: 'Gập gối lúc chạm đất', per: true }, { k: 'strike', t: 'Kiểu tiếp đất', per: true },
     ];
-    const cm = R.comb.common, r = R.res;
+    const cm = cvals(R), r = R.res;
     const f = (k, v) => (k === 'cadence' ? f0(v) : k === 'knee_ic' || k === 'trunk' ? (k === 'knee_ic' ? f0(v) : f1(v)) : f1(v));
     const unit = (k) => (REF[k] ? REF[k].unit : '');
     let y = 140; const rh = 128;
@@ -1583,7 +1647,7 @@
     const keys = ['cadence', 'vert_osc', 'trunk', 'knee_ic', 'shank_ic', 'overstride', 'knee_mid', 'hip_ext', 'knee_swing'];
     for (const k of keys) {
       const cf = REF[k], common = Gait.COMMON.includes(k);
-      const L = R.res.L ? R.res.L.metrics[k] : NaN, Rr = R.res.R ? R.res.R.metrics[k] : NaN, v = common ? R.comb.common[k] : null;
+      const L = R.res.L ? R.res.L.metrics[k] : NaN, Rr = R.res.R ? R.res.R.metrics[k] : NaN, v = common ? cval(R, k) : null;
       const st = common ? rating(k, v) : null, sl = R.res.L ? rating(k, L) : { ok: true, txt: '–' }, sr = R.res.R ? rating(k, Rr) : { ok: true, txt: '–' };
       rows.push({ label: cf.label, unit: cf.unit, a: common ? f1(v) : f1(L), b: common ? '' : f1(Rr), ref: cf.lo + '–' + cf.hi, st: common ? st.txt : sl.txt + ' / ' + sr.txt, ok: common ? st.ok : sl.ok && sr.ok, common });
     }
@@ -1630,7 +1694,7 @@
     wrap(c, 'Điểm cho biết bao nhiêu chỉ số chính nằm trong khoảng bình thường (' + tierText() + '). Đây là điểm tham khảo, không phải chẩn đoán.', 1460, 160, 410, 23);
     c.fillStyle = '#14202B'; c.font = '700 26px ' + FF; c.fillText('Bài tập gợi ý cho bạn', 48, 340);
     const ex = exercises(R).slice(0, 6);
-    if (!ex.length) { c.fillStyle = '#4a5a65'; c.font = '24px ' + FF; wrap(c, 'Các chỉ số chính đều nằm trong khoảng bình thường. Hãy giữ kỹ thuật hiện tại, tập sức mạnh 2 buổi mỗi tuần và đo lại sau 4–6 tuần.', 48, 390, 1700, 34); }
+    if (!ex.length) { c.fillStyle = '#4a5a65'; c.font = '24px ' + FF; wrap(c, (R.comb && conclusion(R).text.indexOf('có cờ tin cậy') >= 0 ? conclusion(R).text + ' ' : 'Các chỉ số chính đều nằm trong khoảng bình thường. ') + 'Hãy giữ kỹ thuật hiện tại, tập sức mạnh 2 buổi mỗi tuần và đo lại sau 4–6 tuần.', 48, 390, 1700, 34); }
     ex.forEach((e, i) => {
       const col = i % 2, row = Math.floor(i / 2), x = 48 + col * 924, y = 362 + row * 220;
       c.fillStyle = '#F3F9F0'; rr(c, x, y, 900, 204, 16); c.fill();
@@ -1747,6 +1811,7 @@
     ['Điểm', (r) => r.score_total], ['Hạng', (r) => (r.score_total === '' || r.score_total == null ? '' : tierOf(r.score_total).label)],
     ['Điểm trái', (r) => r.score_L], ['Điểm phải', (r) => r.score_R], ['Đau/chấn thương', (r) => r.pain],
     ['Kết luận', (r) => r.conclusion], ['Ghi chú bác sĩ', (r) => r.note],
+    ['Cờ tin cậy', (r) => r.flags],
     // điểm riêng từng góc (đo một góc thì góc kia trống) + chỉ số góc sau lưng (ngưỡng tạm); Code.gs ghi theo tên cột nên thêm cuối không lệch dữ liệu cũ
     ['Điểm góc ngang', (r) => r.score_side], ['Điểm góc sau', (r) => r.score_back],
     ['Sụt hông trái (°)', (r) => r.pelvic_drop_L], ['Sụt hông phải (°)', (r) => r.pelvic_drop_R],
@@ -1812,7 +1877,7 @@
   }
 
   // thử nghiệm: window.__gait cho kiểm tra tự động
-  window.__gait = { S, CFG, drawResult, saveResult, makePdf, detailHTML };
+  window.__gait = { S, CFG, drawResult, saveResult, makePdf, detailHTML, exercises, conclusion, improveTip };
 
   route();
   applySettings(false);

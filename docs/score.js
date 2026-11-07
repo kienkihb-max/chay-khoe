@@ -13,6 +13,38 @@
     if (typeof require === 'function') { try { return require('./gait.js'); } catch (e) { /* bỏ qua */ } }
     return null;
   }
+  // Cờ tin cậy của một chỉ số trên một chân (sr = res[s] của Gait.computeSide). Chịu được trường thiếu.
+  // Đọc dạng theo từng chỉ số (extra.flags[k] / sr.flags[k]: {lowConf, conf, spread, suspect, suspectReason}); không có thì rơi về dạng theo chân
+  // (extra.lowConf, extra.spread[k], extra.icSuspect áp cho các chỉ số phụ thuộc mốc chạm đất).
+  const IC_KEYS = ['knee_ic', 'shank_ic', 'overstride'];
+  const IC_REASON = 'Mốc chạm đất có thể bắt sai (gối lúc chạm đất ngoài khoảng thường gặp, hoặc chân chạm sau hông nhiều)';
+  function flagOf(sr, k) {
+    const ex = (sr && sr.extra) || {}, mf = (ex.flags && ex.flags[k]) || (sr && sr.flags && sr.flags[k]) || {};
+    const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+    const sp = mf.spread !== undefined ? mf.spread : (ex.spread && typeof ex.spread === 'object' ? ex.spread[k] : null);
+    const suspect = mf.suspect != null ? !!mf.suspect : !!ex.icSuspect && IC_KEYS.includes(k);
+    return {
+      lowConf: mf.lowConf != null ? !!mf.lowConf : !!ex.lowConf,
+      conf: num(mf.conf != null ? mf.conf : ex.conf), spread: num(sp),
+      suspect, reason: suspect ? (mf.suspectReason || ex.suspectReason || IC_REASON) : '',
+    };
+  }
+  // COUNT_LOWCONF (gait.js có thể gọi LOWCONF_IN_SCORE); mặc định false = chỉ số có cờ không tính vào điểm
+  function countLow() { const g = getGait(); return !!(g && (g.COUNT_LOWCONF != null ? g.COUNT_LOWCONF : g.LOWCONF_IN_SCORE)); }
+  function skipped(sr, k) { if (countLow()) return false; const f = flagOf(sr, k); return f.lowConf || f.suspect; }
+  // Luật cờ theo chân (dùng chung điểm, kết luận, gợi ý, bài tập): trả về các chân CÒN DÙNG ĐƯỢC cho chỉ số k.
+  // Mọi chỉ số (riêng chân lẫn chung: nhịp, dao động, thân): bỏ chân có cờ ở chỉ số đó, dùng chân còn lại; cả hai chân có cờ mới bỏ hẳn.
+  // (Video quay ngang thì chân xa luôn mờ, bỏ cả chỉ số chung là bỏ oan.)
+  function usableLegs(R, k) {
+    const legs = ['L', 'R'].filter((s) => R && R.res && R.res[s]);
+    return legs.filter((s) => !skipped(R.res[s], k));
+  }
+  // Giá trị chỉ số chung dùng để chấm/kết luận: đủ hai chân thì = R.comb.common[k]; một chân dùng được thì giá trị chân đó; không chân nào thì null.
+  function commonVal(R, k) {
+    const u = usableLegs(R, k);
+    if (!u.length) return null;
+    return u.length === ['L', 'R'].filter((s) => R.res[s]).length ? R.comb.common[k] : R.res[u[0]].metrics[k];
+  }
   const avg = (a) => Math.round(a.reduce((x, y) => x + y, 0) / a.length);
 
   function mScore(k, v) {
@@ -28,7 +60,11 @@
     const COMMON = (getGait() || {}).COMMON || [];
     for (const s of ['L', 'R']) {
       if (!R.res || !R.res[s]) continue;
-      const v = SCORE_KEYS.map((k) => mScore(k, COMMON.includes(k) ? R.comb.common[k] : R.res[s].metrics[k])).filter((q) => q != null);
+      const v = SCORE_KEYS.map((k) => {
+        const u = usableLegs(R, k);
+        if (COMMON.includes(k)) return u.length ? mScore(k, commonVal(R, k)) : null;
+        return u.includes(s) ? mScore(k, R.res[s].metrics[k]) : null;
+      }).filter((q) => q != null);
       if (v.length) out[s] = avg(v);
     }
     const t = [out.L, out.R].filter((q) => q != null);
@@ -60,7 +96,7 @@
     }
     return out;
   }
-  const api = { SCORE_KEYS, BACK_PERLEG, BACK_COMMON, mScore, side, back, combine, setRef: (m) => { refOverride = m; } };
+  const api = { SCORE_KEYS, BACK_PERLEG, BACK_COMMON, mScore, flagOf, skipped, usableLegs, commonVal, countLow, side, back, combine, setRef: (m) => { refOverride = m; } };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Score = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -10,6 +10,14 @@
   };
   // Ngưỡng tin cậy điểm khớp (visibility 0..1): dưới mức này điểm bị coi là mờ, khung đó bỏ khỏi tính; chỉnh ở đây.
   const VIS_MIN = 0.6;
+  // Chân xa camera: điểm 0,3–0,6 vẫn nhận cho một bước nếu qua kiểm tra hợp lý (độ dài đùi/cẳng, không nhảy, hai gối không chập).
+  const VIS_LOW = 0.3;
+  // Chân có ít hơn MIN_STEPS bước rõ (mọi điểm chân ≥ VIS_MIN lúc chạm đất) = "dưới ngưỡng tin cậy": vẫn hiện số kèm ±X
+  // (X = nửa khoảng tứ phân vị giữa các bước). Có tính chân đó vào điểm không: Linh chọn tạm KHÔNG (07/11/2026), đổi ở đây.
+  const COUNT_LOWCONF = false;
+  // Mốc chạm đất nghi bắt sai: gối lúc chạm đất ngoài khoảng này (độ) hoặc chân chạm sau hông quá OVER_MIN_CM.
+  const KNEE_IC_OK = [0, 30], OVER_MIN_CM = -5;
+  const IC_KEYS = ['knee_ic', 'shank_ic', 'overstride'];   // chỉ số đo đúng lúc chạm đất: bị gắn cờ khi nghi bắt sai mốc
   const BAD_FRAC_MAX = 0.3;   // quá tỉ lệ khung bị bỏ này thì báo 'Khung hình kém'
   const MIN_STEPS = 4;        // ít bước hơn mức này thì báo 'Khung hình kém'
   // tỉ lệ khung có ít nhất một điểm trong `ids` dưới ngưỡng
@@ -91,6 +99,37 @@
     y.reverse();
     return y.slice(pad, pad + n);
   }
+  // lọc trung vị cửa sổ w (lẻ), bỏ qua NaN; cửa sổ toàn NaN thì giữ NaN
+  function medfilt(a, w) {
+    const n = a.length, h = w >> 1, out = new Float64Array(n);
+    for (let i = 0; i < n; i++) out[i] = median(Array.prototype.slice.call(a, Math.max(0, i - h), Math.min(n, i + h + 1)));
+    return out;
+  }
+  // tần số trội (Hz) của tín hiệu trong dải [f0, f1]: trừ trung bình (hw>0: trung bình trượt ±hw khung), cửa sổ Hann, quét DFT bước 0,005 Hz
+  function domFreq(x, fps, f0, f1, hw) {
+    const N = x.length, yy = new Float64Array(N);
+    let g = 0;
+    for (let i = 0; i < N; i++) g += x[i];
+    g /= N;
+    for (let i = 0; i < N; i++) {
+      let m = g;
+      if (hw > 0) {
+        let s = 0, c = 0;
+        for (let j = Math.max(0, i - hw); j <= Math.min(N - 1, i + hw); j++) { s += x[j]; c++; }
+        m = s / c;
+      }
+      yy[i] = (x[i] - m) * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (N - 1)));
+    }
+    let best = -1, fb = NaN;
+    for (let f = f0; f <= f1; f += 0.005) {
+      let re = 0, im = 0;
+      const w = (2 * Math.PI * f) / fps;
+      for (let i = 0; i < N; i++) { re += yy[i] * Math.cos(w * i); im -= yy[i] * Math.sin(w * i); }
+      const m = re * re + im * im;
+      if (m > best) { best = m; fb = f; }
+    }
+    return fb;
+  }
   function smooth(a, fps, fc) {
     fc = fc || 10;
     const f = Math.min(fc, (fps / 2) * 0.9);
@@ -134,8 +173,193 @@
     return peaks;
   }
 
+  // ---------- tìm bước không dựa vào nhãn trái/phải ----------
+  // Quay ngang, MediaPipe hay đổi nhãn "trái"/"phải" giữa hai chân (video áo xám: cùng một bàn chân đang trụ khung này
+  // mang nhãn phải, khung sau mang nhãn trái, có khi kéo dài 3–5 khung) và visibility đi theo NHÃN chứ không theo chân thật.
+  // Lọc trung vị không gỡ được đoạn tráo dài, làm mốc chạm đất (IC) bắt trễ 3–5 khung, lúc chân kia đã nhấc.
+  // Nên ở đây tìm bước bằng những gì không phụ thuộc nhãn:
+  //  1. Ghép điểm thành hai chân trong từng khung: gót/mũi theo cổ chân gần nhất, gối theo độ dài cẳng chân sát độ dài điển hình.
+  //  2. "Mặt đất" = đường thẳng ước từ điểm thấp nhất của bàn chân qua cả đoạn (đường nghiêng theo camera), lấy mức các lần trụ.
+  //  3. Mỗi bước hông xuống thấp nhất một lần. Trong khoảng giữa hai đáy hông: IC = khung đầu bàn chân phía trước xuống tới mức
+  //     trụ của bước đó (± TOL_GROUND_CM); TO = khung cuối bàn chân trụ còn ở mức đó. Đo trên điểm thô (chưa lọc, chưa làm mượt).
+  //  4. Hai lần trụ liền nhau là hai chân khác nhau (chạy luôn đổi chân). Chân nào là "phải" lấy theo nhãn MediaPipe đa số.
+  //     Hạn chế: tên trái/phải chỉ đúng khi đa số khung MediaPipe gán đúng nhãn; hai chân hoán tên thì số vẫn đúng từng chân.
+  //  5. Ghi lại P theo chân thật (mỗi khung: chân đang trụ/vừa nhấc của lần trụ đó mang tên chân đó) để phần đo và ảnh dùng.
+  const TOL_GROUND_CM = 2.5;
+  // Bàn chân lúc trụ phải nằm trong TOL_BAND_CM so với mặt đất chung (rộng vì chân xa camera trông cao hơn chân gần 3–6 cm).
+  const TOL_BAND_CM = 8;
+  function findSteps(P0, fps, heightCm) {
+    const N = P0.x[0].length, L = IDX.L, R = IDX.R;
+    const P = { x: P0.x.map((a) => Float64Array.from(a)), y: P0.y.map((a) => Float64Array.from(a)), v: P0.v.map((a) => Float64Array.from(a)) };
+    const pt = (j, i) => (P0.v[j][i] >= VIS_LOW ? [P0.x[j][i], P0.y[j][i]] : [NaN, NaN]);
+    const D = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+    const other = (j, part) => (j === L[part] ? R[part] : L[part]);
+    // hông: hai hông gần như trùng nhau khi quay ngang, lấy điểm rõ hơn cho cả hai
+    const hipJ = new Int32Array(N);
+    for (let i = 0; i < N; i++) hipJ[i] = P0.v[L.hip][i] >= P0.v[R.hip][i] ? L.hip : R.hip;
+    // chân 0 = cổ chân mang nhãn trái gốc; s0[part][i] = ô của chân 0 ở khung i (chân 1 là ô còn lại)
+    const s0 = { ank: new Int32Array(N).fill(L.ank), heel: new Int32Array(N), toe: new Int32Array(N), knee: new Int32Array(N) };
+    for (const part of ['heel', 'toe']) {
+      for (let i = 0; i < N; i++) {
+        const a = D(pt(L[part], i), pt(L.ank, i)) + D(pt(R[part], i), pt(R.ank, i));
+        const b = D(pt(R[part], i), pt(L.ank, i)) + D(pt(L[part], i), pt(R.ank, i));
+        s0[part][i] = b < a ? R[part] : L[part];
+      }
+    }
+    const sh = [], th = [];
+    for (let i = 0; i < N; i++) {
+      const a = D(pt(L.knee, i), pt(L.ank, i)) + D(pt(R.knee, i), pt(R.ank, i));
+      const b = D(pt(R.knee, i), pt(L.ank, i)) + D(pt(L.knee, i), pt(R.ank, i));
+      const m = Math.min(a, b);
+      if (Number.isFinite(m)) sh.push(m / 2);
+      for (const j of [L.knee, R.knee]) { const t = D(pt(hipJ[i], i), pt(j, i)); if (Number.isFinite(t)) th.push(t); }
+    }
+    const Ls = median(sh), Lt = median(th);
+    if (!(Ls > 0 && Lt > 0)) throw new Error('Không nhận diện được người trong video (thiếu khung xương).');
+    for (let i = 0; i < N; i++) {
+      const c = (kA, kB) => Math.abs(D(pt(kA, i), pt(L.ank, i)) - Ls) + Math.abs(D(pt(kB, i), pt(R.ank, i)) - Ls);
+      s0.knee[i] = c(R.knee, L.knee) < c(L.knee, R.knee) ? R.knee : L.knee;
+    }
+    const slot = (leg, part, i) => (leg === 0 ? s0[part][i] : other(s0[part][i], part));
+    // hướng chạy: mũi ở phía nào của hông
+    const dd = [];
+    for (let i = 0; i < N; i++) { const t = pt(0, i)[0] - P0.x[hipJ[i]][i]; if (Number.isFinite(t)) dd.push(t); }
+    const d = median(dd) >= 0 ? 1 : -1;
+    // điểm thấp nhất mỗi bàn chân (ảnh: y hướng xuống) và vị trí cổ chân so với hông
+    const lo = [new Float64Array(N), new Float64Array(N)], lx = [new Float64Array(N), new Float64Array(N)], rel = [new Float64Array(N), new Float64Array(N)];
+    for (let l = 0; l < 2; l++) {
+      for (let i = 0; i < N; i++) {
+        let y = NaN, x = NaN;
+        for (const part of ['heel', 'toe']) { const p = pt(slot(l, part, i), i); if (Number.isFinite(p[1]) && !(p[1] <= y)) { y = p[1]; x = p[0]; } }
+        lo[l][i] = y; lx[l][i] = x;
+        rel[l][i] = d * (pt(slot(l, 'ank', i), i)[0] - P0.x[hipJ[i]][i]);
+      }
+    }
+    const pxcm = (Ls + Lt) / (RATIO * heightCm);
+    // mặt đất: đường y = a + b·x bám theo phía dưới (y lớn) của điểm thấp nhất mỗi khung
+    const gx = [], gy = [];
+    for (let i = 0; i < N; i++) {
+      const l = !(lo[1][i] > lo[0][i]) ? 0 : 1;
+      if (Number.isFinite(lo[l][i])) { gx.push(lx[l][i]); gy.push(lo[l][i]); }
+    }
+    if (gy.length < 10) throw new Error('Không nhận diện được người trong video (thiếu khung xương).');
+    let ga = median(gy), gb = 0;
+    for (let it = 0; it < 4; it++) {
+      const r = gy.map((y, k) => y - (ga + gb * gx[k])), thr = percentile(r, 50);
+      let n = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+      for (let k = 0; k < gy.length; k++) if (r[k] >= thr) { n++; sx += gx[k]; sy += gy[k]; sxx += gx[k] * gx[k]; sxy += gx[k] * gy[k]; }
+      const den = n * sxx - sx * sx;
+      gb = Math.abs(den) > 1e-9 ? (n * sxy - sx * sy) / den : 0;
+      if (Math.abs(gb) > 0.3) gb = 0;   // nghiêng quá vô lý thì bỏ nghiêng
+      ga = (sy - gb * sx) / n;
+    }
+    const res0 = gy.map((y, k) => y - (ga + gb * gx[k]));
+    const g0 = percentile(res0, 85), tol = TOL_GROUND_CM * pxcm, band = TOL_BAND_CM * pxcm;
+    const hgt = (l, i) => ga + gb * lx[l][i] + g0 - lo[l][i];    // độ cao bàn chân l so với mặt đất (px, dương = ở trên)
+    // Mỗi bước hông xuống thấp nhất một lần (giữa pha trụ). Cửa sổ tìm IC của một bước = từ đáy hông trước (+2 khung) tới đáy này.
+    const hy = new Float64Array(N);
+    for (let i = 0; i < N; i++) hy[i] = P0.v[hipJ[i]][i] >= VIS_LOW ? P0.y[hipJ[i]][i] : NaN;
+    const hyS = smooth(interpNaN(hy), fps, 6);
+    const fStep = domFreq(hyS, fps, 1.2, 4.0, Math.max(2, Math.round(fps * 0.5)));
+    const per = Number.isFinite(fStep) && fStep > 0 ? fps / fStep : 0.36 * fps;
+    const vall = findPeaks(hyS, Math.max(2, Math.round(0.6 * per)), 0.25 * (percentile(hyS, 95) - percentile(hyS, 5)));
+    // bàn chân phía trước / phía sau (theo cổ chân so với hông); thiếu một bên thì lấy bên còn lại
+    const front = (i) => (!(rel[1][i] > rel[0][i]) ? (Number.isFinite(rel[0][i]) ? 0 : 1) : 1);
+    const loF = (i) => lo[front(i)][i];
+    const ank = (l, i) => pt(slot(l, 'ank', i), i);
+    // IC = khung đầu trong cửa sổ mà bàn chân phía trước đã xuống tới mức trụ của chính bước đó (± TOL_GROUND_CM).
+    // Mức trụ lấy riêng từng bước vì bàn chân xa camera chạm đất trông cao hơn chân gần 3–6 cm (phối cảnh).
+    // Bước mà bàn chân phía trước không xuống gần "mặt đất" chung (cách quá TOL_BAND_CM) thì bỏ (điểm hỏng).
+    const steps = [];
+    for (let k = 0; k < vall.length; k++) {
+      const v = vall[k], w0 = k > 0 ? vall[k - 1] + 2 : Math.max(1, v - Math.round(per));
+      if (w0 >= v) continue;
+      let Lv = -Infinity, iv = -1;   // Lv: điểm thấp nhất của bàn chân phía trước trong cửa sổ, chỉ dùng để loại bước không chạm "mặt đất"
+      for (let i = w0; i <= Math.min(N - 1, v + 2); i++) if (loF(i) > Lv) { Lv = loF(i); iv = i; }
+      if (iv < 0 || !(hgt(front(iv), iv) <= band)) continue;
+      // Mức trụ tính riêng cho gót và mũi: lúc bàn chân đặt phẳng, mũi (gần camera) thấp hơn lúc vừa chạm vài cm, nên so
+      // "điểm thấp nhất" với mức trụ phẳng sẽ bắt trễ. Chạm đất = gót HOẶC mũi đã xuống tới mức trụ của chính nó.
+      const fy = (part, i) => pt(slot(front(i), part, i), i)[1];
+      let Hv = -Infinity, Tv = -Infinity;
+      for (let i = w0; i <= Math.min(N - 1, v + 2); i++) {
+        if (fy('heel', i) > Hv) Hv = fy('heel', i);
+        if (fy('toe', i) > Tv) Tv = fy('toe', i);
+      }
+      let ic = w0;
+      while (ic < v && !(fy('heel', ic) >= Hv - tol || fy('toe', ic) >= Tv - tol)) ic++;
+      if (ic === w0 && k === 0) continue;   // đầu video: không biết bàn chân đã chạm từ lúc nào
+      steps.push({ ic, to: ic, leg: front(ic), Hv, Tv });
+    }
+    // TO: bám bàn chân trụ (cổ chân gần vị trí khung trước nhất) tới khi nó rời mức trụ (cho phép hở 2 khung vì điểm gót/mũi hay nhảy), trước IC kế tiếp
+    for (let k = 0; k < steps.length; k++) {
+      const s = steps[k], end = k + 1 < steps.length ? steps[k + 1].ic - 1 : N - 1;
+      let cur = s.leg, last = s.ic, miss = 0;
+      for (let i = s.ic + 1; i <= end && miss < 3; i++) {
+        const p = ank(cur, i - 1), o = 1 - cur;
+        if (D(ank(o, i), p) < D(ank(cur, i), p)) cur = o;
+        if (pt(slot(cur, 'heel', i), i)[1] >= s.Hv - tol || pt(slot(cur, 'toe', i), i)[1] >= s.Tv - tol) { last = i; miss = 0; } else miss++;
+      }
+      s.to = last;
+      delete s.Hv; delete s.Tv;
+    }
+    // hai lần chạm sát nhau bất thường (< 0,5 khoảng điển hình) là nhiễu: bỏ lần có đoạn trụ ngắn hơn
+    for (let changed = true; changed && steps.length > 2;) {
+      changed = false;
+      const iv = []; for (let k = 1; k < steps.length; k++) iv.push(steps[k].ic - steps[k - 1].ic);
+      const mi = median(iv);
+      for (let k = 1; k < steps.length; k++) {
+        if (steps[k].ic - steps[k - 1].ic < 0.5 * mi) {
+          const dk = steps[k].to - steps[k].ic < steps[k - 1].to - steps[k - 1].ic ? k : k - 1;
+          steps.splice(dk, 1); changed = true; break;
+        }
+      }
+    }
+    // đặt tên chân: hai lần trụ liền nhau đổi chân; quãng hở lớn (sót bước) thì bắt đầu đoạn mới, mỗi đoạn theo nhãn đa số
+    const iv = []; for (let k = 1; k < steps.length; k++) iv.push(steps[k].ic - steps[k - 1].ic);
+    const mi = median(iv);
+    for (let a = 0; a < steps.length;) {
+      let b = a;
+      while (b + 1 < steps.length && steps[b + 1].ic - steps[b].ic <= 1.6 * mi) b++;
+      let vote = 0;   // >0: lần trụ thứ chẵn trong đoạn là chân phải
+      for (let k = a; k <= b; k++) {
+        const s = steps[k], lab = slot(s.leg, 'ank', s.ic) === R.ank ? 1 : -1;
+        vote += ((k - a) % 2 === 0 ? 1 : -1) * lab * Math.min(1, P0.v[slot(s.leg, 'ank', s.ic)][s.ic]);
+      }
+      for (let k = a; k <= b; k++) steps[k].side = ((k - a) % 2 === 0) === vote >= 0 ? 'R' : 'L';
+      a = b + 1;
+    }
+    // ghi lại P theo chân thật. Trong [IC_k, IC_k+1): lúc trụ, chân k = bàn chân gần vị trí khung trước nhất (bàn chân trụ chỉ trôi
+    // chậm theo băng tải); sau khi nhấc = chân phía sau. Trước lần chạm đầu: chân sắp chạm = chân phía trước.
+    const legOf = new Int8Array(N).fill(-1), sideOf = [];
+    for (let k = 0; k < steps.length; k++) {
+      const s = steps[k], end = k + 1 < steps.length ? steps[k + 1].ic : N;
+      let cur = s.leg;
+      for (let i = s.ic; i < end; i++) {
+        if (i <= s.to) {
+          if (i > s.ic) {
+            const p = pt(slot(cur, 'ank', i - 1), i - 1), o = 1 - cur;
+            const dc = D(pt(slot(cur, 'ank', i), i), p), dO = D(pt(slot(o, 'ank', i), i), p);
+            if (dO < dc) cur = o;
+          }
+        } else cur = rel[0][i] < rel[1][i] ? 0 : rel[1][i] < rel[0][i] ? 1 : cur;
+        legOf[i] = cur; sideOf[i] = s.side;
+      }
+    }
+    if (steps.length) for (let i = 0; i < steps[0].ic; i++) { legOf[i] = rel[0][i] >= rel[1][i] ? 0 : 1; sideOf[i] = steps[0].side; }
+    for (let i = 0; i < N; i++) {
+      if (legOf[i] < 0) continue;
+      const sd = sideOf[i], od = sd === 'L' ? 'R' : 'L';
+      for (const part of ['knee', 'ank', 'heel', 'toe']) {
+        const js = slot(legOf[i], part, i), jo = other(js, part);
+        for (const A of ['x', 'y', 'v']) { const vs = P0[A][js][i], vo = P0[A][jo][i]; P[A][IDX[sd][part]][i] = vs; P[A][IDX[od][part]][i] = vo; }
+      }
+      for (const A of ['x', 'y', 'v']) { P[A][L.hip][i] = P0[A][hipJ[i]][i]; P[A][R.hip][i] = P0[A][hipJ[i]][i]; }
+    }
+    return { P, steps, pxcm, Ls, Lt, d, ground: { a: ga, b: gb, g0, tol } };
+  }
+
   // ---------- đo một bên ----------
-  function computeSide(P, fps, heightCm, speedMs, side) {
+  function computeSide(P, fps, heightCm, speedMs, side, st) {
     const ids = IDX[side];
     const N = P.x[0].length;
     const keys = ['sh', 'hip', 'knee', 'ank', 'heel', 'toe'];
@@ -146,16 +370,20 @@
     const masked = (j) => {
       const xs = new Float64Array(N), ys = new Float64Array(N);
       for (let i = 0; i < N; i++) {
-        const bad = !(P.v[j][i] >= VIS_MIN);
+        const bad = !(P.v[j][i] >= VIS_LOW); // nhận cả điểm mờ vừa (chân xa); bước nào dùng được xét riêng ở dưới
         xs[i] = bad ? NaN : P.x[j][i];
         ys[i] = bad ? NaN : P.y[j][i];
       }
       return [xs, ys];
     };
+    // Lọc trung vị ~0,15 s bỏ điểm nhảy lẻ. Tráo nhãn trái/phải đã được findSteps gỡ (P ghi lại theo chân thật), nên điểm chân
+    // không cần lọc dài 0,25 s như trước (lọc dài làm trễ và bẹt góc quanh lúc chạm đất).
+    const mw = Math.max(3, Math.round(fps * 0.15) | 1), mwLeg = mw;
     const S = {};
     for (const k of keys) {
       const [xs, ys] = masked(ids[k]);
-      S[k] = { x: smooth(interpNaN(xs), fps), y: smooth(interpNaN(ys), fps) };
+      const w = k === 'hip' || k === 'sh' ? mw : mwLeg;
+      S[k] = { x: smooth(interpNaN(medfilt(xs, w)), fps), y: smooth(interpNaN(medfilt(ys, w)), fps) };
     }
     const [nx0] = masked(0);
     const noseX = interpNaN(nx0);
@@ -163,12 +391,8 @@
     for (let i = 0; i < N; i++) diffs[i] = noseX[i] - S.hip.x[i];
     const d = median(diffs) > 0 ? 1 : -1;
 
-    const seg = new Float64Array(N);
-    for (let i = 0; i < N; i++) {
-      seg[i] = Math.hypot(S.hip.x[i] - S.knee.x[i], S.hip.y[i] - S.knee.y[i]) +
-        Math.hypot(S.knee.x[i] - S.ank.x[i], S.knee.y[i] - S.ank.y[i]);
-    }
-    const pxcm = median(seg) / (RATIO * heightCm);
+    // Tỉ lệ px/cm dùng chung cho hai chân (findSteps: độ dài đùi + cẳng điển hình so với chiều cao).
+    const pxcm = st.pxcm;
 
     const deg = (r) => (r * 180) / Math.PI;
     const kneeFlex = new Float64Array(N), trunk = new Float64Array(N), shank = new Float64Array(N);
@@ -185,40 +409,71 @@
       rel[i] = d * (S.ank.x[i] - S.hip.x[i]);
     }
 
-    const prom = 0.35 * (percentile(rel, 95) - percentile(rel, 5));
-    const dist = Math.max(Math.floor(0.35 * fps), 1);
-    const ic = findPeaks(rel, dist, prom);
-    const negRel = rel.map((v) => -v);
-    const to = findPeaks(negRel, dist, prom);
-    if (ic.length < 4) throw new Error('chân ' + (side === 'L' ? 'trái' : 'phải') + ': phát hiện quá ít bước (<4)');
+    // ---- Nhịp và chu kỳ ----
+    // cadFFT: tần số trội của dao động dọc hông (2 lần nảy mỗi sải) trên cả đoạn, 1,2–4 Hz.
+    const cadFFT = domFreq(S.hip.y, fps, 1.2, 4.0, Math.max(2, Math.round(fps * 0.5))) * 60;
 
-    const cadIC = (2 * (ic.length - 1)) / ((ic[ic.length - 1] - ic[0]) / fps) * 60;
-    let meanY = 0;
-    for (let i = 0; i < N; i++) meanY += S.hip.y[i];
-    meanY /= N;
-    const yy = new Float64Array(N);
-    const hw = Math.max(2, Math.round(fps * 0.5));   // bỏ trôi chậm: trừ trung bình trượt 1 giây
-    for (let i = 0; i < N; i++) {
-      let m = 0, c = 0;
-      for (let j = Math.max(0, i - hw); j <= Math.min(N - 1, i + hw); j++) { m += S.hip.y[j]; c++; }
-      yy[i] = (S.hip.y[i] - m / c) * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (N - 1)));
+    // ---- Chạm đất (IC) và nhấc chân (TO) ----
+    // Lấy từ findSteps: IC = khung đầu bàn chân chạm mặt đất, TO = khung cuối, đo trên điểm thô (xem ghi chú ở findSteps).
+    // Cách cũ (Zeni 2008: đỉnh cổ chân xa nhất trước hông, rồi chờ bàn chân hết hạ) bắt trễ 3–5 khung vì nhãn trái/phải bị tráo.
+    // Đỉnh Zeni giờ chỉ là cận sớm: nếu cổ chân còn đang vươn ra trước sau khung "chạm" (thường là nhiễu điểm thấp) thì dời IC
+    // tới đỉnh đó, miễn là bàn chân vẫn chạm đất.
+    const mine = st.steps.filter((s) => s.side === side);
+    const pick = (k, i) => [P.x[ids[k]][i], P.y[ids[k]][i]];
+    const H = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+    const oth = IDX[side === 'L' ? 'R' : 'L'];
+    const vmin = (i) => Math.min(...['knee', 'ank', 'heel', 'toe'].map((k) => P.v[ids[k]][i]));
+    const relRaw = (i) => d * (P.x[ids.ank][i] - P.x[ids.hip][i]);
+    for (const s of mine) {
+      let a = s.ic;
+      while (a + 1 <= s.to && a - s.ic < Math.round(0.1 * fps) && relRaw(a + 1) > relRaw(a) + 0.5 * pxcm) a++;
+      s.icZ = a;
     }
-    let best = -1, cadFFT = cadIC;
-    for (let f = 1.2; f <= 4.0; f += 0.005) {
-      let re = 0, im = 0;
-      const w = (2 * Math.PI * f) / fps;
-      for (let i = 0; i < N; i++) { re += yy[i] * Math.cos(w * i); im -= yy[i] * Math.sin(w * i); }
-      const m = re * re + im * im;
-      if (m > best) { best = m; cadFFT = f * 60; }
+    // Phân loại từng bước theo độ rõ chân này ở khung IC: "rõ" = gối, cổ chân, gót, mũi đều ≥ VIS_MIN;
+    // "cứu được" = thấp nhất ≥ VIS_LOW và qua kiểm tra hợp lý: đùi/cẳng trong ±20% độ dài điển hình (cả hai chân và riêng
+    // các bước rõ của chân này), cổ chân không nhảy quá 35% cẳng chân so với khung trước/sau, gối cách gối chân kia > 1/4 đùi;
+    // "mờ" = còn lại, bỏ khỏi số đo.
+    const lens = (i) => [H(pick('hip', i), pick('knee', i)), H(pick('knee', i), pick('ank', i))];
+    const own = mine.filter((s) => vmin(s.icZ) >= VIS_MIN).map((s) => lens(s.icZ));
+    const ownT = own.length >= 2 ? median(own.map((v) => v[0])) : NaN, ownS = own.length >= 2 ? median(own.map((v) => v[1])) : NaN;
+    const near = (v, ref) => !Number.isFinite(ref) || Math.abs(v - ref) <= 0.2 * ref;
+    const stepQ = { clear: 0, rescued: 0, blur: 0 };
+    const ic = [], to = [], nextIc = [], kinds = [];
+    for (let m = 0; m < mine.length; m++) {
+      const i = mine[m].icZ;
+      let kind = 'blur';
+      if (vmin(i) >= VIS_MIN) kind = 'clear';
+      else if (vmin(i) >= VIS_LOW && i > 0 && i + 1 < N) {
+        const [t, s] = lens(i);
+        const jump = Math.max(H(pick('ank', i), pick('ank', i - 1)), H(pick('ank', i + 1), pick('ank', i)));
+        const kk = H(pick('knee', i), [P.x[oth.knee][i], P.y[oth.knee][i]]);
+        if (near(t, st.Lt) && near(s, st.Ls) && near(t, ownT) && near(s, ownS) && jump < 0.35 * st.Ls && kk > st.Lt / 4) kind = 'rescued';
+      }
+      stepQ[kind]++;
+      if (kind === 'blur') continue;
+      ic.push(i); to.push(mine[m].to); kinds.push(kind);
+      nextIc.push(m + 1 < mine.length ? mine[m + 1].icZ : NaN);
     }
-    const cadence = Math.abs(cadIC - cadFFT) < 8 ? cadIC : cadFFT;
+    if (ic.length < 2) throw new Error('chân ' + (side === 'L' ? 'trái' : 'phải') + ': phát hiện quá ít bước rõ (<2)');
 
+    // Nhịp: cadIC theo trung vị khoảng cách giữa các lần chạm đất của chân này (mọi bước, kể cả bước mờ: mốc thời gian
+    // lấy từ cả hai bàn chân nên không phụ thuộc độ rõ chân này). Hai cách khớp nhau trong 5% thì lấy cadFFT
+    // (dùng cả đoạn, chính xác hơn đếm khung ±1); lệch hơn thì FFT có thể đã bắt nhầm hài (hông nảy không đều), lấy cadIC.
+    const iv = [];
+    for (let t = 0; t + 1 < mine.length; t++) iv.push(mine[t + 1].icZ - mine[t].icZ);
+    const ivMed = median(iv);
+    const cadSteps = iv.filter((v) => v <= 1.6 * ivMed).map((v) => (120 * fps) / v);
+    const cadIC = (120 * fps) / ivMed;
+    const cadence = Number.isFinite(cadFFT) && Math.abs(cadIC - cadFFT) <= 0.05 * cadFFT ? cadFFT : cadIC;
+
+    // Dao động dọc: lọc thấp hông ở 2× tần số bước (bỏ nhiễu khung hình, giữ dạng nảy), biên độ đỉnh–đáy mỗi sải, lấy trung vị.
+    const hipLP = smooth(S.hip.y, fps, Math.max(3, (2 * cadence) / 60));
     const vo = [];
-    for (let t = 0; t + 1 < ic.length; t++) {
-      const a = ic[t], b = ic[t + 1];
-      if (b - a > 3) {
+    for (let t = 0; t + 1 < mine.length; t++) {
+      const a = mine[t].icZ, b = mine[t + 1].icZ;
+      if (b - a > 3 && b - a <= 1.6 * ivMed) {
         let mn = Infinity, mx = -Infinity;
-        for (let i = a; i < b; i++) { mn = Math.min(mn, S.hip.y[i]); mx = Math.max(mx, S.hip.y[i]); }
+        for (let i = a; i < b; i++) { mn = Math.min(mn, hipLP[i]); mx = Math.max(mx, hipLP[i]); }
         vo.push((mx - mn) / pxcm);
       }
     }
@@ -228,40 +483,84 @@
     const trunkIc = ic.map((k) => at(trunk, k));
     const over = ic.map((k) => at(rel, k) / pxcm);
     const fsa = ic.map((k) => at(foot, k));
+    // knee_mid: gập gối lớn nhất trong pha trụ thật [IC, TO]; knee_swing: từ TO đến lần chạm đất sau; hip_ext: duỗi hông lúc nhấc chân.
     const kneeMid = [], kneeSwing = [], hipExt = [];
-    for (let t = 0; t + 1 < ic.length; t++) {
-      const k = ic[t], k2 = ic[t + 1];
-      const tos = to.filter((q) => q > k && q < k2);
-      if (tos.length) {
-        const tt = tos[0];
-        let mx = -Infinity;
-        for (let i = k; i <= tt; i++) mx = Math.max(mx, kneeFlex[i]);
-        kneeMid.push(mx);
-        let ms = -Infinity;
-        for (let i = tt; i <= Math.min(k2, N - 1); i++) ms = Math.max(ms, kneeFlex[i]);
-        kneeSwing.push(ms);
-        hipExt.push(-thigh[tt]);
-      }
+    for (let t = 0; t < ic.length; t++) {
+      const k = ic[t], tt = to[t], k2 = nextIc[t];
+      if (!(tt > k && tt < k2 && k2 - k <= 1.6 * ivMed)) continue;
+      let mx = -Infinity;
+      for (let i = k; i <= tt; i++) mx = Math.max(mx, kneeFlex[i]);
+      kneeMid.push(mx);
+      let ms = -Infinity;
+      for (let i = tt; i <= k2; i++) ms = Math.max(ms, kneeFlex[i]);
+      kneeSwing.push(ms);
+      hipExt.push(-at(thigh, tt));
     }
     const fsaMed = median(fsa);
     const strike = fsaMed > 8 ? 'Gót' : fsaMed < -1.6 ? 'Mũi chân' : 'Giữa bàn';
-    const metrics = {
-      cadence, vert_osc: median(vo), trunk: median(trunkIc), knee_ic: median(kneeIc),
-      shank_ic: median(shankIc), overstride: median(over), knee_mid: median(kneeMid),
-      hip_ext: median(hipExt), knee_swing: median(kneeSwing),
+    const per = {
+      cadence: cadSteps, vert_osc: vo, trunk: trunkIc, knee_ic: kneeIc, shank_ic: shankIc, overstride: over,
+      knee_mid: kneeMid, hip_ext: hipExt, knee_swing: kneeSwing,
     };
-    const extra = { side, vis, strike, fsa: fsaMed, nSteps: ic.length, badFrac: badFrac(P, keys.map((k) => ids[k]), N), cadIC, cadFFT, pxcm, d };
-    const arrays = { S, ic, to, kneeFlex, trunk, d, rel, pxcm };
+    const metrics = {};
+    for (const k of Object.keys(per)) metrics[k] = median(per[k]);
+    metrics.cadence = cadence;
+    // Dưới ngưỡng tin cậy: ít hơn MIN_STEPS bước rõ. spread = nửa khoảng tứ phân vị giữa các bước (độ dao động giữa các bước,
+    // KHÔNG phải sai số đã kiểm chứng).
+    const lowConf = stepQ.clear < MIN_STEPS;
+    const spread = {};
+    for (const k of Object.keys(per)) spread[k] = per[k].length >= 2 ? (percentile(per[k], 75) - percentile(per[k], 25)) / 2 : NaN;
+    // Nghi bắt sai mốc chạm đất: gối lúc chạm đất ngoài khoảng thường gặp, hoặc bàn chân chạm sau hông nhiều.
+    const kneeBad = !(metrics.knee_ic >= KNEE_IC_OK[0] && metrics.knee_ic <= KNEE_IC_OK[1]);
+    const overBad = metrics.overstride < OVER_MIN_CM;
+    const icSuspect = kneeBad || overBad;
+    const why = [];
+    if (kneeBad && !Number.isFinite(metrics.knee_ic)) why.push('Không đo được gối lúc chạm đất');
+    else if (kneeBad) why.push('Gối lúc chạm đất ' + Math.round(metrics.knee_ic) + '° ngoài ' + KNEE_IC_OK[0] + '–' + KNEE_IC_OK[1] + '°');
+    if (overBad) why.push('Bàn chân chạm sau hông ' + Math.round(-metrics.overstride) + ' cm');
+    const suspectReason = why.join('; ');
+    // conf: độ rõ trung bình (0–1) các điểm đã dùng. Chỉ số đo ở chân: hông, gối, cổ chân, gót, mũi ở các khung chạm đất đã nhận.
+    // Nhịp, dao động dọc, thân: vai và hông trên cả đoạn.
+    const mv = (parts, frames) => { let a = 0, n = 0; for (const i of frames) for (const k of parts) { a += P.v[ids[k]][i]; n++; } return n ? a / n : NaN; };
+    const legConf = mv(['hip', 'knee', 'ank', 'heel', 'toe'], ic);
+    const allF = Array.from({ length: N }, (_, i) => i);
+    const bodyConf = mv(['sh', 'hip'], allF);
+    // flags[k]: hợp đồng dữ liệu cho phần hiển thị/điểm (score.js đọc extra.flags[k]).
+    const flags = {};
+    for (const k of Object.keys(per)) {
+      const sus = icSuspect && IC_KEYS.includes(k);
+      flags[k] = {
+        lowConf, conf: ['cadence', 'vert_osc', 'trunk'].includes(k) ? bodyConf : legConf,
+        spread: Number.isFinite(spread[k]) ? spread[k] : null, suspect: sus, suspectReason: sus ? suspectReason : '',
+      };
+    }
+    const extra = {
+      side, vis, strike, fsa: fsaMed, nSteps: ic.length, stepQ, lowConf, spread, icSuspect, suspectReason, flags,
+      badFrac: badFrac(P, keys.map((k) => ids[k]), N), cadIC, cadFFT, pxcm, d,
+    };
+    const arrays = { S, ic, to, kinds, kneeFlex, trunk, d, rel, pxcm };
     return { metrics, extra, arrays };
   }
 
-  function computeBoth(P, fps, heightCm, speedMs) {
+  function computeBoth(P0, fps, heightCm, speedMs) {
+    const st = findSteps(P0, fps, heightCm);
+    const P = st.P;
     const res = {}, errs = {};
     for (const s of ['L', 'R']) {
-      try { res[s] = computeSide(P, fps, heightCm, speedMs, s); } catch (e) { errs[s] = e.message; }
+      try { res[s] = computeSide(P, fps, heightCm, speedMs, s, st); } catch (e) { errs[s] = e.message; }
     }
     if (!Object.keys(res).length) throw new Error(Object.values(errs).join('; ') || 'Không đo được');
-    return { res, errs };
+    // P: bản đã ghi lại theo chân thật (bản vào không bị sửa), để vẽ khung xương khớp với số đo.
+    return { res, errs, P, steps: st.steps, ground: st.ground };
+  }
+
+  // Bỏ chân "dưới ngưỡng tin cậy" khỏi phần tính điểm khi COUNT_LOWCONF = false (số vẫn hiện, kèm cờ và ±X).
+  // score.js tự lọc theo extra.flags[k]; hàm này cho nơi cần bỏ cả chân.
+  function scoreRes(res) {
+    if (COUNT_LOWCONF) return res;
+    const out = {};
+    for (const s of Object.keys(res || {})) if (!res[s].extra.lowConf) out[s] = res[s];
+    return out;
   }
 
   function combine(res, speedMs) {
@@ -467,9 +766,14 @@
     return { per, common, errs, extra: { vis, pxcm, steps, tilt0, badFrac: badFrac(P, ['L', 'R'].flatMap((s) => ['hip', 'knee', 'ank'].map((k) => IDX[s][k])), N) }, arrays: { ev, dy, tilt, lean, midX, own } };
   }
 
+  // cfg.side (reference.js): "low" = chỉ thấp hơn lo mới là bất thường, "high" = chỉ cao hơn hi, mặc định cả hai phía
+  // (khớp cách score.js trừ điểm, để chip Đánh giá không báo "cao"/"thấp" ở phía không bị trừ điểm).
   function rateValue(v, cfg) {
     if (v == null || Number.isNaN(v)) return 'n/a';
-    return v < cfg.lo ? 'thấp' : v > cfg.hi ? 'cao' : 'trong khoảng';
+    const side = cfg.side || 'both';
+    if (v < cfg.lo && side !== 'high') return 'thấp';
+    if (v > cfg.hi && side !== 'low') return 'cao';
+    return 'trong khoảng';
   }
 
   // ---------- lấy mẫu đều từ khung hình có thời gian ----------
@@ -499,7 +803,7 @@
     return { P, N, t0 };
   }
 
-  const api = { VIS_MIN, BAD_FRAC_MAX, MIN_STEPS, badFrac, IDX, COMMON, PERLEG, ASYM, median, percentile, smooth, filtfilt, findPeaks,
+  const api = { VIS_MIN, VIS_LOW, COUNT_LOWCONF, IC_KEYS, KNEE_IC_OK, OVER_MIN_CM, scoreRes, findSteps, BAD_FRAC_MAX, MIN_STEPS, badFrac, IDX, COMMON, PERLEG, ASYM, median, percentile, smooth, filtfilt, findPeaks,
     computeSide, computeBoth, combine, computeExtra, BACK_PERLEG, BACK_COMMON, computeBack, fatigue, rateValue, resample };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Gait = api;

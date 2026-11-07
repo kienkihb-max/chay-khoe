@@ -95,3 +95,9 @@
 /* Nút "Quay xong" khi chưa chốt góc nào: nhìn rõ là chưa bấm được */
 #done:disabled{color:var(--mut);background:var(--bg);border-color:var(--line);cursor:not-allowed}
 #done:disabled:hover{color:var(--mut);background:var(--bg);border-color:var(--line)}
+
+/* Cờ tin cậy trong bảng Chi tiết: "Dưới ngưỡng tin cậy ±X" / "Nghi bắt sai mốc"; chip Đánh giá của chỉ số có cờ mờ đi */
+#detail .tflag{margin-top:4px;font-size:12px;color:var(--amber)}
+#detail .tflag .chip{margin:0;background:var(--leaf-pale);color:var(--amber);border:1px dashed var(--amber);cursor:help}
+#detail .tflag .why{color:var(--mut)}
+#detail .chip.lowc{opacity:.5}
