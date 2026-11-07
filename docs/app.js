@@ -366,7 +366,7 @@
   // góc tức thời một bên, tính trên toạ độ điểm ảnh (cùng định nghĩa gait.js: gối = 180 - góc hông-gối-cổ chân; hông = đùi so với phương thẳng đứng)
   function lvAngles(lm, side, vw, vh) {
     const I = Gait.IDX[side];
-    if (!(lm[I.hip].visibility > 0.3 && lm[I.knee].visibility > 0.3 && lm[I.ank].visibility > 0.3)) return null;
+    if (!(lm[I.hip].visibility >= Gait.VIS_MIN && lm[I.knee].visibility >= Gait.VIS_MIN && lm[I.ank].visibility >= Gait.VIS_MIN)) return null;
     const hx = lm[I.hip].x * vw, hy = lm[I.hip].y * vh, kx = lm[I.knee].x * vw, ky = lm[I.knee].y * vh, ax = lm[I.ank].x * vw, ay = lm[I.ank].y * vh;
     const ang = (ux, uy, wx, wy) => Math.acos(Math.max(-1, Math.min(1, (ux * wx + uy * wy) / (Math.hypot(ux, uy) * Math.hypot(wx, wy) + 1e-9)))) * 180 / Math.PI;
     return { knee: 180 - ang(hx - kx, hy - ky, ax - kx, ay - ky), hip: ang(0, 1, kx - hx, ky - hy) };
@@ -612,7 +612,7 @@
         S.lastLm = lm; lvFeed(el, lm); drawLive(lm);
         nfr++; if (performance.now() - tfps > 2000) { $('fpsb').textContent = 'Nhận diện ' + (nfr / ((performance.now() - tfps) / 1000)).toFixed(0) + ' khung/giây'; nfr = 0; tfps = performance.now(); }
         if (S.recAt == null) {
-          const hy = lm ? (lm[23].visibility > 0.3 && lm[24].visibility > 0.3 ? (lm[23].y + lm[24].y) / 2 : lm[23].visibility >= lm[24].visibility ? lm[23].y : lm[24].y) : NaN;
+          const hy = lm ? (lm[23].visibility >= Gait.VIS_MIN && lm[24].visibility >= Gait.VIS_MIN ? (lm[23].y + lm[24].y) / 2 : lm[23].visibility >= lm[24].visibility ? lm[23].y : lm[24].y) : NaN;
           S.hipBuf.push({ t: el, y: hy });
         }
         const RA2 = S.recAt == null ? Infinity : S.recAt;
@@ -1163,6 +1163,17 @@
     }
     return out;
   }
+  // Cảnh báo 'Khung hình kém': quá nhiều khung có điểm mờ (dưới Gait.VIS_MIN) bị bỏ, hoặc còn quá ít bước. Trả '' nếu ổn.
+  function poorFrameWarn(R) {
+    const ex = R && (R.back ? [R.back.extra] : ['L', 'R'].filter((s) => R.res && R.res[s]).map((s) => R.res[s].extra));
+    if (!ex || !ex.length) return '';
+    const bf = Math.max(...ex.map((e) => (e.badFrac == null ? 0 : e.badFrac)));
+    const steps = R.back ? Math.min(...['L', 'R'].map((s) => (R.back.extra.steps && R.back.extra.steps[s] != null ? R.back.extra.steps[s] : Infinity))) : Math.min(...ex.map((e) => e.nSteps));
+    const why = [];
+    if (bf > Gait.BAD_FRAC_MAX) why.push(Math.round(bf * 100) + '% khung hình có điểm mờ bị bỏ');
+    if (steps < Gait.MIN_STEPS) why.push('chỉ còn ' + steps + ' bước');
+    return why.length ? 'Khung hình kém: ' + why.join(', ') + '. Thử đo lại: đủ sáng, quay trọn người từ đầu đến chân, mặc quần áo khác màu nền.' : '';
+  }
   const EXL = ['contact_ms', 'hip_flex', 'heel_kick', 'arm_swing', 'elbow', 'head_fwd'];
   const BACK_DETAIL = ['pelvic_drop', 'knee_valgus', 'foot_mid', 'step_width', 'lat_trunk'];   // bảng "Nhìn từ sau" (thứ tự hiện)
   function detailHTML(R) {
@@ -1171,7 +1182,7 @@
     const sc3 = scores(R), d = (v) => (v != null ? v : '–');
     // đo cả hai góc: điểm chung = trung bình 50/50 hai góc, ghi thêm điểm riêng từng góc
     const per = sc3.side && sc3.back ? ' · góc ngang ' + d(sc3.side.total) + ' · góc sau ' + d(sc3.back.total) : '';
-    let h = '<p style="margin:0 0 8px;font-weight:700">Điểm: chung ' + d(sc3.total) + ' · trái ' + d(sc3.L) + ' · phải ' + d(sc3.R) + per + ' (/100, tham khảo)</p>' + (R.comb ? q : '');
+    let h = '<p style="margin:0 0 8px;font-weight:700">Điểm: chung ' + d(sc3.total) + ' · trái ' + d(sc3.L) + ' · phải ' + d(sc3.R) + per + ' (/100, tham khảo)</p>' + (poorFrameWarn(R) ? '<p class="poorframe">' + poorFrameWarn(R) + '</p>' : '') + (R.comb ? q : '');
     const head = '<table><tr><th>Chỉ số</th><th>Trái</th><th>Phải</th><th>Tham chiếu</th><th>Đánh giá</th></tr>';
     // một dòng: n = số thực {c | L,R}; a/b = chữ hiện ở cột Trái/Phải; có tham chiếu thì tô màu số, vẽ thanh + chấm, chip Đánh giá
     const row = (label, k, n, a, b) => {
@@ -1196,7 +1207,7 @@
         if (x.k && x.n.L !== undefined) anyTwo = true;
         h += x.k ? row(lbl, x.k, x.n, x.a, x.b) : '<tr><td>' + lbl + '</td><td>' + x.a + '</td><td>' + x.b + '</td><td></td><td><span class="chip" style="color:' + (x.ok ? GREEN : AMBER) + ';background:' + (x.ok ? '#E3F1DC' : '#FBEBCF') + '">' + x.st + '</span></td></tr>';
       }
-      for (const s of ['L', 'R']) if (R.res[s]) h += '<tr><td>Chân ' + (s === 'L' ? 'trái' : 'phải') + ': số bước · độ tin cậy</td><td colspan="4">' + R.res[s].extra.nSteps + ' bước · vis ' + R.res[s].extra.vis.toFixed(2) + (R.res[s].extra.vis < 0.6 ? ' (thấp)' : '') + '</td></tr>';
+      for (const s of ['L', 'R']) if (R.res[s]) h += '<tr><td>Chân ' + (s === 'L' ? 'trái' : 'phải') + ': số bước · độ tin cậy</td><td colspan="4">' + R.res[s].extra.nSteps + ' bước · vis ' + R.res[s].extra.vis.toFixed(2) + (R.res[s].extra.vis < Gait.VIS_MIN ? ' (thấp)' : '') + '</td></tr>';
       h += '</table>';
     }
     if (R.back) {   // khối Nhìn từ sau: chỉ số từng chân + chỉ số chung; ngưỡng đang tạm
@@ -1312,10 +1323,11 @@
     el.innerHTML = '<div class="rvcard"><h2 id="rvt"></h2>' +
       '<canvas id="rvc" width="' + (back ? 640 : 1188) + '" height="' + (back ? 640 : 438) + '"></canvas>' +
       '<div class="rvnums">' + nums + '</div>' +
-      (errs.length ? '<div class="rvw"></div>' : '') +
+      (errs.length ? '<div class="rvw"></div>' : '') + (poorFrameWarn(R) ? '<div class="poorframe" id="rvpoor"></div>' : '') +
       '<div class="rvbtn"><button class="alt" id="rvback">Quay lại</button><button class="go" id="rvok">Chốt góc này</button></div></div>';
     $('rvt').textContent = 'Xem lại góc ' + ANG_NAME[R.angle] + ' · ' + R.sub.name;
     if (errs.length) el.querySelector('.rvw').textContent = errs.join(' · ');
+    if (poorFrameWarn(R)) $('rvpoor').textContent = poorFrameWarn(R);
     const c = $('rvc').getContext('2d');
     if (back) drawBackPhoto(c, photos.B, 0, 0, 640, 640);
     else { drawPhoto(c, photos.L, 'L', 0, 0, 584, 438, R); drawPhoto(c, photos.R, 'R', 604, 0, 584, 438, R); }
