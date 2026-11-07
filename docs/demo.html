@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Đánh giá dáng chạy bằng AI | Savita x Bác sĩ Kiên</title>
+<style>
+:root{--moss:#1F4D2B;--moss2:#2A6A3B;--leaf:#A9D69B;--leaf-soft:#E3F1DC;--leaf-pale:#F3F9F0;--ink:#1B1F1C;--mut:#5C685F;--line:#DCE6D8;--bg:#F3F9F0;--on-dark-mut:#CFE6C8;--shadow:rgba(31,77,43,.14)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;padding-top:52px}
+#topnav{position:fixed;left:0;right:0;top:0;height:52px;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 10px var(--shadow);display:flex;align-items:center;gap:6px;padding:0 20px;overflow-x:auto}
+.logo{display:flex;align-items:center;gap:10px;margin-right:24px;flex-shrink:0}
+.logo img{width:36px;height:36px;display:block}
+.logo b{font-size:17px;font-weight:700;color:var(--moss);white-space:nowrap}
+#topnav a.nv{display:inline-flex;align-items:center;height:36px;padding:0 18px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none;border-radius:999px;white-space:nowrap;flex-shrink:0}
+#topnav a.nv:hover{background:var(--leaf-soft);color:var(--moss)}
+#topnav a.nv.on{background:var(--moss);color:#fff}
+@media (max-width:1100px){.logo b{display:none}.logo{margin-right:8px}}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+section{padding:56px 0 0}
+h2{font-size:28px;margin:0 0 22px;color:var(--moss);font-weight:800;text-transform:uppercase;letter-spacing:-.005em}
+.hero{background:linear-gradient(170deg,var(--moss) 0%,var(--moss) 55%,#3B7D4A 100%);color:#fff;padding:64px 0}
+.hero .eyebrow{font-size:13px;font-weight:700;letter-spacing:.14em;color:var(--leaf);margin:0 0 14px}
+.hero h1{font-size:44px;line-height:1.1;margin:0 0 18px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;max-width:760px}
+.hero p.lead{font-size:18px;line-height:1.55;color:var(--on-dark-mut);margin:0;max-width:640px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.step{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 2px 10px var(--shadow)}
+.step .ic{width:64px;height:64px;border-radius:50%;background:var(--leaf-soft);display:flex;align-items:center;justify-content:center;margin-bottom:14px;position:relative}
+.step .ic svg{width:34px;height:34px;stroke:var(--moss);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.step .no{position:absolute;top:-6px;right:-6px;width:26px;height:26px;border-radius:50%;background:var(--moss);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.step h3{margin:0 0 8px;font-size:20px;color:var(--moss)}
+.step p{margin:0;color:var(--mut);line-height:1.5;font-size:15px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:var(--leaf-soft);border-radius:16px;padding:22px}
+.card.dark{background:var(--moss);color:#fff}
+.card h3{margin:0 0 8px;font-size:18px;color:var(--moss)}
+.card.dark h3{color:#fff;text-transform:uppercase}
+.card p{margin:0;font-size:15px;line-height:1.5;color:var(--mut)}
+.card.dark p{color:var(--on-dark-mut)}
+.samples{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.sample{margin:0;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 2px 10px var(--shadow)}
+.sample img{display:block;width:100%;height:auto}
+.sample figcaption{padding:14px 16px 16px;font-size:15px;line-height:1.45}
+.sample .rk{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:6px}
+.rk.t{background:var(--leaf-soft);color:var(--moss)}.rk.k{background:#F8EBD2;color:#9A5F0A}.rk.c{background:#F7DAD5;color:#C73E2E}
+.note{color:var(--mut);font-size:13px;margin:12px 0 0}
+details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:0;margin-bottom:10px}
+summary{cursor:pointer;padding:16px 20px;font-weight:700;font-size:16px;color:var(--moss);list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:22px;line-height:1;color:var(--moss2)}
+details[open] summary::after{content:"–"}
+details p{margin:0;padding:0 20px 18px;color:var(--mut);line-height:1.55}
+.cta{margin-top:56px;background:var(--moss);color:#fff;text-align:center;padding:48px 24px 40px}
+.cta a.btn{display:inline-block;background:#fff;color:var(--moss);font-weight:700;font-size:18px;text-decoration:none;padding:14px 34px;border-radius:999px}
+.cta a.btn:hover{background:var(--leaf)}
+.cta p{margin:20px auto 0;color:var(--on-dark-mut);font-size:14px}
+@media (max-width:900px){.steps,.cards,.samples{grid-template-columns:1fr 1fr}.hero h1{font-size:34px}}
+@media (max-width:600px){.steps,.cards,.samples{grid-template-columns:1fr}.hero{padding:44px 0}.hero h1{font-size:28px}h2{font-size:23px}.wrap{padding:0 16px}#topnav{padding:0 12px}}
+</style>
+</head>
+<body>
+<nav id="topnav"><div class="logo"><img src="logo-savita.svg" alt="Savita"><b>Savita x Bác sĩ Kiên</b></div><a class="nv" href="index.html#/">Đo mới</a><a class="nv" href="index.html#/list">Danh sách</a><a class="nv on" href="demo.html" aria-current="page">Demo</a></nav>
+
+<header class="hero"><div class="wrap">
+  <p class="eyebrow">SAVITA × BÁC SĨ KIÊN</p>
+  <h1>Đánh giá dáng chạy bằng AI – trong 2 phút</h1>
+  <p class="lead">Camera ghi lại khi bạn chạy trên máy chạy bộ, AI nhận diện khung xương, đo các góc khớp và so sánh hai chân. Kết quả có ngay sau buổi chạy.</p>
+</div></header>
+
+<main class="wrap">
+<section><h2>Quy trình 3 bước</h2>
+<div class="steps">
+  <div class="step"><div class="ic"><span class="no">1</span><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></div><h3>Đăng ký thông tin</h3><p>Họ tên, chiều cao (không bắt buộc).</p></div>
+  <div class="step"><div class="ic"><span class="no">2</span><svg viewBox="0 0 24 24"><circle cx="14" cy="4.5" r="2"/><path d="M13 8l-3 4 3 3-1 5M10 12l-3 1M13 8l3 3 3 1M13 15l4 2"/></svg></div><h3>Chạy 2 phút</h3><p>Camera đặt ngang hông, có thể quay thêm góc sau lưng.</p></div>
+  <div class="step"><div class="ic"><span class="no">3</span><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M9 17v-3M12 17v-6M15 17v-4"/></svg></div><h3>Nhận báo cáo</h3><p>Điểm tổng, điểm từng chân, chỉ số chính và khuyến nghị.</p></div>
+</div></section>
+
+<section><h2>App đo những gì</h2>
+<div class="cards">
+  <div class="card dark"><h3>Nhịp chạy</h3><p>Số bước mỗi phút, nhịp hợp lý giúp giảm lực dồn lên gối.</p></div>
+  <div class="card"><h3>Chân đặt trước hông</h3><p>Đặt chân quá xa phía trước dễ "phanh", tăng tải gối.</p></div>
+  <div class="card dark"><h3>Góc gối lúc chạm đất</h3><p>Gối hơi gập giúp hấp thụ lực tốt hơn.</p></div>
+  <div class="card"><h3>Độ nghiêng thân</h3></div>
+  <div class="card dark"><h3>Cân bằng trái–phải</h3></div>
+  <div class="card"><h3>Góc sau lưng (nếu quay)</h3><p>Sụt hông, gối đổ vào trong.</p></div>
+</div></section>
+
+<section><h2>Kết quả mẫu</h2>
+<div class="samples">
+  <figure class="sample"><img src="demo/ket-qua-test.jpg" alt="Kết quả đo thật trên máy chạy: 78 điểm, hạng Tốt" loading="lazy"><figcaption><span class="rk t">Hạng Tốt · 78/100 · đo thật</span><br>Gối chạm đất tốt (12°). Nhịp hơi thấp (160 bước/phút), nên tăng lên khoảng 168 bước/phút.</figcaption></figure>
+  <figure class="sample"><img src="demo/ket-qua-b.png" alt="Kết quả mẫu Người chạy B: 68 điểm, hạng Khá" loading="lazy"><figcaption><span class="rk k">Hạng Khá · 68/100</span><br>Nhịp hơi thấp (160 bước/phút), chân đặt xa trước hông (30 cm).</figcaption></figure>
+  <figure class="sample"><img src="demo/ket-qua-c.png" alt="Kết quả mẫu Người chạy C: 54 điểm, hạng Cần cải thiện" loading="lazy"><figcaption><span class="rk c">Cần cải thiện · 54/100</span><br>Nhịp thấp (150 bước/phút), nên tăng nhịp và giảm bước dài.</figcaption></figure>
+</div>
+<p class="note">Mẫu đầu tiên là một lần đo thật trên máy chạy; hai mẫu sau từ dữ liệu giả lập.</p></section>
+
+<section><h2>Câu hỏi thường gặp</h2>
+  <details><summary>Có cần gắn cảm biến không?</summary><p>Không, AI chỉ cần video.</p></details>
+  <details><summary>Video có được gửi đi đâu không?</summary><p>Phân tích ngay trên máy đo; chỉ kết quả được lưu để bác sĩ theo dõi.</p></details>
+  <details><summary>Kết quả có chính xác không?</summary><p>Đây là công cụ sàng lọc, giúp phát hiện dấu hiệu cần chú ý; không thay thế khám và chẩn đoán của bác sĩ.</p></details>
+</section>
+</main>
+
+<footer class="cta">
+  <a class="btn" href="index.html#/">Đăng ký đo thử</a>
+  <p>Kết quả mang tính sàng lọc, không thay thế chẩn đoán y khoa.</p>
+</footer>
+</body>
+</html>

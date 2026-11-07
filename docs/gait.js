@@ -366,6 +366,97 @@
     return { d_cadence: b.cadence - a.cadence, d_vert: b.vert_osc - a.vert_osc, d_trunk: b.trunk - a.trunk };
   }
 
+  // ---------- góc SAU LƯNG (camera đặt sau người chạy, ngang hông) ----------
+  // Cùng định dạng P như góc ngang (toạ độ pixel). Trái/phải theo nhãn MediaPipe; dấu "trong/ngoài" tính theo
+  // đường giữa hai hông nên không phụ thuộc ảnh có lật gương hay không.
+  // Thời điểm giữa pha chống chân (mid-stance) của chân s = lúc bàn chân s thấp nhất so với chân kia trong ảnh.
+  // Chỉ số mỗi chân (chân trụ):
+  //   pelvic_drop  độ, hông bên KHÔNG trụ tụt xuống (đỉnh trong pha trụ, đã trừ độ nghiêng trung bình của cả clip để bỏ máy đặt lệch)
+  //   knee_valgus  độ, góc hông–gối–cổ chân nhìn từ sau (FPPA): dương = gối đổ vào trong, âm = gối choãi ra (đỉnh trong pha trụ)
+  //   foot_mid     cm, cổ chân trụ so với đường giữa hai hông lúc giữa pha trụ: dương = phía bên mình, âm = đặt chéo qua đường giữa
+  // Chỉ số chung: step_width (cm, khoảng ngang giữa hai bàn chân ở hai bước liền nhau; âm = chéo), lat_trunk (độ, biên độ thân lắc ngang mỗi chu kỳ)
+  const BACK_PERLEG = ['pelvic_drop', 'knee_valgus', 'foot_mid'];
+  const BACK_COMMON = ['step_width', 'lat_trunk'];
+  function computeBack(P, fps, heightCm) {
+    const N = P.x[0].length, deg = (r) => (r * 180) / Math.PI;
+    const ser = (j) => {
+      const xs = new Float64Array(N), ys = new Float64Array(N); let vs = 0;
+      for (let i = 0; i < N; i++) { const bad = !(P.v[j][i] >= 0.3); xs[i] = bad ? NaN : P.x[j][i]; ys[i] = bad ? NaN : P.y[j][i]; vs += P.v[j][i]; }
+      return { x: smooth(interpNaN(xs), fps), y: smooth(interpNaN(ys), fps), vis: vs / N };
+    };
+    const S = {};
+    for (const s of ['L', 'R']) { S[s] = {}; for (const k of ['sh', 'hip', 'knee', 'ank']) S[s][k] = ser(IDX[s][k]); }
+    const vis = ['L', 'R'].reduce((a, s) => a + ['hip', 'knee', 'ank'].reduce((b, k) => b + S[s][k].vis, 0), 0) / 6;
+    // thước đo: đùi + cẳng chân nhìn từ sau ngắn lại khi gối gập, nên lấy lúc chân duỗi nhất (bách phân vị 90)
+    const seg = [];
+    for (const s of ['L', 'R']) for (let i = 0; i < N; i++) {
+      const L = S[s];
+      seg.push(Math.hypot(L.hip.x[i] - L.knee.x[i], L.hip.y[i] - L.knee.y[i]) + Math.hypot(L.knee.x[i] - L.ank.x[i], L.knee.y[i] - L.ank.y[i]));
+    }
+    const pxcm = percentile(seg, 90) / (RATIO * heightCm);
+    const midX = new Float64Array(N), tilt = new Float64Array(N), lean = new Float64Array(N), dy = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const hl = S.L.hip, hr = S.R.hip;
+      midX[i] = (hl.x[i] + hr.x[i]) / 2;
+      tilt[i] = deg(Math.atan2(hr.y[i] - hl.y[i], Math.abs(hr.x[i] - hl.x[i]) + 1e-9));   // dương = hông phải thấp hơn
+      const sx = (S.L.sh.x[i] + S.R.sh.x[i]) / 2, sy = (S.L.sh.y[i] + S.R.sh.y[i]) / 2;
+      lean[i] = deg(Math.atan2(sx - midX[i], -(sy - (hl.y[i] + hr.y[i]) / 2)));
+      dy[i] = S.L.ank.y[i] - S.R.ank.y[i];   // dương = cổ chân trái thấp hơn (trái đang trụ)
+    }
+    const tilt0 = median(tilt);
+    const own = { L: Math.sign(median(Array.from(S.L.hip.x, (x, i) => x - S.R.hip.x[i]))) || -1 };
+    own.R = -own.L;   // hướng "ra ngoài" của mỗi chân trên trục x ảnh
+    const prom = 0.35 * (percentile(dy, 95) - percentile(dy, 5));
+    const dist = Math.max(Math.floor(0.35 * fps), 1), cap = Math.max(2, Math.round(0.25 * fps));
+    const ev = { L: findPeaks(dy, dist, prom), R: findPeaks(dy.map((v) => -v), dist, prom) };
+    const per = {}, errs = {}, steps = {};
+    for (const s of ['L', 'R']) {
+      const sg = s === 'L' ? 1 : -1, L = S[s];
+      steps[s] = ev[s].length;
+      if (ev[s].length < 3) { errs[s] = 'chân ' + (s === 'L' ? 'trái' : 'phải') + ': phát hiện quá ít bước (<3)'; continue; }
+      const drop = [], valg = [], foot = [];
+      for (const k of ev[s]) {
+        let a = k, b = k;
+        while (a > 0 && k - a < cap && sg * dy[a - 1] > 0) a--;
+        while (b < N - 1 && b - k < cap && sg * dy[b + 1] > 0) b++;
+        let dm = 0, vm = 0;   // giữ giá trị có độ lớn lớn nhất trong pha trụ (giữ cả dấu âm)
+        const pk = (cur, v) => (Math.abs(v) > Math.abs(cur) ? v : cur);
+        for (let i = a; i <= b; i++) {
+          dm = pk(dm, sg * (tilt[i] - tilt0));   // trái trụ: hông phải tụt = tilt tăng
+          const hx = L.hip.x[i], hy = L.hip.y[i], kx = L.knee.x[i], ky = L.knee.y[i], ax = L.ank.x[i], ay = L.ank.y[i];
+          const ux = kx - hx, uy = ky - hy, wx = ax - kx, wy = ay - ky;
+          const ang = deg(Math.acos(Math.max(-1, Math.min(1, (ux * wx + uy * wy) / (Math.hypot(ux, uy) * Math.hypot(wx, wy) + 1e-9)))));
+          const xl = Math.abs(ay - hy) > 1e-6 ? hx + ((ax - hx) * (ky - hy)) / (ay - hy) : hx;
+          vm = pk(vm, (kx - xl) * own[s] < 0 ? ang : -ang);
+        }
+        drop.push(dm); valg.push(vm);
+        foot.push(((L.ank.x[k] - midX[k]) * own[s]) / pxcm);
+      }
+      per[s] = { pelvic_drop: median(drop), knee_valgus: median(valg), foot_mid: median(foot) };
+    }
+    if (!Object.keys(per).length) throw new Error(Object.values(errs).join('; ') || 'Không đo được góc sau lưng');
+    // độ rộng bước: hai lần trụ liền nhau của hai chân khác nhau
+    const all = [];
+    ev.L.forEach((i) => all.push([i, 'L'])); ev.R.forEach((i) => all.push([i, 'R']));
+    all.sort((a, b) => a[0] - b[0]);
+    const sw = [];
+    for (let t = 0; t + 1 < all.length; t++) {
+      const [i1, s1] = all[t], [i2, s2] = all[t + 1];
+      if (s1 === s2) continue;
+      const xl = s1 === 'L' ? S.L.ank.x[i1] : S.L.ank.x[i2], xr = s1 === 'R' ? S.R.ank.x[i1] : S.R.ank.x[i2];
+      sw.push(((xl - xr) * own.L) / pxcm);
+    }
+    // thân lắc ngang: biên độ góc thân (giữa vai – giữa hông) trong mỗi chu kỳ của chân có nhiều bước hơn
+    const ref = ev.L.length >= ev.R.length ? ev.L : ev.R, lt = [];
+    for (let t = 0; t + 1 < ref.length; t++) {
+      let mn = Infinity, mx = -Infinity;
+      for (let i = ref[t]; i < ref[t + 1]; i++) { mn = Math.min(mn, lean[i]); mx = Math.max(mx, lean[i]); }
+      lt.push(mx - mn);
+    }
+    const common = { step_width: sw.length >= 2 ? median(sw) : NaN, lat_trunk: lt.length ? median(lt) : NaN };
+    return { per, common, errs, extra: { vis, pxcm, steps, tilt0 }, arrays: { ev, dy, tilt, lean, midX, own } };
+  }
+
   function rateValue(v, cfg) {
     if (v == null || Number.isNaN(v)) return 'n/a';
     return v < cfg.lo ? 'thấp' : v > cfg.hi ? 'cao' : 'trong khoảng';
@@ -399,7 +490,7 @@
   }
 
   const api = { IDX, COMMON, PERLEG, ASYM, median, percentile, smooth, filtfilt, findPeaks,
-    computeSide, computeBoth, combine, computeExtra, fatigue, rateValue, resample };
+    computeSide, computeBoth, combine, computeExtra, BACK_PERLEG, BACK_COMMON, computeBack, fatigue, rateValue, resample };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Gait = api;
 })(typeof window !== 'undefined' ? window : globalThis);

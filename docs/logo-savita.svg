@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Savita">
+  <!-- Logo tạm (cỏ 4 cánh) vẽ theo ảnh mẫu; thay bằng file logo Savita gốc khi có -->
+  <defs>
+    <linearGradient id="lf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3E9A4F"/><stop offset="1" stop-color="#1B5E30"/></linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="31" fill="#F4F9F1"/>
+  <g fill="url(#lf)" transform="translate(32 32)">
+    <path id="l" d="M0 -3 C-11 -8 -11 -22 0 -28 C11 -22 11 -8 0 -3Z"/>
+    <use href="#l" transform="rotate(90)"/>
+    <use href="#l" transform="rotate(180)"/>
+    <use href="#l" transform="rotate(270)"/>
+  </g>
+  <g stroke="#F4F9F1" stroke-width="1.4" stroke-linecap="round" transform="translate(32 32)">
+    <path d="M0 -6V-20"/><path d="M6 0H20"/><path d="M0 6V20"/><path d="M-6 0H-20"/>
+  </g>
+</svg>

@@ -1,4 +1,5 @@
-/* Khoảng tham chiếu thực hành ở ~10 km/h. Bác sĩ chỉnh lo/hi và nhận xét tại đây. */
+/* Khoảng tham chiếu thực hành ở ~10 km/h. Bác sĩ chỉnh lo/hi và nhận xét tại đây.
+ * Các chỉ số GÓC SAU LƯNG ở cuối (có "tam": true) là ngưỡng tạm, CHỜ BÁC SĨ DUYỆT. */
 window.GAIT_REF = {
   "metrics": {
     "cadence": {
@@ -92,6 +93,12 @@ window.GAIT_REF = {
     "heel_kick": {"label": "Gót hất ra sau (cao so với mặt đất)", "unit": "cm", "lo": null, "hi": null, "src": "tham khảo"},
     "arm_swing": {"label": "Biên độ vung tay", "unit": "°", "lo": null, "hi": null, "src": "tham khảo"},
     "elbow": {"label": "Góc gập khuỷu", "unit": "°", "lo": null, "hi": null, "src": "tham khảo"},
-    "head_fwd": {"label": "Đầu nghiêng trước", "unit": "°", "lo": null, "hi": null, "src": "tham khảo"}
+    "head_fwd": {"label": "Đầu nghiêng trước", "unit": "°", "lo": null, "hi": null, "src": "tham khảo"},
+    // ===== GÓC SAU LƯNG (gait.js computeBack). NGƯỠNG TẠM do máy đặt, CHỜ BÁC SĨ DUYỆT; "tam": true để giao diện ghi chú. =====
+    "pelvic_drop": {"label": "Sụt hông bên không trụ", "unit": "°", "lo": -3, "hi": 6, "tam": true, "src": "TẠM, chờ bác sĩ duyệt (tham khảo Bramah 2018)", "low": "Hông bên không trụ nâng lên khi chống chân: ít gặp, xem lại cách đặt máy quay.", "high": "Hông bên không trụ tụt nhiều khi chống chân: cơ mông nhỡ (cơ dạng hông) bên trụ có thể yếu."},
+    "knee_valgus": {"label": "Gối đổ vào trong (nhìn từ sau)", "unit": "°", "lo": -5, "hi": 10, "tam": true, "src": "TẠM, chờ bác sĩ duyệt (góc hông–gối–cổ chân 2D)", "low": "Gối choãi ra ngoài khi chống chân.", "high": "Gối đổ vào trong khi chống chân: tăng tải mặt trước/trong gối, xem sức mạnh mông và kiểm soát gối."},
+    "foot_mid": {"label": "Bàn chân so với đường giữa", "unit": "cm", "lo": 0, "hi": 10, "tam": true, "src": "TẠM, chờ bác sĩ duyệt", "low": "Bàn chân đặt chéo qua đường giữa (chạy như trên dây): tăng tải dải chậu chày, mặt trong cẳng chân.", "high": "Bàn chân đặt xa đường giữa: bước dạng rộng."},
+    "step_width": {"label": "Độ rộng bước", "unit": "cm", "lo": 0, "hi": 15, "tam": true, "src": "TẠM, chờ bác sĩ duyệt", "low": "Hai bàn chân đặt chéo nhau.", "high": "Bước dạng rộng: thân dễ lắc ngang."},
+    "lat_trunk": {"label": "Thân lắc ngang", "unit": "°", "lo": 0, "hi": 10, "tam": true, "src": "TẠM, chờ bác sĩ duyệt", "high": "Thân lắc sang hai bên nhiều: có thể bù cho hông yếu, tốn năng lượng."}
   }
 };

@@ -1,0 +1,95 @@
+/* CSS cho khung camera/overlay (fe camera sửa). */
+
+/* Xem trước camera/video ở màn chuẩn bị: khung co theo đúng tỉ lệ hình nguồn (app.js fitVid đặt data-ar và --ar).
+   Chưa có hình thì giữ khung 16:9 như cũ. Có hình thì hiện trọn, không cắt người. */
+#v1[data-ar]{aspect-ratio:var(--ar);object-fit:contain}
+#v1[data-ar="p"]{width:auto!important;max-width:100%;height:min(48vh,520px);margin:0 auto}
+
+/* Màn đang đo: video và khung xương (#ov) cùng phủ kín lớp; video hiện trọn (contain),
+   drawLive vẽ khung xương theo đúng phép co này nên khớp cả nguồn dọc lẫn ngang. */
+#v2,#ov{position:absolute;inset:0;width:100%;height:100%}
+#v2{object-fit:contain;object-position:50% 50%}
+
+/* Màn đang đo – lớp số trực tiếp (gói 2, app.js tạo #lv): vòng đếm ngược + REC, 3 thẻ số ước tính, sóng góc gối.
+   Kính tối giống khung đếm giờ .cd; màu mức giống dòng trạng thái #ph (ok / wn / rec). Không bắt chuột để không che nút. */
+#lv{position:absolute;inset:0;z-index:2;pointer-events:none}
+#lvrec{position:absolute;left:32px;top:96px;width:76px;height:76px;display:flex;align-items:center;justify-content:center}
+#lvrec[hidden]{display:none}
+#lvrec svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+#lvrec circle{fill:rgba(8,25,14,.75);stroke:rgba(255,255,255,.16);stroke-width:3}
+#lvrec #lvarc{fill:none;stroke:#ff5a45;stroke-width:3.5;stroke-linecap:round;stroke-dasharray:100;transition:stroke-dashoffset .1s linear}
+#lvsec{position:relative;font-size:24px;font-weight:700;line-height:1;margin-top:-8px}
+#lvrec span{position:absolute;left:0;right:0;bottom:15px;display:flex;align-items:center;justify-content:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:.12em;color:#ff8a78}
+#lvrec span i{width:7px;height:7px;border-radius:50%;background:#ff5a45;box-shadow:0 0 0 0 rgba(255,90,69,.7);animation:pulse 1.2s infinite}
+#lvcards{position:absolute;right:32px;top:184px;width:172px;display:flex;flex-direction:column;gap:10px}
+.lvc{background:rgba(8,25,14,.75);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.16);border-left:4px solid #A9D69B;border-radius:14px;padding:8px 14px 9px;display:grid;grid-template-columns:auto 1fr;column-gap:6px;align-items:baseline}
+.lvc em{grid-column:1/-1;font-style:normal;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--leaf)}
+.lvc b{font-size:28px;font-weight:700;line-height:1.15;color:#fff;font-variant-numeric:tabular-nums}
+.lvc small{font-size:12px;color:#D5E6CF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvc[data-lv="ok"]{border-left-color:#33d6a0}.lvc[data-lv="ok"] b{color:#5ee6b8}
+.lvc[data-lv="mid"]{border-left-color:#ffb03b}.lvc[data-lv="mid"] b{color:#ffc266}
+.lvc[data-lv="bad"]{border-left-color:#ff5a45}.lvc[data-lv="bad"] b{color:#ff8a78}
+#lvw{position:absolute;left:32px;bottom:136px;width:min(440px,38vw);background:rgba(8,25,14,.6);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:6px 12px 8px}
+#lvw>div{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+#lvw em{font-style:normal;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--leaf)}
+#lvw em span{color:#D5E6CF;font-weight:400}
+#lvwv{font-size:18px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+#lvwave{display:block;width:100%;height:64px}
+
+/* Điện thoại dọc: thẻ số thành một hàng dưới tên/đồng hồ, vòng đếm + sóng góc gối ở hàng thứ hai; để trống nửa dưới (chân, lúc chạm đất) */
+@media (max-width:640px){
+  #lvrec{left:12px;top:150px;width:56px;height:56px}
+  #lvsec{font-size:18px;margin-top:-6px}
+  #lvrec span{bottom:9px;font-size:8px;gap:3px}
+  #lvrec span i{width:5px;height:5px}
+  #lvcards{left:12px;right:12px;top:88px;width:auto;flex-direction:row;gap:6px}
+  .lvc{flex:1 1 0;min-width:0;padding:4px 8px 5px;border-radius:10px;border-left-width:3px}
+  .lvc em{font-size:10px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lvc b{font-size:20px}
+  .lvc small{font-size:10px}
+  #lvw{left:76px;right:12px;top:150px;bottom:auto;width:auto;padding:3px 10px 4px;border-radius:10px;background:rgba(8,25,14,.38);backdrop-filter:none}
+  #lvwv{font-size:15px}
+  #lvwave{height:32px}
+}
+/* Điện thoại xoay ngang: thẻ số gọn ở cột phải, sóng thấp ở góc trái dưới */
+@media (max-height:480px) and (orientation:landscape){
+  #lvrec{left:12px;top:46px;width:52px;height:52px}
+  #lvsec{font-size:17px;margin-top:-6px}
+  #lvrec span{bottom:8px;font-size:8px;gap:3px}
+  #lvrec span i{width:5px;height:5px}
+  #lvcards{left:auto;right:12px;top:72px;width:150px;flex-direction:column;gap:5px}
+  .lvc{padding:3px 10px 4px;border-radius:10px}
+  .lvc b{font-size:18px}
+  #lvw{left:12px;right:auto;bottom:84px;width:40vw}
+  #lvwave{height:34px}
+}
+
+/* Xem lại một lần quay (app.js openReview tạo #rv): phủ màn chuẩn bị, nền mờ giống #notebg; thẻ trắng như .card1.
+   Màu số theo mức giống thẻ live (lvLevel) nhưng dùng token nền sáng: ok = --moss2, mid = --amber, bad = --red. */
+#rv{position:fixed;inset:0;z-index:90;background:rgba(20,40,25,.4);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+#rv[hidden]{display:none}
+#rv .rvcard{background:var(--white);border:1px solid var(--line);border-radius:22px;padding:24px 28px;width:min(900px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 40px var(--shadow)}
+#rv h2{margin:0;font-size:22px;color:var(--ink)}
+#rvc{display:block;width:100%;height:auto;max-height:52vh;object-fit:contain;border-radius:16px;background:#1B2A34}
+#rv .rvnums{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+#rv .rvn{border:1px solid var(--line);border-left:4px solid var(--leaf);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;background:var(--leaf-pale)}
+#rv .rvn em{font-style:normal;font-size:12px;font-weight:600;color:var(--mut)}
+#rv .rvn b{font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
+#rv .rvn small{font-size:12px;color:var(--mut);min-height:14px}
+#rv .rvn[data-lv="ok"]{border-left-color:var(--moss2)}#rv .rvn[data-lv="ok"] b{color:var(--moss2)}
+#rv .rvn[data-lv="mid"]{border-left-color:var(--amber)}#rv .rvn[data-lv="mid"] b{color:var(--amber)}
+#rv .rvn[data-lv="bad"]{border-left-color:var(--red)}#rv .rvn[data-lv="bad"] b{color:var(--red)}
+#rv .rvw{font-size:13px;font-weight:600;color:var(--amber)}
+#rv .rvbtn{display:flex;gap:10px;justify-content:flex-end}
+#rv .rvbtn .go{height:48px;font-size:16px;padding:0 24px}
+#rv .rvbtn .alt{height:48px}
+@media (max-width:640px){
+  #rv{padding:10px;align-items:flex-start}
+  #rv .rvcard{padding:16px;gap:10px}
+  #rv h2{font-size:18px}
+  #rv .rvnums{grid-template-columns:1fr 1fr}
+  #rv .rvbtn>*{flex:1}
+}
+/* Nút "Quay xong" khi chưa chốt góc nào: nhìn rõ là chưa bấm được */
+#done:disabled{color:var(--mut);background:var(--bg);border-color:var(--line);cursor:not-allowed}
+#done:disabled:hover{color:var(--mut);background:var(--bg);border-color:var(--line)}
