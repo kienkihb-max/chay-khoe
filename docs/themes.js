@@ -15,22 +15,9 @@
         'leaf': '#A9D69B', 'leaf-soft': '#E3F1DC', 'leaf-pale': '#F3F9F0', 'ink': '#1B1F1C', 'mut': '#5C685F', 'line': '#DCE6D8',
         'bg': '#F3F9F0', 'on-dark-mut': '#CFE6C8', 'shadow': 'rgba(31,77,43,.14)', 'teal2': '#3E9A4F', 'teal3': '#2E7D3F',
         'fline': '#C5D4C0', 'fbg': '#FAFDF8', 'dash': '#8FB088', 'dis': '#B9CDB4', 'dk': '8,19,11', 'dk2': '20,40,25',
-        'nav-bg': '#fff', 'nav-ink': '#1B1F1C', 'nav-hover': '#E3F1DC', 'nav-hover-ink': '#1F4D2B', 'nav-line': '#DCE6D8', 'nav-logo': '#1F4D2B'
+        'nav-bg': '#fff', 'nav-ink': '#1B1F1C', 'nav-hover': '#E3F1DC', 'nav-hover-ink': '#1F4D2B', 'nav-line': '#DCE6D8', 'nav-logo': '#1F4D2B', 'title': '#1F4D2B', 'title2': '#2A6A3B'
       },
       cv: { brand: '#1F4D2B', brand2: '#2A6A3B', soft: '#E3F1DC', pale: '#F3F9F0', accent: '#A9D69B', shadow: 'rgba(31,77,43,.12)', ink: '#1B1F1C', mut: '#5C685F' }
-    },
-    {
-      id: 'do', label: 'Đỏ',
-      font: '"Montserrat",' + SYS,
-      fontUrl: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap&subset=vietnamese',
-      vars: {
-        'moss': '#D4161C', 'moss2': '#A80F14', 'moss3': '#EE2A30', 'moss-rgb': '212,22,28', 'moss2-rgb': '212,22,28',
-        'leaf': '#FFD3D1', 'leaf-soft': '#FCE6E5', 'leaf-pale': '#F7F7F7', 'ink': '#111111', 'mut': '#545A60', 'line': '#E2E2E2',
-        'bg': '#F4F4F4', 'on-dark-mut': '#FFE4E2', 'shadow': 'rgba(0,0,0,.12)', 'teal2': '#D4161C', 'teal3': '#A80F14',
-        'fline': '#CFCFCF', 'fbg': '#FAFAFA', 'dash': '#9A9A9A', 'dis': '#E6B3B5', 'dk': '17,17,17', 'dk2': '0,0,0',
-        'nav-bg': '#111111', 'nav-ink': '#fff', 'nav-hover': '#2B2B2B', 'nav-hover-ink': '#fff', 'nav-line': '#111111', 'nav-logo': '#fff'
-      },
-      cv: { brand: '#D4161C', brand2: '#A80F14', soft: '#FCE6E5', pale: '#F7F7F7', accent: '#FFD3D1', shadow: 'rgba(0,0,0,.12)', ink: '#111111', mut: '#545A60' }
     }
   ];
   var byId = {}; THEMES.forEach(function (t) { byId[t.id] = t; });
@@ -90,7 +77,7 @@
     menu.hidden = false; btn.setAttribute('aria-expanded', 'true');
   }
   function build() {
-    var nav = document.getElementById('topnav'); if (!nav || document.getElementById('themebtn')) return;
+    var nav = document.getElementById('topnav'); if (!nav || document.getElementById('themebtn') || THEMES.length < 2) return;   // chỉ một giao diện thì ẩn nút
     var css = document.createElement('style');
     css.textContent =
       '#themebtn{height:36px;padding:0 16px;margin-left:auto;font:inherit;font-size:15px;font-weight:600;border:0;border-radius:999px;background:transparent;color:var(--nav-ink);cursor:pointer;display:inline-flex;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap}' +

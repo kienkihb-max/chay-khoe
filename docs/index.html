@@ -22,7 +22,7 @@ body.hasnav .layer{top:52px}
 body.hasnav #topnav{display:flex}
 #topnav .logo{margin-right:24px}
 #topnav .logo img{width:36px;height:36px}
-#listcnt{display:inline-block;min-width:20px;margin-left:8px;padding:1px 7px;border-radius:999px;background:var(--leaf-soft);color:var(--moss);font-size:12px;font-weight:700;line-height:18px}
+#listcnt{display:inline-block;min-width:20px;margin-left:8px;padding:1px 7px;border-radius:999px;background:var(--leaf-soft);color:var(--title,var(--moss));font-size:12px;font-weight:700;line-height:18px}
 #topnav button{height:36px;padding:0 18px;font-size:15px;background:transparent;color:var(--nav-ink);border-radius:999px}
 #topnav button:hover{background:var(--nav-hover);color:var(--nav-hover-ink)}
 #topnav button.on{background:var(--moss);color:#fff}
@@ -58,7 +58,7 @@ select option{color:#1B1F1C}
 .card1{margin:auto;flex:none;background:var(--white);border:1px solid var(--line);border-radius:22px;padding:34px 36px;width:560px;max-width:100%;display:flex;flex-direction:column;gap:18px;box-shadow:0 10px 40px var(--shadow)}
 #go{position:sticky;bottom:10px;z-index:5;box-shadow:0 6px 20px rgba(var(--moss-rgb),.3)}
 .card1 h2{margin:0;font-size:26px}
-.idchip{display:inline-flex;align-items:center;gap:8px;background:var(--leaf-soft);color:var(--moss);font-weight:700;border-radius:999px;padding:6px 14px;font-size:14px;width:max-content}
+.idchip{display:inline-flex;align-items:center;gap:8px;background:var(--leaf-soft);color:var(--title,var(--moss));font-weight:700;border-radius:999px;padding:6px 14px;font-size:14px;width:max-content}
 .fld label{font-size:13px;font-weight:600;color:var(--mut);display:block;margin-bottom:6px;letter-spacing:.02em}
 input[type=text],input[type=tel],input[type=number]{width:100%;height:52px;padding:0 16px;font:inherit;font-size:18px;color:var(--ink);border:1.5px solid var(--fline);border-radius:12px;background:var(--fbg);transition:border .15s,box-shadow .15s}
 input:focus{outline:none;border-color:var(--moss2);box-shadow:0 0 0 4px rgba(var(--moss2-rgb),.18);background:#fff}
@@ -68,7 +68,7 @@ input:focus{outline:none;border-color:var(--moss2);box-shadow:0 0 0 4px rgba(var
 .go:hover:not(:disabled){background:var(--moss2);box-shadow:0 10px 26px rgba(var(--moss-rgb),.38)}
 .go:disabled{background:var(--dis);box-shadow:none;cursor:not-allowed}
 .alt{height:40px;padding:0 16px;font-size:14px;background:#fff;color:var(--ink);border:1.5px solid var(--fline)}
-.alt:hover{border-color:var(--moss2);color:var(--moss);background:var(--leaf-pale)}
+.alt:hover{border-color:var(--moss2);color:var(--title,var(--moss));background:var(--leaf-pale)}
 .err{color:var(--red);font-weight:600;font-size:14.5px;min-height:0}
 .err:empty{display:none}
 .tools{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px;font-size:13.5px;color:var(--mut)}
@@ -121,7 +121,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 #notetxt{flex:1;min-height:160px;resize:none;border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit;font-size:15px;color:var(--ink)}
 #noteask{display:none;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--amber);font-weight:600}
 #notedrawer .nf{display:flex;align-items:center;justify-content:flex-end;gap:12px}
-#notemsg{font-size:13px;font-weight:600;color:var(--moss2)}
+#notemsg{font-size:13px;font-weight:600;color:var(--title2,var(--moss2))}
 #detail{display:none;font-size:14px;width:100%;max-width:1100px;background:#fff;border-radius:14px;padding:12px 16px;border:1px solid var(--line)}
 #detail table{border-collapse:collapse;width:100%}
 #detail th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
@@ -139,7 +139,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 #detail .rdot.L{box-shadow:0 0 0 2px #2F6FEB}
 #detail .rdot.R{box-shadow:0 0 0 2px #E8890C}
 #detail .rleg{margin:10px 0 0;font-size:12px;color:var(--mut)}
-#detail .dsec{margin:16px 0 4px;font-size:15px;font-weight:700;color:var(--moss)}
+#detail .dsec{margin:16px 0 4px;font-size:15px;font-weight:700;color:var(--title,var(--moss))}
 #detail .dtemp{margin-left:8px;font-size:12px;font-weight:600;color:var(--amber)}
 #detail .rleg .rdot{position:static;display:inline-block;transform:none;vertical-align:middle;background:#fff}
 .modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--leaf-soft);border-radius:14px;padding:5px}
@@ -214,7 +214,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
         <div class="fld"><label for="vslow">VIDEO QUAY CHẬM (SLOW-MO)?</label><select id="vslow" style="width:100%;height:50px;border:1px solid var(--fline);border-radius:10px;background:#fff;color:#1B1F1C;font-size:16px;padding:0 10px"><option value="auto">Tự nhận biết (khuyên dùng)</option><option value="1">Không, video quay thường</option><option value="2">Quay chậm gấp 2 (60 → 30 khung/giây)</option><option value="4">Quay chậm gấp 4 (120 → 30)</option><option value="8">Quay chậm gấp 8 (240 → 30)</option></select><div class="hint">Video slow-mo phát chậm hơn thực tế nên nhịp chạy sẽ bị đo thấp nếu chọn sai.</div></div>
       </div>
       <div id="msg1" class="err"></div>
-      <details id="adv" style="margin:6px 0 14px;font-size:14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--leaf-pale)"><summary style="cursor:pointer;font-weight:700;color:var(--moss)">⚙ Cài đặt đo (mặc định)</summary>
+      <details id="adv" style="margin:6px 0 14px;font-size:14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--leaf-pale)"><summary style="cursor:pointer;font-weight:700;color:var(--title,var(--moss))">⚙ Cài đặt đo (mặc định)</summary>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">
     <div class="fld" style="grid-column:1/-1"><label for="s_mode">KIỂU CHẠY</label><select id="s_mode"><option value="std">Chuẩn: chạy 2 phút, phân tích 15 giây</option><option value="fast">Nhanh: chạy 1 phút, phân tích 15 giây</option><option value="long">Kỹ: chạy 2,5 phút, phân tích 30 giây</option><option value="full">Đầy đủ: chạy 3 phút, phân tích 60 giây</option><option value="custom">Tùy chỉnh (chọn bên dưới)</option></select></div>
     <div class="fld"><label for="s_speed">TỐC ĐỘ MÁY CHẠY (KM/H)</label><input id="s_speed" type="number" step="0.5" min="4" max="25" value="10"></div>
@@ -236,7 +236,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 <section class="layer" id="L4" style="background:var(--bg);overflow:auto">
   <div style="max-width:1100px;margin:0 auto;padding:28px 24px">
     <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
-      <h2 style="margin:0;flex:1;color:var(--moss)">Danh sách đã đo</h2>
+      <h2 style="margin:0;flex:1;color:var(--title,var(--moss))">Danh sách đã đo</h2>
       <button class="alt" id="seedbtn" style="display:none;height:40px;padding:0 14px;font-size:14px">Tạo dữ liệu mẫu (5 người)</button>
       <input id="listq" type="search" placeholder="Tìm tên / SĐT" style="height:40px;width:220px;padding:0 12px;font-size:14px">
     </div>
