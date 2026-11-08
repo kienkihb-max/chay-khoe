@@ -23,11 +23,28 @@
     stream: null, pose: null, poseReady: false, camReady: false,
     nextId: 1, rows: [], busy: false, running: false,
     mode: 'live', file: null, fileUrl: null, sub: null, t0: 0, frames: [], jobs: [], result: null, computing: false, lastLm: null, abort: false,
-    // Góc quay: angle = góc đang chọn ở L1; take = góc của lần quay đang chạy; sess = các góc đã chốt của người đang đo { sub, side:{R,photos}, back:{R,photos} }
-    angle: 'side', take: 'side', sess: null, camBy: {},
+    // Góc quay: take = góc tự nhận của lần quay đang chạy (null = chưa nhận, xem angle.js); sess = các góc đã chốt của người đang đo { sub, side:{R,photos}, back:{R,photos} }
+    take: 'side', sess: null, angF: [], angMan: null,
   };
-  try { S.camBy = JSON.parse(localStorage.getItem('gait_cam_angle') || '{}') || {}; } catch (e) { /* bỏ qua */ }
-  const ANG_NAME = { side: 'Ngang', back: 'Sau lưng' };
+  const ANG_NAME = { side: 'bên', back: 'sau lưng' };
+  // Không nhận ra góc: không đoán, dừng và không tính chỉ số
+  const ANG_WAIT = 15;   // giây chờ tối đa khi đo trực tiếp (trước lúc thu hình)
+  const angMsg = (why) => 'Chưa nhận ra góc quay' + (why ? ' (' + why + ')' : '') + '. Hãy đặt camera ngang hông (thấy cả hai chân) hoặc ngay sau lưng người chạy rồi đo lại.';
+  // Gom đặc trưng góc từ khung xương thô (90 khung gần nhất); đủ khung và rõ ràng thì chốt góc cho lần quay này
+  function angFeed(lm, vw, vh) {
+    const f = Angle.feat(lm, vw, vh); if (!f) return null;
+    S.angF.push(f); if (S.angF.length > 90) S.angF.shift();
+    const d = Angle.decide(S.angF);
+    if (d.angle) setTake(d.angle);
+    return d;
+  }
+  // Nhãn góc ở màn đo + nút "Đổi" (chọn tay ghi đè góc tự nhận cho lần đo này; ẩn khi đã bắt đầu tính kết quả)
+  function angShow(man) { $('idl').textContent = S.take ? (man ? 'Chọn tay: góc ' : 'Đã nhận: góc ') + ANG_NAME[S.take] : ''; $('angchg').hidden = !S.take || S.computing; }
+  function setTake(a, man) { S.take = a; S.late = []; lvReset(); angShow(man); }
+  function angStop(why) {
+    if (REC.mr) recStop(false);
+    S.abort = true; S.running = false; clearInterval(S.timer); show('L1'); $('msg1').textContent = angMsg(why); $('angpick').hidden = false; refreshL1();
+  }
   // Quay sau lưng: người chạy quay lưng về camera nên chân trái nằm bên TRÁI hình (camera không lật gương).
   // MediaPipe đặt tên trái/phải theo kiểu người nhìn thẳng vào camera, nên khi thấy hông "trái" nằm bên phải hông "phải" thì đổi tên mọi cặp điểm trái/phải.
   // Kết quả: L luôn là chân nằm bên trái hình = chân trái thật của người chạy.
@@ -102,23 +119,10 @@
     $('go').disabled = !(ok && ready);
     $('go').textContent = !ok ? 'Còn thiếu: ' + miss.join(', ') : !ready ? (S.poseReady ? 'Hãy chọn file video' : 'Đang chuẩn bị...') : S.mode === 'file' ? 'Phân tích video' : 'Bắt đầu đo · ' + Math.round(CFG.total / 60 * 10) / 10 + ' phút';
     if (S.mode === 'live' && CFG.total < 100) $('go').textContent = 'Bắt đầu (thử ' + CFG.total + ' giây)';
-    // Góc quay: ✓ cho góc đã chốt; "Quay xong" chỉ bấm được khi đã chốt ít nhất 1 góc
+    // Góc quay tự nhận; "Quay xong" chỉ bấm được khi đã chốt ít nhất 1 góc
     const ss = S.sess || {}, got = ['side', 'back'].filter((a) => ss[a]);
-    $('aSide').textContent = (ss.side ? '✓ ' : '') + ANG_NAME.side; $('aBack').textContent = (ss.back ? '✓ ' : '') + ANG_NAME.back;
     $('angst').textContent = got.length ? 'Đã chốt góc ' + got.map((a) => ANG_NAME[a]).join(' và ') + (ss.sub ? ' cho ' + ss.sub.name : '') + '. Quay lại một góc đã chốt sẽ thay lần quay cũ.' : '';
     $('done').disabled = !got.length || S.running;
-  }
-  function setAngle(a) {
-    S.angle = a;
-    $('aSide').classList.toggle('on', a === 'side'); $('aBack').classList.toggle('on', a === 'back');
-    $('vflab').textContent = a === 'back' ? 'FILE VIDEO (quay sau lưng, thấy cả hai chân)' : 'FILE VIDEO (quay ngang hông, thấy cả hai chân)';
-    // Mỗi góc nhớ camera riêng (máy có 2 camera)
-    const want = S.camBy[a];
-    if (want && S.mode === 'live' && !S.running && S.stream && Q.get('mock') !== '1') {
-      const tr = S.stream.getVideoTracks()[0], cur = tr && tr.getSettings ? tr.getSettings().deviceId : '';
-      if (want !== cur && [...$('camsel').options].some((o) => o.value === want)) startCamera(want);
-    }
-    refreshL1();
   }
   // ---------- Cài đặt đo ----------
   const SETK = { s_mode: 'std', s_speed: 10, s_fps: 30, s_res: 720, s_clip: 15, s_rec: 50, s_total: 120 };
@@ -245,12 +249,8 @@
     refreshL1();
   });
   $('camsel').addEventListener('change', (e) => {
-    S.camBy[S.angle] = e.target.value;
-    try { localStorage.setItem('gait_cam_angle', JSON.stringify(S.camBy)); } catch (er) { /* bỏ qua */ }
     startCamera(e.target.value);
   });
-  $('aSide').addEventListener('click', () => { if (!S.running) setAngle('side'); });
-  $('aBack').addEventListener('click', () => { if (!S.running) setAngle('back'); });
   // Xoay máy khi đang ở màn chuẩn bị: tự mở lại camera theo hướng mới. Đang đo thì không mở lại, khung hình tự co theo hình camera gửi về.
   PORTRAIT.addEventListener('change', () => { if (!S.running && S.mode !== 'file' && S.stream) startCamera($('camsel').value); });
   try { localStorage.removeItem('gait_orient'); } catch (e) { /* bỏ qua */ }   // dọn lựa chọn hướng cũ (đã bỏ ô chọn)
@@ -376,8 +376,8 @@
   }
   function lvReset() {
     LV.buf = []; LV.wave = []; LV.st = null; LV.tCalc = -1e9; LV.wv = null; LV.side = 'L';
-    const back = S.take === 'back';
-    if ((lvBox.dataset.take || 'side') !== S.take) { lvBox.dataset.take = S.take; $('lvcards').innerHTML = lvCardsHTML(back ? LV_CARDS_BACK : LV_CARDS); }
+    const back = S.take === 'back', tk = S.take || 'side';
+    if ((lvBox.dataset.take || 'side') !== tk) { lvBox.dataset.take = tk; $('lvcards').innerHTML = lvCardsHTML(back ? LV_CARDS_BACK : LV_CARDS); }
     $('lvw').hidden = back;   // sóng góc gối chỉ có nghĩa khi quay ngang
     $('lvwv').textContent = ''; $('lvwside').textContent = ''; lvCards(); lvRec(null); wctx.clearRect(0, 0, lvWaveCv.width, lvWaveCv.height);
   }
@@ -400,6 +400,7 @@
   }
   // gọi sau mỗi lần nhận diện; t = giây (thời gian của người chạy)
   function lvFeed(t, lm) {
+    if (!S.take) return;   // chưa nhận góc: chưa tính chỉ số
     const vw = v2.videoWidth, vh = v2.videoHeight;
     if (lm && vw) LV.buf.push({ t, lm: lm.map((q) => ({ x: q.x * vw, y: q.y * vh, v: q.visibility == null ? 1 : q.visibility })) });
     while (LV.buf.length && LV.buf[0].t < t - LV_WIN) LV.buf.shift();
@@ -556,7 +557,7 @@
   // Người đang đo: đã chốt góc nào thì giữ mã cũ (các góc cùng một người, cùng một kết quả); tên/SĐT/chiều cao lấy lại từ form
   function takeSub() {
     const id = S.sess ? S.sess.sub.id : idStr();
-    S.take = S.angle;
+    S.take = S.angMan || null; S.angMan = null; S.angF = [];
     return { id, name: titleCase($('name').value) || 'Khách ' + id, phone: $('phone').value.trim(), height: +$('height').value || 165, pain: $('pain').value.trim() };
   }
   async function startRun() {
@@ -567,7 +568,7 @@
     document.querySelector('.cd em').textContent = 'CÒN LẠI';
     S.lastLm = null; S.frames = []; S.late = []; S.nrec = 0; S.jobs = []; S.result = null; S.computing = false; S.abort = false; S.running = true;
     show('L2'); layout(); lvReset();
-    $('who').textContent = S.sub.name; $('idl').textContent = '';
+    $('who').textContent = S.sub.name; angShow(true);
     S.t0 = performance.now() / 1000;
     let recStarted = false, recDone = false, shown = false; S.endNow = false;
     S.recAt = $('s_auto').checked ? null : CFG.rec; S.hipBuf = []; S.lastChk = 0; S.curCad = 0;
@@ -607,7 +608,10 @@
         const t = performance.now() / 1000, el = t - S.t0;
         const r = await detect(v2);
         const vw = v2.videoWidth, vh = v2.videoHeight;
-        const lm0 = r && r.poseLandmarks ? r.poseLandmarks : null, lm = S.take === 'back' ? fixLR(lm0) : lm0;
+        const lm0 = r && r.poseLandmarks ? r.poseLandmarks : null;
+        if (!S.take && lm0) angFeed(lm0, vw, vh);
+        if (!S.take && el > ANG_WAIT && !(S.recAt != null && el >= S.recAt)) { angStop(Angle.decide(S.angF).why); return; }
+        const lm = S.take === 'back' ? fixLR(lm0) : lm0;
         S.lastLm = lm; lvFeed(el, lm); drawLive(lm);
         nfr++; if (performance.now() - tfps > 2000) { $('fpsb').textContent = 'Nhận diện ' + (nfr / ((performance.now() - tfps) / 1000)).toFixed(0) + ' khung/giây'; nfr = 0; tfps = performance.now(); }
         if (S.recAt == null) {
@@ -616,7 +620,7 @@
         }
         const RA2 = S.recAt == null ? Infinity : S.recAt;
         if (el >= RA2 && el < RA2 + CFG.clip) {
-          const rec = { t, lm: lm ? lm.map((q) => ({ x: q.x * vw, y: q.y * vh, v: q.visibility == null ? 1 : q.visibility })) : null, vw, vh, blob: null };
+          const rec = { t, lm: lm0 ? lm0.map((q) => ({ x: q.x * vw, y: q.y * vh, v: q.visibility == null ? 1 : q.visibility })) : null, vw, vh, blob: null };
           S.nrec = (S.nrec || 0) + 1;
           if (lm && S.nrec % 3 === 0) {
             const sc = Math.min(1, 1280 / vw);
@@ -646,7 +650,7 @@
     S.sub = takeSub();
     S.lastLm = null; S.frames = []; S.late = []; S.result = null; S.error = null; S.computing = false; S.abort = false; S.running = true; S.photosReady = false;
     show('L2'); layout(); lvReset(); $('early').style.display = 'none'; $('nowbtn').style.display = 'none';
-    $('who').textContent = S.sub.name; $('idl').textContent = '';
+    $('who').textContent = S.sub.name; angShow(true);
     document.querySelector('.cd em').textContent = 'TIẾN ĐỘ'; $('count').textContent = '0%'; $('progf').style.width = '0%'; $('fpsb').textContent = '';
     setPhase('Đang mở video...', 'wn');
     try {
@@ -684,9 +688,11 @@
       const t0 = performance.now();
       for (let i = 0; i < n && !S.abort; i++) {
         const r = (await seek(start + i * k / CFG.fps)) ? await detect(v2, i * k * 1000 / CFG.fps) : null;
-        const lm0 = r && r.poseLandmarks ? r.poseLandmarks : null, lm = S.take === 'back' ? fixLR(lm0) : lm0;
+        const lm0 = r && r.poseLandmarks ? r.poseLandmarks : null;
+        if (!S.take && lm0 && angFeed(lm0, vw, vh) && !S.take && S.angF.length >= 90) throw new Error(angMsg(Angle.decide(S.angF).why));
+        const lm = S.take === 'back' ? fixLR(lm0) : lm0;
         S.lastLm = lm; lvFeed(i / CFG.fps, lm); drawLive(lm);
-        const rec = { t: i / CFG.fps, lm: lm ? lm.map((q) => ({ x: q.x * vw, y: q.y * vh, v: q.visibility == null ? 1 : q.visibility })) : null, vw, vh, blob: null, sc };
+        const rec = { t: i / CFG.fps, lm: lm0 ? lm0.map((q) => ({ x: q.x * vw, y: q.y * vh, v: q.visibility == null ? 1 : q.visibility })) : null, vw, vh, blob: null, sc };
         if (lm && i % 3 === 0) {
           grab.width = Math.round(vw * sc); grab.height = Math.round(vh * sc); gctx.drawImage(v2, 0, 0, grab.width, grab.height);
           await new Promise((res) => grab.toBlob((b) => { rec.blob = b; res(); }, 'image/jpeg', 0.85));
@@ -704,13 +710,16 @@
       let g = 0; while (!S.result && !S.error && g++ < 600) await new Promise((r) => setTimeout(r, 100));
       await finish();
     } catch (e) {
-      S.running = false; show('L1'); $('msg1').textContent = e.message; refreshL1();
+      S.running = false; show('L1'); $('msg1').textContent = e.message; $('angpick').hidden = !/^Chưa nhận ra góc quay/.test(e.message); refreshL1();
     }
   }
   $('early').addEventListener('click', () => { S.endNow = true; });
   $('nowbtn').addEventListener('click', () => { S.recAt = performance.now() / 1000 - S.t0; S.recWhy = 'đo ngay'; });
   $('cancel').addEventListener('click', () => { if (!confirm('Dừng đo và không lưu kết quả của lần này?')) return; if (REC.mr) recStop(false); S.abort = true; S.running = false; clearInterval(S.timer); show('L1'); refreshL1(); });
-  $('go').addEventListener('click', () => { $('msg1').textContent = ''; if (S.mode === 'file') startVideo(); else { SPEED = SPEED0; startRun(); } });
+  // Chọn tay góc quay (đổi giữa lần đo, hoặc khi app không nhận được góc thì đo lại với góc đã chọn)
+  $('angchg').addEventListener('click', () => { if (S.running && S.take && !S.computing && !S.result) setTake(S.take === 'back' ? 'side' : 'back', true); });
+  $('angpick').addEventListener('click', (e) => { const b = e.target.closest('button[data-a]'); if (!b || $('go').disabled) return; S.angMan = b.dataset.a; $('go').click(); });
+  $('go').addEventListener('click', () => { $('msg1').textContent = ''; $('angpick').hidden = true; if (S.mode === 'file') startVideo(); else { SPEED = SPEED0; startRun(); } });
 
   // ---------- Phân tích ----------
   const titleCase = (s) => s.trim().replace(/\s+/g, ' ').toLowerCase().replace(/(^|\s)(\S)/g, (m, p, q) => p + q.toUpperCase());
@@ -747,10 +756,17 @@
     return Math.max(10, Math.min(CFG.fps, Math.round(r)));
   }
   function analyse() {
-    S.computing = true; S.error = null; S.photosReady = false;
+    S.computing = true; S.error = null; S.photosReady = false; $('angchg').hidden = true;
     setTimeout(() => {
       try {
         const frames = S.frames;
+        // khung lưu toạ độ thô: chưa nhận góc thì nhận trên đoạn quay; vẫn không chắc thì báo lỗi, không tính chỉ số
+        if (!S.take) {
+          const d = Angle.decide(frames.map((f) => f.lm && Angle.feat(f.lm)));
+          if (!d.angle) throw new Error(angMsg(d.why));
+          setTake(d.angle);
+        }
+        if (S.take === 'back') frames.forEach((f) => { f.lm = fixLR(f.lm); });
         const FPS = S.mode === 'file' ? CFG.fps : effFps(frames); S.fps = FPS;
         const { P, N, t0 } = Gait.resample(frames, FPS);
         if (S.take === 'back') {   // góc sau lưng: chỉ số nhìn từ sau, lưu ở R.back
@@ -1295,7 +1311,7 @@
     if (REC.mr) await recStop(true, S.sub && S.sub.name);
     S.running = false; clearInterval(S.timer);
     if (S.error) {
-      show('L1'); $('msg1').textContent = 'Không đo được: ' + S.error + ' Hãy bấm Bắt đầu để đo lại.';
+      show('L1'); $('msg1').textContent = 'Không đo được: ' + S.error + ' Hãy bấm Bắt đầu để đo lại.'; $('angpick').hidden = !/^Chưa nhận ra góc quay/.test(S.error);
       refreshL1(); return;
     }
     let guard = 0; while (!S.photosReady && guard++ < 50) await new Promise((r) => setTimeout(r, 100));
