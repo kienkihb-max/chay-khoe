@@ -85,6 +85,7 @@ input:focus{outline:none;border-color:var(--moss2);box-shadow:0 0 0 4px rgba(var
 #L2::before{content:"";position:absolute;left:0;right:0;top:0;height:170px;background:linear-gradient(180deg,rgba(var(--dk),.85),transparent);z-index:1;pointer-events:none}
 #chip{position:absolute;left:32px;top:28px;z-index:2;display:flex;align-items:center;gap:14px;font-size:30px;font-weight:700}
 #chip small{font-size:15px;font-weight:700;letter-spacing:.08em;background:rgba(255,255,255,.16);backdrop-filter:blur(6px);border-radius:999px;padding:5px 13px}
+#chip button{font-size:14px;color:#fff;background:transparent;border:1.5px solid rgba(255,255,255,.4);border-radius:999px;padding:4px 12px}
 .cd{position:absolute;right:32px;top:24px;z-index:2;text-align:center;background:rgba(var(--dk),.75);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.16);border-radius:22px;padding:8px 30px 12px}
 .cd em{display:block;font-style:normal;font-size:12px;letter-spacing:.2em;color:var(--leaf);font-weight:600;margin-top:4px}
 #count{font-size:92px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.02em}
@@ -201,7 +202,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
         <h2>Thông tin người tham gia</h2>
       </div>
       <div class="modes"><button id="mLive" class="on">Quay trực tiếp</button><button id="mFile">Tải video lên</button></div>
-      <div class="fld"><label>GÓC QUAY</label><div class="modes" id="angles"><button id="aSide" class="on">Ngang</button><button id="aBack">Sau lưng</button></div><div class="hint" id="angst"></div></div>
+      <div class="fld"><label>GÓC QUAY</label><div class="hint">Tự nhận góc bên (ngang hông) hoặc sau lưng khi bắt đầu đo.</div><div class="hint" id="angst"></div></div>
       <div class="fld"><label for="name">HỌ VÀ TÊN</label><input id="name" type="text" autocomplete="off" placeholder="Nguyễn Văn A"></div>
       <div class="fld"><label for="phone">SỐ ĐIỆN THOẠI / ZALO (TÙY CHỌN)</label><input id="phone" type="tel" autocomplete="off" placeholder="09xx xxx xxx"></div>
       <div class="two">
@@ -209,7 +210,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
         <div class="fld"><label for="pain">TIỀN SỬ ĐAU, CHẤN THƯƠNG (NẾU CÓ)</label><input id="pain" type="text" autocomplete="off" placeholder="Để trống nếu không"></div>
       </div>
       <div id="filebox">
-        <div class="fld"><label for="vfile" id="vflab">FILE VIDEO (quay ngang hông, thấy cả hai chân)</label><input id="vfile" type="file" accept="video/*"><div class="hint" id="vinfo">Chưa chọn video</div></div>
+        <div class="fld"><label for="vfile" id="vflab">FILE VIDEO (quay ngang hông hoặc sau lưng, thấy cả hai chân)</label><input id="vfile" type="file" accept="video/*"><div class="hint" id="vinfo">Chưa chọn video</div></div>
         <div class="two">
           <div class="fld"><label for="vstart">BẮT ĐẦU TỪ GIÂY</label><input id="vstart" type="number" min="0" value="0"><div class="hint">Nên chọn đoạn đã chạy ổn định</div></div>
           <div class="fld"><label for="vspeed">TỐC ĐỘ MÁY (KM/H)</label><input id="vspeed" type="number" min="4" max="25" step="0.5" value="10"></div>
@@ -217,6 +218,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
         <div class="fld"><label for="vslow">VIDEO QUAY CHẬM (SLOW-MO)?</label><select id="vslow" style="width:100%;height:50px;border:1px solid var(--fline);border-radius:10px;background:#fff;color:#1B1F1C;font-size:16px;padding:0 10px"><option value="auto">Tự nhận biết (khuyên dùng)</option><option value="1">Không, video quay thường</option><option value="2">Quay chậm gấp 2 (60 → 30 khung/giây)</option><option value="4">Quay chậm gấp 4 (120 → 30)</option><option value="8">Quay chậm gấp 8 (240 → 30)</option></select><div class="hint">Video slow-mo phát chậm hơn thực tế nên nhịp chạy sẽ bị đo thấp nếu chọn sai.</div></div>
       </div>
       <div id="msg1" class="err"></div>
+      <div id="angpick" hidden><div class="hint">Hoặc chọn tay góc quay để đo tiếp:</div><div class="modes"><button data-a="side">Góc bên</button><button data-a="back">Góc sau lưng</button></div></div>
       <details id="adv" style="margin:6px 0 14px;font-size:14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--leaf-pale)"><summary style="cursor:pointer;font-weight:700;color:var(--title,var(--moss))">⚙ Cài đặt đo (mặc định)</summary>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">
     <div class="fld" style="grid-column:1/-1"><label for="s_mode">KIỂU CHẠY</label><select id="s_mode"><option value="std">Chuẩn: chạy 2 phút, phân tích 15 giây</option><option value="fast">Nhanh: chạy 1 phút, phân tích 15 giây</option><option value="long">Kỹ: chạy 2,5 phút, phân tích 30 giây</option><option value="full">Đầy đủ: chạy 3 phút, phân tích 60 giây</option><option value="custom">Tùy chỉnh (chọn bên dưới)</option></select></div>
@@ -251,7 +253,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 <section class="layer" id="L2">
   <video id="v2" autoplay muted playsinline></video>
   <canvas id="ov"></canvas>
-  <div id="chip"><span id="who"></span><small id="idl"></small></div>
+  <div id="chip"><span id="who"></span><small id="idl"></small><button id="angchg" hidden title="Đổi góc quay (chọn tay)">Đổi</button></div>
   <div class="cd"><div id="count">2:00</div><em>CÒN LẠI</em></div>
   <div id="fpsb"></div>
   <div id="bar"><div id="ph">...</div><button id="nowbtn" disabled>Đo ngay</button><button id="early" disabled>Kết thúc sớm</button><button id="cancel">Dừng, không lưu</button></div>
@@ -268,6 +270,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 <script src="i18n.js"></script>
 <script src="reference.js"></script>
 <script src="gait.js"></script>
+<script src="angle.js"></script>
 <script src="score.js"></script>
 <script src="sync.js"></script>
 <script src="app.js"></script>
