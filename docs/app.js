@@ -13,7 +13,18 @@
     res: 720,
   };
   const LOGO = new Image(); LOGO.onload = () => { if (S.result && $('L3').classList.contains('show')) drawResult(S.result); }; LOGO.src = 'logo.png';   // logo trên ảnh kết quả
-  const CONTACT = 'bacsikien.com  ·  0345 901 772';   // in ở cuối trang 2 của PDF; sửa tại đây
+  const CONTACT = 'bacsikien.com  ·  0345 901 772';
+  const ZALO = 'https://zalo.me/0345901772';   // Zalo bác sĩ: nút "Đặt lịch đánh giá chuyên sâu" và nút gửi thông tin dự phòng
+  // Chế độ bác sĩ: mở link có ?bs=1 thì hiện "Thêm ghi chú" + "Chi tiết (bác sĩ)" và nhớ trong máy; ?bs=0 tắt.
+  // Chỉ là ẩn nút cho gọn, KHÔNG phải bảo mật: ai biết link vẫn bật được.
+  const DOCTOR = (() => {
+    let v = null;
+    try { v = localStorage.getItem('gait_bs'); } catch (e) { /* bỏ qua */ }
+    const q = Q.get('bs');
+    if (q === '1' || q === '0') { v = q; try { localStorage.setItem('gait_bs', q); } catch (e) { /* bỏ qua */ } }
+    return v === '1';
+  })();
+  document.body.classList.toggle('bs', DOCTOR);   // in ở cuối trang 2 của PDF; sửa tại đây
   let SPEED0 = 1000 / (CFG.pace * 60);
   let SPEED = SPEED0;   // m/s
   const REF = (window.GAIT_REF || {}).metrics || {};
@@ -1303,6 +1314,7 @@
     const d = $('detail'), b = $('tgdetail'), box = $('resbox');
     d.style.display = open ? 'block' : 'none';
     if (box) box.style.display = open ? 'none' : '';
+    $('l3cta').style.display = open ? 'none' : '';
     b.textContent = open ? 'Tổng quan' : 'Chi tiết (bác sĩ)';
     const sc = d.parentElement; if (sc) sc.scrollTop = 0; window.scrollTo(0, 0);
   }
@@ -1341,6 +1353,7 @@
     if (!seed) {
       drawResult(R);
       resetDetail(R);
+      resetReg(R);
       show('L3');
     }
     // dòng dữ liệu (danh sách + Google Sheet)
@@ -1532,6 +1545,7 @@
     S.result = rec.R; S.photos = photos; S.photosReady = true;
     drawResult(S.result);
     resetDetail(S.result);
+    resetReg(S.result);
     $('note').value = rec.note || '';
     show('L3');
   }
@@ -1574,6 +1588,68 @@
     } finally { noteSaving = false; $('notesave').disabled = false; }
   }
   $('notebtn').addEventListener('click', openNote);
+
+  // ---------- Khách: tải ảnh chỉ số cơ bản · đặt lịch qua Zalo · đăng ký nhận báo cáo chi tiết ----------
+  // Báo cáo chi tiết (PDF) không cho khách tải: chỉ đi lên Drive qua sendRow, bác sĩ gửi riêng qua Zalo.
+  const vnPhone = (v) => { const d = (v || '').replace(/[\s.\-()]/g, ''); return /^(0|\+?84)(3|5|7|8|9)\d{8}$/.test(d) ? d : ''; };
+  function regMsg(t, ok) { $('regmsg').textContent = t; $('regmsg').classList.toggle('ok', !!ok); }
+  function resetReg(R) {
+    const sub = (R && R.sub) || {};
+    $('regname').value = sub.name && sub.name !== 'Khách ' + sub.id ? sub.name : titleCase($('name').value || '');
+    $('regphone').value = sub.phone || $('phone').value.trim();
+    $('regok').checked = false; $('regsend').disabled = false;
+    $('regfb').hidden = true; $('regcopy').textContent = ''; regMsg('');
+  }
+  let regSending = false;
+  async function sendReg(ev) {
+    ev.preventDefault();
+    const R = S.result; if (!R || regSending) return;
+    const name = titleCase($('regname').value), phone = vnPhone($('regphone').value);
+    if (!name) { regMsg('Vui lòng nhập họ tên.'); $('regname').focus(); return; }
+    if (!phone) { regMsg('Số điện thoại chưa đúng. Nhập số di động Việt Nam 10 số, ví dụ 0912 345 678.'); $('regphone').focus(); return; }
+    if (!$('regok').checked) { regMsg('Vui lòng đánh dấu ô đồng ý để gửi kết quả cho bác sĩ.'); $('regok').focus(); return; }
+    regSending = true; $('regsend').disabled = true; $('regfb').hidden = true; $('regcopy').textContent = ''; regMsg('Đang gửi…', true);
+    let r = '';
+    try {
+      const id = R.sub.id, row = S.rows.find((x) => x.id === id);
+      if (row) {
+        // tên/SĐT vừa đăng ký thay cho bản ở form đo: danh sách, IndexedDB (để mở lại khớp tên), ảnh + PDF gửi kèm
+        R.sub.name = name; R.sub.phone = phone; row.name = name; row.phone = phone;
+        $('regname').value = name; $('regphone').value = phone;
+        try { localStorage.setItem('gait_rows', JSON.stringify(S.rows)); } catch (e) { /* bỏ qua */ }
+        try {
+          await idbDo('readwrite', (st) => { const g = st.get(id); g.onsuccess = () => { if (g.result) { g.result.name = name; if (g.result.R && g.result.R.sub) Object.assign(g.result.R.sub, { name, phone }); st.put(g.result, id); } }; return g; });
+        } catch (e) { console.warn('Không lưu được tên đăng ký để mở lại:', e); }
+        drawResult(R);
+        r = await Promise.race([sendRow(row, makePdf(R)), new Promise((ok) => setTimeout(() => ok('Chờ gửi'), 6000))]);
+      }
+    } catch (e) { console.warn('Chưa gửi được đăng ký:', e); }
+    finally { regSending = false; $('regsend').disabled = false; }
+    if (r === 'Đã gửi') { regMsg('Đã đăng ký. Bác sĩ sẽ liên hệ qua Zalo để gửi báo cáo chi tiết.', true); return; }
+    regMsg(r === 'Chờ gửi' ? 'Chưa gửi được ngay (mạng yếu), máy sẽ tự gửi lại. Để chắc chắn, hãy gửi thông tin qua Zalo.' : 'Chưa gửi được đăng ký. Hãy gửi thông tin qua Zalo.');
+    $('regfb').hidden = false;
+  }
+  $('regf').addEventListener('submit', sendReg);
+  for (const k of ['regname', 'regphone', 'regok']) $(k).addEventListener('input', () => { if (!$('regmsg').classList.contains('ok')) regMsg(''); });
+  // dự phòng khi chưa gửi được: chép Mã + họ tên + SĐT để khách dán vào Zalo bác sĩ
+  $('regzalo').addEventListener('click', async () => {
+    const R = S.result;
+    const txt = 'Đăng ký nhận báo cáo chi tiết\nMã: ' + (R ? R.sub.id : '') + '\nHọ tên: ' + titleCase($('regname').value) + '\nSĐT/Zalo: ' + $('regphone').value.trim();
+    let ok = false;
+    try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) { /* trình duyệt chặn sao chép */ }
+    $('regcopy').textContent = ok ? 'Đã sao chép, dán vào Zalo' : 'Không sao chép được, hãy gõ mã kết quả và họ tên vào Zalo';
+    window.open(ZALO, '_blank', 'noopener');
+  });
+  $('dlimg').addEventListener('click', () => {
+    const R = S.result; if (!R) return;
+    $('res').toBlob((b) => {
+      if (!b) return;
+      const a = document.createElement('a'), u = URL.createObjectURL(b);
+      a.href = u; a.download = 'ket-qua-' + R.sub.id + '.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(u), 4000);
+    }, 'image/png');
+  });
   $('notesave').addEventListener('click', saveNoteNow);
   $('noteclose').addEventListener('click', () => closeNote(false));
   $('notebg').addEventListener('click', () => closeNote(false));

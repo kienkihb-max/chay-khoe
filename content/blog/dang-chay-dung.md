@@ -2,6 +2,9 @@
 title: Dáng chạy đúng: tần số bước, bước dài, kiểu tiếp đất và nguy cơ chấn thương
 description: Tổng quan bằng chứng về dáng chạy: tần số bước, bước quá dài, kiểu tiếp đất, dao động thân và vai trò của đánh giá dáng chạy trong chấn thương do chạy bộ.
 slug: dang-chay-dung
+image: img/blog/dang-chay-dung.jpg
+image_credit: Jenny Hill
+image_url: https://unsplash.com/photos/man-running-on-road-near-grass-field-mQVWb7kUoOE
 cluster: dang-chay
 date: 2026-11-08
 updated: 2026-11-08

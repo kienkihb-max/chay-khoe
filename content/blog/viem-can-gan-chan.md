@@ -2,6 +2,9 @@
 title: Viêm cân gan chân ở người chạy bộ: cơ chế, yếu tố nguy cơ và can thiệp
 description: Tổng quan bằng chứng về viêm cân gan chân (đau gót chân) ở người chạy bộ: cơ chế, yếu tố nguy cơ, chỉ số dáng chạy liên quan và các can thiệp có bằng chứng.
 slug: viem-can-gan-chan
+image: img/blog/viem-can-gan-chan.jpg
+image_credit: Jan Romero
+image_url: https://unsplash.com/photos/person-foot-on-brown-rock-DL4DDQb8yjc
 cluster: chan-thuong
 date: 2026-11-08
 updated: 2026-11-08

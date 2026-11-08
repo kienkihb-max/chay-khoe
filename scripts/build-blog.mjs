@@ -12,7 +12,7 @@ const CLUSTERS = { 'dang-chay': 'Dáng chạy', 'chan-thuong': 'Chấn thương'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'content', 'blog');
 const OUT = join(ROOT, 'docs', 'blog');
-const STATIC_PAGES = ['', 'screening/huong-dan.html', 'screening/chi-so.html', 'screening.html', 'blog/', 'thu-vien-anh/', 'gioi-thieu.html'];
+const STATIC_PAGES = ['', 'screening/huong-dan.html', 'screening/chi-so.html', 'screening.html', 'blog/', 'thu-vien-anh/', 'gioi-thieu.html', 'lien-he.html'];
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const fmtDate = (d) => d.split('-').reverse().join('/');
@@ -29,6 +29,9 @@ function parseFile(name, text) {
   if (!CLUSTERS[fm.cluster]) throw new Error(name + ': cluster phải là ' + Object.keys(CLUSTERS).join(' | '));
   for (const k of ['date', 'updated']) if (!/^\d{4}-\d{2}-\d{2}$/.test(fm[k])) throw new Error(name + ': ' + k + ' phải dạng YYYY-MM-DD');
   if (fm.description.length > 160) console.warn('CẢNH BÁO ' + name + ': description ' + fm.description.length + ' ký tự (>160)');
+  if (fm.image && !/^img\/blog\/[\w.-]+$/.test(fm.image)) throw new Error(name + ': image phải dạng img/blog/<tên>.jpg');
+  if (fm.image && !existsSync(join(ROOT, 'docs', fm.image))) throw new Error(name + ': không thấy docs/' + fm.image);
+  if (fm.image_url && !/^https:\/\//.test(fm.image_url)) throw new Error(name + ': image_url phải là https');
   fm.reviewed = fm.reviewed === 'true';
   return { fm, body: m[2] };
 }
@@ -105,24 +108,26 @@ function nav(r, active) {
     '<div class="navlinks" id="navlinks"><a class="nv" href="' + r + 'index.html">Trang chủ</a>' +
     '<div class="nvdrop"><a class="nv go" href="' + r + 'screening/huong-dan.html">Screening</a><div class="nvmenu"><a href="' + r + 'screening/huong-dan.html">Hướng dẫn</a><a href="' + r + 'screening/chi-so.html">Các chỉ số</a><a href="' + r + 'screening.html#/">Đo ngay</a></div></div>' +
     '<a class="nv' + on('blog') + '" href="' + r + 'blog/">Kiến thức</a>' +
-    '<a class="nv' + on('gal') + '" href="' + r + 'thu-vien-anh/">Thư viện ảnh</a></div>' +
+    '<a class="nv' + on('gal') + '" href="' + r + 'thu-vien-anh/">Thư viện ảnh</a>' +
+    '<a class="nv' + on('contact') + '" href="' + r + 'lien-he.html">Liên hệ</a></div>' +
     '<span id="langsw" role="group" aria-label="Language"><button type="button" data-lang="vi">VI</button><button type="button" data-lang="en">EN</button></span>' +
     '<button type="button" id="navtoggle" aria-label="Menu" aria-controls="navlinks" aria-expanded="false">☰</button></nav>';
 }
-function page({ r, title, desc, canonical, og, ldjson, active, main, skipTitle }) {
+function page({ r, title, desc, canonical, og, ldjson, active, main, skipTitle, image }) {
   return '<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
     '<title' + (skipTitle ? ' data-i18n-skip' : '') + '>' + esc(title) + '</title>\n<meta name="description" content="' + esc(desc) + '">\n<link rel="canonical" href="' + esc(canonical) + '">\n' +
     '<meta property="og:site_name" content="' + SITE_NAME + '">\n<meta property="og:locale" content="vi_VN">\n<meta property="og:type" content="' + og + '">\n' +
     '<meta property="og:title" content="' + esc(title) + '">\n<meta property="og:description" content="' + esc(desc) + '">\n<meta property="og:url" content="' + esc(canonical) + '">\n' +
-    '<meta property="og:image" content="' + SITE_URL + '/logo.png">\n<meta name="twitter:card" content="summary">\n' +
+    '<meta property="og:image" content="' + SITE_URL + '/' + (image || 'logo.png') + '">\n<meta name="twitter:card" content="' + (image ? 'summary_large_image' : 'summary') + '">\n' +
     (ldjson ? '<script type="application/ld+json">' + JSON.stringify(ldjson, null, 1).replace(/</g, '\\u003c') + '</script>\n' : '') +
     '<link rel="icon" href="' + r + 'logo-128.png">\n<link rel="stylesheet" href="' + r + 'site.css">\n<link rel="stylesheet" href="' + r + 'nav.css">\n<script src="' + r + 'themes.js"></script>\n</head>\n<body>\n' +
     nav(r, active) + '\n' + main + '\n<script src="' + r + 'i18n.js"></script>\n<script src="' + r + 'nav.js"></script>\n</body>\n</html>\n';
 }
 
 function entry(p, r) {
-  return '<li><a class="t" data-i18n-skip href="' + r + p.fm.slug + '/">' + esc(p.fm.title) + '</a><p data-i18n-skip>' + esc(p.fm.description) + '</p><div class="meta"><span>Cập nhật ' + fmtDate(p.fm.updated) + '</span>' +
-    (p.fm.reviewed ? '' : '<span class="badge">Chờ bác sĩ duyệt</span>') + '</div></li>';
+  const th = p.fm.image ? '<a class="th" href="' + r + p.fm.slug + '/" tabindex="-1" aria-hidden="true"><img src="' + r + '../' + esc(p.fm.image) + '" alt="" width="1200" height="630" loading="lazy"></a>' : '';
+  return '<li' + (th ? ' class="hasth"' : '') + '>' + th + '<div class="eb"><a class="t" data-i18n-skip href="' + r + p.fm.slug + '/">' + esc(p.fm.title) + '</a><p data-i18n-skip>' + esc(p.fm.description) + '</p><div class="meta"><span>Cập nhật ' + fmtDate(p.fm.updated) + '</span>' +
+    (p.fm.reviewed ? '' : '<span class="badge">Chờ bác sĩ duyệt</span>') + '</div></div></li>';
 }
 
 function articlePage(p, posts) {
@@ -135,6 +140,8 @@ function articlePage(p, posts) {
     '<article class="art" data-i18n-skip>\n<p class="crumb"><a href="../">Kiến thức</a> / ' + esc(CLUSTERS[fm.cluster]) + '</p>\n<h1>' + esc(fm.title) + '</h1>\n' +
     '<div class="artmeta"><span><span data-i18n-skip="0">Tác giả:</span> <a href="' + AUTHOR_URL + '" target="_blank" rel="noopener">' + esc(fm.author) + '</a></span>' +
     '<span>Cập nhật ' + fmtDate(fm.updated) + '</span>' + (fm.reviewed ? '' : '<span class="badge">Chờ bác sĩ duyệt</span>') + '</div>\n' +
+    (fm.image ? '<figure class="cover"><img src="../../' + esc(fm.image) + '" alt="" width="1200" height="630">' +
+      (fm.image_credit ? '<figcaption>Ảnh: ' + (fm.image_url ? '<a data-i18n-skip href="' + esc(fm.image_url) + '" target="_blank" rel="noopener">' + esc(fm.image_credit) + '</a>' : '<span data-i18n-skip>' + esc(fm.image_credit) + '</span>') + ' / Unsplash</figcaption>' : '') + '</figure>\n' : '') +
     (fm.summary || fm.evidence ? '<aside class="abstract">' + (fm.summary ? '<b class="k">Tóm tắt</b><p>' + inline(fm.summary) + '</p>' : '') +
       (fm.evidence ? '<div class="ev"><b>Mức độ bằng chứng:</b> ' + esc(fm.evidence) + '</div>' : '') + '</aside>\n' : '') +
     '<div class="artbody">\n' + body + '\n</div>\n' +
@@ -145,11 +152,11 @@ function articlePage(p, posts) {
     '</article></div>\n<footer class="sitefoot">' + SITE_NAME + ' · Kết quả và nội dung mang tính sàng lọc, tham khảo.</footer></main>';
   const ld = {
     '@context': 'https://schema.org', '@type': 'Article', headline: fm.title, description: fm.description, inLanguage: 'vi',
-    datePublished: fm.date, dateModified: fm.updated, mainEntityOfPage: url, image: SITE_URL + '/logo.png',
+    datePublished: fm.date, dateModified: fm.updated, mainEntityOfPage: url, image: SITE_URL + '/' + (fm.image || 'logo.png'),
     author: { '@type': 'Person', name: fm.author, url: AUTHOR_URL },
     publisher: { '@type': 'Organization', name: SITE_NAME, logo: { '@type': 'ImageObject', url: SITE_URL + '/logo.png' } }
   };
-  return page({ r: '../../', title: fm.title + ' | ' + SITE_NAME, desc: fm.description, canonical: url, og: 'article', ldjson: ld, active: 'blog', main, skipTitle: true });
+  return page({ r: '../../', title: fm.title + ' | ' + SITE_NAME, desc: fm.description, canonical: url, og: 'article', ldjson: ld, active: 'blog', main, skipTitle: true, image: fm.image });
 }
 
 function indexPage(posts) {

@@ -2,6 +2,9 @@
 title: Đau gối khi chạy: đau bánh chè-đùi và hội chứng dải chậu chày
 description: Tổng quan bằng chứng về đau gối khi chạy bộ: đau khớp bánh chè-đùi, hội chứng dải chậu chày, yếu tố nguy cơ, chỉ số dáng chạy liên quan và can thiệp.
 slug: dau-goi-khi-chay
+image: img/blog/dau-goi-khi-chay.jpg
+image_credit: Mathias Reding
+image_url: https://unsplash.com/photos/legs-covered-in-mud-running-on-grass-OZZceyOQmdE
 cluster: chan-thuong
 date: 2026-11-08
 updated: 2026-11-08

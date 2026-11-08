@@ -153,6 +153,27 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 #detail .dsec{margin:16px 0 4px;font-size:15px;font-weight:700;color:var(--title,var(--moss))}
 #detail .dtemp{margin-left:8px;font-size:12px;font-weight:600;color:var(--amber)}
 #detail .rleg .rdot{position:static;display:inline-block;transform:none;vertical-align:middle;background:#fff}
+/* chế độ bác sĩ (?bs=1, nhớ trong máy): chỉ khi đó mới hiện "Thêm ghi chú" và "Chi tiết (bác sĩ)" */
+body:not(.bs) #l3acts .grp{display:none}
+/* màn Kết quả: khách tải ảnh chỉ số cơ bản, đặt lịch qua Zalo, đăng ký nhận báo cáo chi tiết */
+#l3cta{flex:none;width:100%;max-width:1100px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;gap:12px}
+#l3cta .ctah{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap}
+#l3cta .ctah h3{margin:0;font-size:17px;color:var(--title,var(--moss))}
+#l3cta .ctah .hint{margin:0;flex:1;min-width:200px}
+#l3cta .ctab{display:flex;gap:8px;flex-wrap:wrap}
+#l3cta .alt,#l3cta a.go{height:44px;font-size:15px;padding:0 18px}
+#l3cta a.go{display:inline-flex;align-items:center;justify-content:center;border-radius:12px;font-weight:600;text-decoration:none}
+#regf{display:grid;grid-template-columns:1fr 1fr auto;gap:10px 14px;align-items:end}
+#regf .go{height:52px;font-size:16px;padding:0 22px}
+#regf .chk,#regf .regout{grid-column:1/-1}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink);cursor:pointer}
+.chk input{width:18px;height:18px;margin:1px 0 0;flex:none;accent-color:var(--moss)}
+#regf .regout{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap}
+#regf .regout:has(#regmsg:empty):has(#regfb[hidden]){display:none}
+#regmsg.ok,#regcopy{color:var(--title2,var(--moss2))}
+#regcopy{font-size:14px;font-weight:600}
+#regfb{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}
+#regfb[hidden]{display:none}
 .modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--leaf-soft);border-radius:14px;padding:5px}
 .modes button{height:44px;background:transparent;color:var(--mut);font-size:15px;border-radius:10px}
 .modes button.on{background:var(--moss);color:#fff;box-shadow:0 2px 8px var(--shadow)}
@@ -165,7 +186,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 <script src="themes.js"></script>
 </head>
 <body>
-<nav id="topnav"><div class="logo"><img src="logo.png" alt="Hanoi Running Lab"><b>Hanoi Running Lab</b></div><button id="demolink" onclick="location.href='index.html'">Trang chủ</button><span class="nvdrop"><button data-nav="#/">Screening</button><span class="nvmenu"><a href="screening/huong-dan.html">Hướng dẫn</a><a href="screening/chi-so.html">Các chỉ số</a><a href="screening.html#/">Đo ngay</a></span></span><button onclick="location.href='blog/'">Kiến thức</button><button onclick="location.href='thu-vien-anh/'">Thư viện ảnh</button><button data-nav="#/list" hidden>Danh sách<span id="listcnt">0</span></button><span id="syncst" style="display:none;margin-left:8px;font-size:13px;font-weight:600;color:var(--amber)"></span>
+<nav id="topnav"><div class="logo"><img src="logo.png" alt="Hanoi Running Lab"><b>Hanoi Running Lab</b></div><button id="demolink" onclick="location.href='index.html'">Trang chủ</button><span class="nvdrop"><button data-nav="#/">Screening</button><span class="nvmenu"><a href="screening/huong-dan.html">Hướng dẫn</a><a href="screening/chi-so.html">Các chỉ số</a><a href="screening.html#/">Đo ngay</a></span></span><button onclick="location.href='blog/'">Kiến thức</button><button onclick="location.href='thu-vien-anh/'">Thư viện ảnh</button><button onclick="location.href='lien-he.html'">Liên hệ</button><button data-nav="#/list" hidden>Danh sách<span id="listcnt">0</span></button><span id="syncst" style="display:none;margin-left:8px;font-size:13px;font-weight:600;color:var(--amber)"></span>
   <div class="acts" id="l3acts">
     <button class="alt" id="tolist" hidden>Về danh sách</button>
     <div class="grp">
@@ -270,6 +291,23 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 <section class="layer" id="L3">
   <div id="resbox"><canvas id="res" width="1920" height="1080"></canvas></div>
   <div id="detail"></div>
+  <div id="l3cta">
+    <div class="ctah">
+      <h3>Nhận báo cáo chi tiết</h3>
+      <p class="hint">Ảnh chỉ số cơ bản tải được ngay. Báo cáo chi tiết do bác sĩ gửi riêng qua Zalo.</p>
+      <div class="ctab">
+        <button class="alt" id="dlimg" type="button">Tải ảnh kết quả</button>
+        <a class="go" id="zbook" href="https://zalo.me/0345901772" target="_blank" rel="noopener">Đặt lịch đánh giá chuyên sâu</a>
+      </div>
+    </div>
+    <form id="regf" novalidate>
+      <div class="fld"><label for="regname">HỌ VÀ TÊN</label><input type="text" id="regname" autocomplete="name" maxlength="80" data-i18n-skip></div>
+      <div class="fld"><label for="regphone">SỐ ĐIỆN THOẠI / ZALO</label><input type="tel" id="regphone" autocomplete="tel" inputmode="tel" maxlength="20" data-i18n-skip></div>
+      <button class="go" id="regsend" type="submit">Đăng ký nhận báo cáo</button>
+      <label class="chk"><input type="checkbox" id="regok">Tôi đồng ý gửi kết quả và thông tin liên hệ cho ThS. BS. Lê Trung Kiên để nhận báo cáo chi tiết</label>
+      <div class="regout"><span class="err" id="regmsg" role="status" aria-live="polite"></span><span id="regfb" hidden><button class="alt" id="regzalo" type="button">Gửi thông tin qua Zalo</button><span id="regcopy" role="status"></span></span></div>
+    </form>
+  </div>
 </section>
 
 <script>document.write(/[?&]mock=1/.test(location.search) ? '<script src="mock_pose.js"><\/script>' : '<script src="vendor/tasks-vision/vision_bundle.js"><\/script>');</script>

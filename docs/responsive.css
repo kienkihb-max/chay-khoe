@@ -48,6 +48,9 @@
   .card1{padding:20px 16px;border-radius:16px}
   .card1 h2{font-size:22px}
   .two{grid-template-columns:1fr}
+  #l3cta{padding:14px}
+  #regf{grid-template-columns:1fr}
+  #l3cta .ctab,#l3cta .ctab>*{width:100%}
   #adv>div{grid-template-columns:1fr!important}
   input[type=text],input[type=tel],input[type=number]{font-size:16px}
   #chip{font-size:18px;left:12px;top:14px;gap:8px;flex-wrap:wrap;max-width:55%}

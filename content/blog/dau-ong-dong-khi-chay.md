@@ -2,6 +2,9 @@
 title: Đau ống đồng khi chạy: hội chứng căng giãn xương chày giữa và gãy xương do mỏi
 description: Tổng quan bằng chứng về đau ống đồng (shin splints) khi chạy: hội chứng căng giãn xương chày giữa, yếu tố nguy cơ, dáng chạy và phân biệt với gãy xương do mỏi.
 slug: dau-ong-dong-khi-chay
+image: img/blog/dau-ong-dong-khi-chay.jpg
+image_credit: Samuel Arkwright
+image_url: https://unsplash.com/photos/runners-legs-moving-swiftly-on-a-track-MoiQCBPc9CY
 cluster: chan-thuong
 date: 2026-11-08
 updated: 2026-11-08

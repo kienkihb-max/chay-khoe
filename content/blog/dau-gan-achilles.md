@@ -2,6 +2,9 @@
 title: Đau gân Achilles ở người chạy bộ: bệnh lý gân gót giữa thân gân
 description: Tổng quan bằng chứng về đau gân Achilles (gân gót) ở người chạy: cơ chế, yếu tố nguy cơ, chỉ số dáng chạy liên quan và can thiệp tập tải có bằng chứng.
 slug: dau-gan-achilles
+image: img/blog/dau-gan-achilles.jpg
+image_credit: David Moorhouse
+image_url: https://unsplash.com/photos/close-up-of-a-runners-leg-and-athletic-shoe-GToHUINXOb4
 cluster: chan-thuong
 date: 2026-11-08
 updated: 2026-11-08
