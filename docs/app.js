@@ -17,6 +17,7 @@
   let SPEED = SPEED0;   // m/s
   const REF = (window.GAIT_REF || {}).metrics || {};
   const BLUE = '#2F6FEB', ORANGE = '#E8890C', GREEN = '#1F4D2B', AMBER = '#9A5F0A';
+  const TC = Themes.cv;   // màu thương hiệu theo giao diện đang chọn (themes.js); GREEN/AMBER/BAR_IN là màu TRẠNG THÁI, giữ nguyên
   const LINKS = [['sh', 'hip'], ['hip', 'knee'], ['knee', 'ank'], ['ank', 'heel'], ['heel', 'toe'], ['ank', 'toe']];
 
   const S = {
@@ -917,7 +918,7 @@
       c.beginPath(); c.arc(T[0], T[1], 46, 0, 7); c.stroke(); c.setLineDash([]);
 
       // chú thích trực quan: góc gối + khoảng cách bàn chân trước hông
-      const pill = (txt, px, py, bg) => { c.font = '700 28px system-ui,"Segoe UI",Arial'; const tw = c.measureText(txt).width + 30; c.fillStyle = bg; rr(c, px - tw / 2, py - 24, tw, 48, 24); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, px, py + 1); c.textAlign = 'left'; c.textBaseline = 'alphabetic'; };
+      const pill = (txt, px, py, bg) => { c.font = '700 28px ' + Themes.font; const tw = c.measureText(txt).width + 30; c.fillStyle = bg; rr(c, px - tw / 2, py - 24, tw, 48, 24); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, px, py + 1); c.textAlign = 'left'; c.textBaseline = 'alphabetic'; };
       const Hh = P(ph.lm.hip), Kk = P(ph.lm.knee), Aa = P(ph.lm.ank);
       const mm = R.res[side] && R.res[side].metrics;
       if (mm) {
@@ -938,13 +939,13 @@
         pill(f0(Math.abs(mm.overstride)) + ' cm', (Hh[0] + Aa[0]) / 2, by + 38, 'rgba(14,36,51,.85)');
       }
     } else {
-      c.fillStyle = '#8FA3AE'; c.font = '28px system-ui'; c.textAlign = 'center';
+      c.fillStyle = '#8FA3AE'; c.font = '28px ' + Themes.font; c.textAlign = 'center';
       c.fillText('Chưa bắt được khung chạm đất', x + w / 2, y + h / 2); c.textAlign = 'left';
     }
     c.restore();
     // nhãn
     c.fillStyle = col; rr(c, x + 18, y + 16, 190, 46, 23); c.fill();
-    c.fillStyle = '#fff'; c.font = '700 26px system-ui,Segoe UI,Arial'; c.textBaseline = 'middle';
+    c.fillStyle = '#fff'; c.font = '700 26px ' + Themes.font; c.textBaseline = 'middle';
     c.fillText(side === 'L' ? 'Chân trái' : 'Chân phải', x + 38, y + 40);
     c.textBaseline = 'alphabetic';
   }
@@ -964,7 +965,6 @@
   }
 
   // ---- báo cáo gọn: số to, vị trí đo trên ảnh, kết luận + lời khuyên ----
-  const FFX = 'system-ui,"Segoe UI",Arial';
   // kết luận + lời khuyên theo quy tắc đơn giản (bác sĩ nên rà lại nội dung)
   // ---------- Điểm dáng chạy (0-100) và bài tập gợi ý ----------
   // Logic điểm nằm ở score.js (window.Score): mỗi chỉ số 100 nếu trong khoảng bình thường, giảm dần theo độ lệch.
@@ -1077,20 +1077,20 @@
     return 'Giữ phong độ này! Tập sức mạnh 2 buổi mỗi tuần và đo lại sau 4–6 tuần';
   }
   function drawResult(R) {
-    const cv = $('res'), c = cv.getContext('2d'), INK = '#1B1F1C', MUT = '#5C685F';
-    const font = (w, s) => { c.font = w + ' ' + s + 'px ' + FFX; };
+    const cv = $('res'), c = cv.getContext('2d'), INK = TC.ink, MUT = TC.mut;
+    const font = (w, s) => { c.font = w + ' ' + s + 'px ' + Themes.font; };
     const fit = (txt, w, s, min, maxW) => { font(w, s); while (s > min && c.measureText(txt).width > maxW) { s -= 2; font(w, s); } };
-    const card = (x, y, w, h) => { c.save(); c.shadowColor = 'rgba(31,77,43,.12)'; c.shadowBlur = 14; c.shadowOffsetY = 3; c.fillStyle = '#fff'; rr(c, x, y, w, h, 22); c.fill(); c.restore(); };
+    const card = (x, y, w, h) => { c.save(); c.shadowColor = TC.shadow; c.shadowBlur = 14; c.shadowOffsetY = 3; c.fillStyle = '#fff'; rr(c, x, y, w, h, 22); c.fill(); c.restore(); };
     const pill = (txt, x, y, h, bg, fg, size) => { font('700', size); const w = c.measureText(txt).width + h * 0.9; c.fillStyle = bg; rr(c, x, y, w, h, h / 2); c.fill(); c.fillStyle = fg; c.textBaseline = 'middle'; c.fillText(txt, x + h * 0.45, y + h / 2 + 1); c.textBaseline = 'alphabetic'; return w; };
     c.textBaseline = 'alphabetic'; c.textAlign = 'left';
-    c.fillStyle = '#F3F9F0'; c.fillRect(0, 0, 1920, 1080);
+    c.fillStyle = TC.pale; c.fillRect(0, 0, 1920, 1080);
     // ---- đầu trang: tên, ngày đo, bacsikien.com ----
-    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, '#1F4D2B'); g.addColorStop(1, '#2A6A3B');
+    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 100);
     c.fillStyle = '#fff'; font('700', 34); c.fillText('Chạy bộ cùng Bác sĩ Kiên', 48, 62);
     const d = R.when ? new Date(R.when) : new Date();   // mở lại người cũ: giữ ngày đo
     c.textAlign = 'right'; c.fillStyle = '#fff'; font('700', 30); c.fillText('Ngày đo ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(), 1872, 50);
-    c.fillStyle = '#A9D69B'; font('600', 24); c.fillText('bacsikien.com', 1872, 84); c.textAlign = 'left';
+    c.fillStyle = TC.accent; font('600', 24); c.fillText('bacsikien.com', 1872, 84); c.textAlign = 'left';
     // Góc đã quay: chỉ ngang (R.comb), chỉ sau (R.back), hoặc cả hai. Chỉ vẽ khối của góc đã quay.
     const sc = scores(R), sub = R.sub, hasSide = !!R.comb, hasBack = !!R.back, both = hasSide && hasBack;
     const ph = S.photos || {};
@@ -1190,7 +1190,7 @@
     if (hasSide) {
       [['cadence', 'Nhịp chạy', 'bước/phút'], ['overstride', 'Chân đặt trước hông', 'cm'], ['knee_ic', 'Gối lúc chạm đất', '°']]
         .forEach(([k, lb, unit], i) => metricCard(k, lb, unit, i, mainVal(R, k), f0));
-      tipCard('NÊN CẢI THIỆN', GREEN, improveTip(R));
+      tipCard('NÊN CẢI THIỆN', TC.brand, improveTip(R));
     } else {
       LV_CARDS_BACK.forEach(([k, lb, unit], i) => metricCard(k, lb, unit, i, backVal(R.back, k), f1));
       tipCard('GHI CHÚ', AMBER, 'Ngưỡng góc sau lưng đang tạm, chờ bác sĩ duyệt. Quay thêm góc ngang để có đánh giá đầy đủ.');
@@ -1427,17 +1427,17 @@
         seg(o.sh, o.hip, col, 7); seg(o.hip, o.knee, col, 7); seg(o.knee, o.ank, col, 7);
         for (const kk of ['sh', 'hip', 'knee', 'ank']) { const A = P(o[kk]); c.fillStyle = col; c.beginPath(); c.arc(A[0], A[1], 10, 0, 7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); }
         const A = P(o.ank), txt = sd === 'L' ? 'Trái' : 'Phải';
-        c.font = '700 26px system-ui,"Segoe UI",Arial'; const tw = c.measureText(txt).width + 28;
+        c.font = '700 26px ' + Themes.font; const tw = c.measureText(txt).width + 28;
         c.fillStyle = col; rr(c, A[0] - tw / 2, A[1] + 22, tw, 42, 21); c.fill();
         c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, A[0], A[1] + 44); c.textAlign = 'left'; c.textBaseline = 'alphabetic';
       }
     } else {
-      c.fillStyle = '#8FA3AE'; c.font = '28px system-ui'; c.textAlign = 'center';
+      c.fillStyle = '#8FA3AE'; c.font = '28px ' + Themes.font; c.textAlign = 'center';
       c.fillText('Chưa bắt được khung hình', x + w / 2, y + h / 2); c.textAlign = 'left';
     }
     c.restore();
-    c.fillStyle = GREEN; rr(c, x + 18, y + 16, 190, 46, 23); c.fill();
-    c.fillStyle = '#fff'; c.font = '700 26px system-ui,Segoe UI,Arial'; c.textBaseline = 'middle';
+    c.fillStyle = TC.brand; rr(c, x + 18, y + 16, 190, 46, 23); c.fill();
+    c.fillStyle = '#fff'; c.font = '700 26px ' + Themes.font; c.textBaseline = 'middle';
     c.fillText('Nhìn từ sau', x + 38, y + 40); c.textBaseline = 'alphabetic';
   }
   // Quay xong · xuất kết quả: ghép các góc đã chốt thành một kết quả, ngày đo = hôm nay
@@ -1584,13 +1584,13 @@
   }
   function drawPage2(R) {
     const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080;
-    const c = cv.getContext('2d'), FF = 'system-ui,"Segoe UI",Arial';
+    const c = cv.getContext('2d'), FF = Themes.font;
     c.fillStyle = '#fff'; c.fillRect(0, 0, 1920, 1080);
-    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, '#1F4D2B'); g.addColorStop(1, '#2A6A3B');
+    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 110);
     c.fillStyle = '#fff'; c.font = '700 40px ' + FF; c.fillText('Ý nghĩa các chỉ số của bạn', 48, 66);
     c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Chạy bộ cùng Bác sĩ Kiên', 1872, 52);
-    c.fillStyle = '#E3F1DC'; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
+    c.fillStyle = TC.soft; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
     const rows = [
       { k: 'cadence', t: 'Cadence (nhịp chạy)' }, { k: 'vert_osc', t: 'Nhấp nhô' }, { k: 'trunk', t: 'Nghiêng thân' },
       { k: 'overstride', t: 'Tiếp đất trước thân', per: true }, { k: 'knee_ic', t: 'Gập gối lúc chạm đất', per: true }, { k: 'strike', t: 'Kiểu tiếp đất', per: true },
@@ -1601,7 +1601,7 @@
     let y = 140; const rh = 128;
     rows.forEach((row, i) => {
       const yy = y + i * rh;
-      c.fillStyle = i % 2 ? '#fff' : '#F3F9F0'; c.fillRect(48, yy, 1824, rh - 8);
+      c.fillStyle = i % 2 ? '#fff' : TC.pale; c.fillRect(48, yy, 1824, rh - 8);
       c.fillStyle = '#14202B'; c.font = '700 26px ' + FF; c.fillText(row.t, 68, yy + 40);
       c.fillStyle = '#5B6B77'; c.font = '21px ' + FF; wrap(c, MEANING[row.k], 68, yy + 74, 820, 28);
       // giá trị + đánh giá (cột phải)
@@ -1623,24 +1623,24 @@
     // ghi chú bác sĩ
     const note = ($('note').value || '').trim();
     const ny = y + rows.length * rh + 6;
-    c.fillStyle = '#E3F1DC'; rr(c, 48, ny, 1824, 118, 14); c.fill();
-    c.fillStyle = GREEN; c.font = '700 20px ' + FF; c.fillText('NHẬN XÉT CỦA BÁC SĨ', 72, ny + 34);
+    c.fillStyle = TC.soft; rr(c, 48, ny, 1824, 118, 14); c.fill();
+    c.fillStyle = TC.brand; c.font = '700 20px ' + FF; c.fillText('NHẬN XÉT CỦA BÁC SĨ', 72, ny + 34);
     c.fillStyle = '#14202B'; c.font = '24px ' + FF;
     if (note) wrap(c, note, 72, ny + 70, 1780, 30);
     c.fillStyle = '#7A8791'; c.font = '17px ' + FF;
     c.fillText('Kết quả sàng lọc 2D bằng AI trong 15 giây chạy, chỉ mang tính tham khảo, không thay thế khám và chẩn đoán lâm sàng. Nếu đang đau hoặc chấn thương, hãy gặp bác sĩ.', 48, 1040, 1824);
-    c.textAlign = 'right'; c.fillStyle = GREEN; c.font = '700 20px ' + FF; c.fillText('Liên hệ: ' + CONTACT, 1872, 1068); c.textAlign = 'left';
+    c.textAlign = 'right'; c.fillStyle = TC.brand; c.font = '700 20px ' + FF; c.fillText('Liên hệ: ' + CONTACT, 1872, 1068); c.textAlign = 'left';
     return cv;
   }
   function drawPage3(R) {
     const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080;
-    const c = cv.getContext('2d'), FF = 'system-ui,"Segoe UI",Arial';
+    const c = cv.getContext('2d'), FF = Themes.font;
     c.fillStyle = '#fff'; c.fillRect(0, 0, 1920, 1080);
-    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, '#1F4D2B'); g.addColorStop(1, '#2A6A3B');
+    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 110);
     c.fillStyle = '#fff'; c.font = '700 40px ' + FF; c.fillText('Bảng số đo chi tiết', 48, 66);
     c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Chạy bộ cùng Bác sĩ Kiên', 1872, 52);
-    c.fillStyle = '#E3F1DC'; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
+    c.fillStyle = TC.soft; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
     const rows = [];
     const keys = ['cadence', 'vert_osc', 'trunk', 'knee_ic', 'shank_ic', 'overstride', 'knee_mid', 'hip_ext', 'knee_swing'];
     for (const k of keys) {
@@ -1657,7 +1657,7 @@
     ['Chỉ số', 'Chân trái', 'Chân phải', 'Bình thường', 'Đánh giá'].forEach((t, i) => c.fillText(t, X[i] + 10, top + 4));
     rows.forEach((r, i) => {
       const y = top + 14 + i * rh;
-      c.fillStyle = i % 2 ? '#fff' : '#F3F9F0'; c.fillRect(48, y, 1824, rh - 2);
+      c.fillStyle = i % 2 ? '#fff' : TC.pale; c.fillRect(48, y, 1824, rh - 2);
       const fs = Math.max(15, Math.min(22, rh - 22));
       c.font = fs + 'px ' + FF; c.fillStyle = '#14202B'; c.fillText(r.label + (r.unit ? ' (' + r.unit + ')' : ''), X[0] + 10, y + rh * 0.68, 690);
       c.font = '700 ' + fs + 'px ' + FF;
@@ -1672,16 +1672,16 @@
   }
   function drawPage4(R) {
     const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080;
-    const c = cv.getContext('2d'), FF = 'system-ui,"Segoe UI",Arial';
+    const c = cv.getContext('2d'), FF = Themes.font;
     c.fillStyle = '#fff'; c.fillRect(0, 0, 1920, 1080);
-    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, '#1F4D2B'); g.addColorStop(1, '#2A6A3B');
+    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 110);
     c.fillStyle = '#fff'; c.font = '700 40px ' + FF; c.fillText('Điểm dáng chạy và bài tập gợi ý', 48, 66);
     c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Chạy bộ cùng Bác sĩ Kiên', 1872, 52);
-    c.fillStyle = '#E3F1DC'; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
+    c.fillStyle = TC.soft; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
     const sc = scores(R);
     const box = (x, label, v, big) => {
-      c.fillStyle = '#F3F9F0'; rr(c, x, 134, big ? 520 : 400, 150, 16); c.fill();
+      c.fillStyle = TC.pale; rr(c, x, 134, big ? 520 : 400, 150, 16); c.fill();
       c.fillStyle = '#5B6B77'; c.font = '700 20px ' + FF; c.fillText(label, x + 24, 174);
       c.fillStyle = v == null ? '#8A97A1' : scoreCol(v); c.font = '700 80px ' + FF; c.fillText(v == null ? '–' : String(v), x + 24, 256);
       c.font = '700 80px ' + FF; const nw = c.measureText(v == null ? '–' : String(v)).width; c.fillStyle = '#5B6B77'; c.font = '26px ' + FF; c.fillText('/100', x + 24 + nw + 8, 256);
@@ -1695,8 +1695,8 @@
     if (!ex.length) { c.fillStyle = '#4a5a65'; c.font = '24px ' + FF; wrap(c, (R.comb && conclusion(R).text.indexOf('có cờ tin cậy') >= 0 ? conclusion(R).text + ' ' : 'Các chỉ số chính đều nằm trong khoảng bình thường. ') + 'Hãy giữ kỹ thuật hiện tại, tập sức mạnh 2 buổi mỗi tuần và đo lại sau 4–6 tuần.', 48, 390, 1700, 34); }
     ex.forEach((e, i) => {
       const col = i % 2, row = Math.floor(i / 2), x = 48 + col * 924, y = 362 + row * 220;
-      c.fillStyle = '#F3F9F0'; rr(c, x, y, 900, 204, 16); c.fill();
-      c.fillStyle = GREEN; c.beginPath(); c.arc(x + 38, y + 40, 18, 0, 7); c.fill();
+      c.fillStyle = TC.pale; rr(c, x, y, 900, 204, 16); c.fill();
+      c.fillStyle = TC.brand; c.beginPath(); c.arc(x + 38, y + 40, 18, 0, 7); c.fill();
       c.fillStyle = '#fff'; c.font = '700 20px ' + FF; c.textAlign = 'center'; c.fillText(String(i + 1), x + 38, y + 47); c.textAlign = 'left';
       c.fillStyle = '#14202B'; c.font = '700 26px ' + FF; c.fillText(e.t, x + 68, y + 48, 810);
       c.fillStyle = AMBER; c.font = '600 18px ' + FF; c.fillText(e.why, x + 24, y + 84, 850);
@@ -1704,19 +1704,19 @@
     });
     c.fillStyle = '#7A8791'; c.font = '17px ' + FF;
     c.fillText('Tên bài tập kèm thuật ngữ tiếng Anh để dễ tra cứu video hướng dẫn. Bài tập mang tính gợi ý chung, hãy dừng nếu thấy đau và hỏi bác sĩ hoặc huấn luyện viên trước khi tập nếu bạn đang chấn thương.', 48, 1040, 1824);
-    c.textAlign = 'right'; c.fillStyle = GREEN; c.font = '700 20px ' + FF; c.fillText('Liên hệ: ' + CONTACT, 1872, 1068); c.textAlign = 'left';
+    c.textAlign = 'right'; c.fillStyle = TC.brand; c.font = '700 20px ' + FF; c.fillText('Liên hệ: ' + CONTACT, 1872, 1068); c.textAlign = 'left';
     return cv;
   }
   // Trang "Nhìn từ sau lưng": ảnh sau lưng + 5 chỉ số góc sau (từng chân / chung), khoảng bình thường TẠM và giải thích
   function drawPageBack(R) {
     const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080;
-    const c = cv.getContext('2d'), FF = 'system-ui,"Segoe UI",Arial', B = R.back;
+    const c = cv.getContext('2d'), FF = Themes.font, B = R.back;
     c.fillStyle = '#fff'; c.fillRect(0, 0, 1920, 1080);
-    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, '#1F4D2B'); g.addColorStop(1, '#2A6A3B');
+    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 110);
     c.fillStyle = '#fff'; c.font = '700 40px ' + FF; c.fillText('Nhìn từ sau lưng', 48, 66);
     c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Chạy bộ cùng Bác sĩ Kiên', 1872, 52);
-    c.fillStyle = '#E3F1DC'; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
+    c.fillStyle = TC.soft; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
     drawBackPhoto(c, (S.photos || {}).B, 48, 134, 520, 860);
     const sc = scores(R), bs = sc.back ? sc.back.total : null;
     c.fillStyle = '#5B6B77'; c.font = '700 22px ' + FF; c.fillText('ĐIỂM GÓC SAU', 608, 166);
@@ -1729,7 +1729,7 @@
       const cf = REF[k] || { label: k, unit: '' }, y = top + 16 + i * rh, per = Score.BACK_PERLEG.includes(k);
       const vals = per ? ['L', 'R'].map((s) => (B.per && B.per[s] ? B.per[s][k] : NaN)) : [B.common ? B.common[k] : NaN];
       const qs = vals.map((v) => rating(k, v)), ok = qs.every((q) => q.ok);
-      c.fillStyle = i % 2 ? '#fff' : '#F3F9F0'; c.fillRect(608, y, 1264, rh - 8);
+      c.fillStyle = i % 2 ? '#fff' : TC.pale; c.fillRect(608, y, 1264, rh - 8);
       c.fillStyle = '#14202B'; c.font = '700 22px ' + FF; c.fillText(cf.label + (cf.unit ? ' (' + cf.unit + ')' : ''), X[0] + 10, y + 36, 380);
       c.font = '700 24px ' + FF;   // mỗi số tô theo đánh giá của chính nó (khớp bảng Chi tiết)
       if (per) vals.forEach((v, j) => { c.fillStyle = qs[j].ok ? GREEN : AMBER; c.fillText(f1(v), X[1 + j] + 10, y + 36, 170); });
@@ -1742,7 +1742,7 @@
     });
     c.fillStyle = '#7A8791'; c.font = '17px ' + FF;
     c.fillText('Chỉ số góc sau đo 2D từ video quay sau lưng; khoảng bình thường đang tạm, chờ bác sĩ duyệt. Chỉ mang tính tham khảo, không thay thế khám lâm sàng.', 48, 1040, 1824);
-    c.textAlign = 'right'; c.fillStyle = GREEN; c.font = '700 20px ' + FF; c.fillText('Liên hệ: ' + CONTACT, 1872, 1068); c.textAlign = 'left';
+    c.textAlign = 'right'; c.fillStyle = TC.brand; c.font = '700 20px ' + FF; c.fillText('Liên hệ: ' + CONTACT, 1872, 1068); c.textAlign = 'left';
     return cv;
   }
   function jpegBytes(cv) {
@@ -1850,6 +1850,8 @@
   }
   function go(h) { if (location.hash === h) route(); else location.hash = h; }
   window.addEventListener('hashchange', route);
+  // đổi giao diện: vẽ lại ảnh kết quả đang giữ (các trang PDF vẽ lúc xuất nên tự theo giao diện)
+  Themes.onChange(() => { if (S.result) { try { drawResult(S.result); } catch (e) { console.warn('vẽ lại kết quả', e); } } });
   $('listq').addEventListener('input', renderList);
 
   // ---------- Dữ liệu mẫu (chỉ khi ?mock=1): chạy đúng đường tính như lúc đo thật trên chuỗi người que sinh sẵn ----------
