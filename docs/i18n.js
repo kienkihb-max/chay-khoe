@@ -23,7 +23,7 @@
     [`Quay 2 phút trên máy chạy bộ, nhận báo cáo kèm định nghĩa từng chỉ số và tài liệu tham khảo.`, `Record 2 minutes on a treadmill and get a report with each metric defined and referenced.`],
     [`9 tài liệu tham khảo công khai`, `9 openly listed references`],
     [`Video không rời khỏi máy`, `Video never leaves your device`],
-    [`Đội y tế các giải chạy`, `Medical team at running races`],
+    [`Có báo cáo sau khoảng 2 phút`, `Report in about 2 minutes`],
     [`— ThS. BS. Lê Trung Kiên, Người sáng lập Hanoi Running Lab`, `— Dr. Le Trung Kien, MSc, Founder of Hanoi Running Lab`],
     [`Cách hoạt động`, `How it works`],
     [`Camera cố định ghi lại chuyển động của bạn trên máy chạy bộ.`, `A fixed camera records your movement on a treadmill.`],
