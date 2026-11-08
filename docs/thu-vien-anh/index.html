@@ -20,6 +20,7 @@
 <style>
 .ggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0 0;padding:0;list-style:none}
 .ggrid li{margin:0}
+.gempty{margin:32px 0;color:var(--mut,#667);font-size:17px}
 .ggrid button{display:block;padding:0;border:0;background:var(--line);cursor:zoom-in;width:100%;border-radius:8px;overflow:hidden}
 .ggrid img{width:100%;aspect-ratio:3/2;height:auto;display:block;transition:transform .2s}
 .ggrid button:hover img{transform:scale(1.03)}
@@ -39,7 +40,6 @@
 <nav id="topnav"><a class="logo" href="../index.html"><img src="../logo.png" alt="Hanoi Running Lab"><b>Hanoi Running Lab</b></a><div class="navlinks" id="navlinks"><a class="nv" href="../index.html">Trang chủ</a><div class="nvdrop"><a class="nv go" href="../screening/huong-dan.html">Screening</a><div class="nvmenu"><a href="../screening/huong-dan.html">Hướng dẫn</a><a href="../screening/chi-so.html">Các chỉ số</a><a href="../screening.html#/">Đo ngay</a></div></div><a class="nv" href="../blog/">Kiến thức</a><a class="nv on" aria-current="page" href="../thu-vien-anh/">Thư viện ảnh</a></div><span id="langsw" role="group" aria-label="Language"><button type="button" data-lang="vi">VI</button><button type="button" data-lang="en">EN</button></span><button type="button" id="navtoggle" aria-label="Menu" aria-controls="navlinks" aria-expanded="false">☰</button></nav>
 <main class="wrap"><header class="listhead"><h1>Thư viện ảnh</h1></header>
 <ul class="ggrid" id="grid"></ul>
-<p class="gcredit">Ảnh: bacsikien.com</p>
 <footer class="sitefoot">Hanoi Running Lab · Nội dung mang tính thông tin, không thay thế khám và chẩn đoán của bác sĩ.</footer></main>
 <div id="lb" role="dialog" aria-modal="true" aria-label="Xem ảnh lớn" data-i18n-skip><button type="button" class="x" aria-label="Đóng">×</button><button type="button" class="pv" aria-label="Ảnh trước">‹</button><img alt=""><button type="button" class="nx" aria-label="Ảnh sau">›</button></div>
 <script>
@@ -47,6 +47,7 @@
 var grid=document.getElementById('grid'),lb=document.getElementById('lb'),lbi=lb.querySelector('img');
 var pics=[],idx=0,lastBtn=null;
 function render(){
+  if(!pics.length){var e=document.createElement("p");e.className="gempty";e.textContent="Ảnh đang được cập nhật.";grid.replaceWith(e);return}
   pics.forEach(function(p,i){
     var li=document.createElement('li'),b=document.createElement('button'),im=document.createElement('img');
     b.type='button';b.setAttribute('aria-label','Xem ảnh lớn: '+p.alt);

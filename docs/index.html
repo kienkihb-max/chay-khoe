@@ -122,8 +122,11 @@ footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text
 @media (max-width:900px){.herogrid{grid-template-columns:1fr;gap:28px}.heroimg img{aspect-ratio:4/3;object-position:50% 20%}}
 .herogrid a.herocta{font-size:21px;padding:18px 36px;white-space:nowrap}@media (max-width:480px){.herogrid a.herocta{white-space:normal;font-size:18px;padding:16px 24px}}
 .hero p.punch{font-size:22px;font-weight:700;line-height:1.35;color:#fff;margin:0 0 10px}
-.trust{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:rgba(255,255,255,.85)}.trust li::before{content:"✓ ";color:#b9e4a6;font-weight:700}
+.trust{list-style:none;margin:18px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:14px;color:rgba(255,255,255,.85)}.trust li::before{content:"✓ ";color:#b9e4a6;font-weight:700}
 .sign{text-align:right;font-weight:600;font-style:italic;margin:24px 0 0;color:var(--moss,#2d4a2b)}
+.heroimg img.herologo{aspect-ratio:1/1;max-width:420px;margin:0 auto;border-radius:50%;background:#fff;object-fit:contain;object-position:50% 50%}
+@media (max-width:900px){.heroimg img.herologo{aspect-ratio:1/1;max-width:260px}}
+@media (max-width:480px){.trust{grid-template-columns:1fr}}
 .hero .tag{font-size:20px;font-weight:600;font-style:italic;line-height:1.4;color:#fff;margin:0 0 18px;max-width:760px}
 .hero p.lead{max-width:720px;margin:0 0 14px;font-size:17px}
 .sub{font-size:18px;font-weight:600;font-style:italic;color:var(--moss2);margin:-12px 0 20px}
@@ -172,8 +175,8 @@ footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text
   <p class="punch">Không cần phòng lab. Không cần cảm biến. Chỉ cần một chiếc điện thoại.</p>
   <p class="lead">Quay 2 phút trên máy chạy bộ, nhận báo cáo kèm định nghĩa từng chỉ số và tài liệu tham khảo.</p>
   <a class="herocta" href="screening.html">SCREENING – PHÂN TÍCH DÁNG CHẠY</a>
-  <ul class="trust"><li>9 tài liệu tham khảo công khai</li><li>Video xử lý ngay trên máy, không gửi đi</li><li>Đội y tế các giải chạy</li></ul>
-  </div><figure class="heroimg"><img src="img/home-moi.jpg" width="720" height="900" alt="Bác sĩ Lê Trung Kiên tại Hanoi International Marathon"><figcaption>ThS. BS. Lê Trung Kiên</figcaption></figure>
+  <ul class="trust"><li>9 tài liệu tham khảo công khai</li><li>Video không rời khỏi máy</li><li>Đội y tế các giải chạy</li><li>Không cần cài app</li></ul>
+  </div><figure class="heroimg"><img class="herologo" src="logo.png" width="512" height="512" alt="Logo Hanoi Running Lab"></figure>
 </div></header>
 
 <main class="wrap">
@@ -201,18 +204,6 @@ footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text
     <a class="btn2" href="thu-vien-anh/">Khám phá thư viện ảnh</a></div>
 </div></section>
 
-<section><h2>Sứ mệnh</h2>
-<p class="sub">Running is movement. Understanding it is science.</p>
-<div class="prose"><p>Chúng tôi theo đuổi ba nguyên tắc:</p></div>
-<ul class="prin">
-  <li><b>Đo lường khách quan</b>Sử dụng dữ liệu và công nghệ thay vì chỉ dựa vào quan sát chủ quan.</li>
-  <li><b>Minh bạch khoa học</b>Giải thích cách đo, ý nghĩa và giới hạn của từng chỉ số.</li>
-  <li><b>Ứng dụng thực tiễn</b>Chuyển dữ liệu thành thông tin có ích cho việc tập luyện và chăm sóc sức khỏe vận động.</li>
-</ul>
-<div class="prose" style="margin-top:22px"><p>Không có một kiểu dáng chạy duy nhất phù hợp với tất cả mọi người.</p></div>
-<p class="sign">— ThS. BS. Lê Trung Kiên, Người sáng lập Hanoi Running Lab</p>
-<a class="btn2" href="gioi-thieu.html">Đọc thêm về Hanoi Running Lab →</a>
-</section>
 </main>
 
 <footer class="closing">HANOI RUNNING LAB – Where running meets science.</footer>
