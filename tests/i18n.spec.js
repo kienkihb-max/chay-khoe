@@ -12,11 +12,11 @@ test.describe('Đổi ngôn ngữ EN/VI', () => {
   test('L-1 mặc định VI, bấm EN đổi chữ ngay (không tải lại), bấm VI trả đúng chữ gốc', async ({ page }) => {
     await page.goto('/index.html?mock=1');
     await expect(page.locator('#langsw [data-lang="vi"]')).toHaveClass(/on/);
-    await expect(page.locator('#topnav .logo b')).toHaveText('Chạy bộ cùng Bác sĩ Kiên');
+    await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
     const before = await page.locator('#L1').innerText();
     await page.evaluate(() => { window.__marker = 1; });
     await page.click('#langsw [data-lang="en"]');
-    await expect(page.locator('#topnav .logo b')).toHaveText('Run with Dr. Kien');
+    await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
     expect(await page.evaluate(() => window.__marker)).toBe(1);   // không tải lại
     await expect(page.locator('#topnav [data-nav="#/"]')).toHaveText('New test');
     await expect(page.locator('#langsw [data-lang="en"]')).toHaveClass(/on/);
@@ -27,7 +27,7 @@ test.describe('Đổi ngôn ngữ EN/VI', () => {
     expect((await page.locator('#L1').innerText()).replace('Camera giả (mock)', '')).not.toMatch(VI);
     await shot(page.locator('#L1'), 'i18n-en-measure');
     await page.click('#langsw [data-lang="vi"]');
-    await expect(page.locator('#topnav .logo b')).toHaveText('Chạy bộ cùng Bác sĩ Kiên');
+    await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
     expect(await page.locator('#L1').innerText()).toBe(before);
     await expect(page.locator('#name')).toHaveAttribute('placeholder', 'Nguyễn Văn A');
   });
@@ -36,9 +36,9 @@ test.describe('Đổi ngôn ngữ EN/VI', () => {
     await page.goto('/index.html?mock=1');
     await page.click('#langsw [data-lang="en"]');
     await page.reload();
-    await expect(page.locator('#topnav .logo b')).toHaveText('Run with Dr. Kien');
+    await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
     await page.goto('/demo.html');
-    await expect(page.locator('#topnav .logo b')).toHaveText('Run with Dr. Kien');
+    await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
     await expect(page.locator('#topnav a.nv.on')).toHaveText('About');
     await page.click('#langsw [data-lang="vi"]');
     await expect(page.locator('#topnav a.nv.on')).toHaveText('Giới thiệu');

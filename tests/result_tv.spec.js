@@ -103,7 +103,7 @@ test.describe.serial('Màn Kết quả TV - bố cục', () => {
   test('AC5 góc có logo, ngày đo, bacsikien.com; khung 16:9; chữ đọc được từ 3 m', async () => {
     const T = D.filter((d) => d.t != null);
     // tên thương hiệu vẽ ở góc trái trên, không còn ảnh logo
-    expect(T.some((d) => /Chạy bộ cùng Bác sĩ Kiên/.test(d.t)), 'chữ thương hiệu ở góc').toBeTruthy();
+    expect(T.some((d) => /Hanoi Running Lab/.test(d.t)), 'chữ thương hiệu ở góc').toBeTruthy();
     expect(T.some((d) => /Savita/i.test(d.t)), 'không còn chữ Savita').toBeFalsy();
     expect(T.some((d) => /CHẠY BỘ CÙNG BÁC SĨ KIÊN/.test(d.t)), 'chữ logo cũ đã bỏ').toBeFalsy();
     const today = await page.evaluate(() => { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); });

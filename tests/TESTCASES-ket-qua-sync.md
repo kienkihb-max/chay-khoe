@@ -15,7 +15,7 @@ Muốn nhìn ảnh: thêm `SHOT_DIR=<thư mục scratchpad>` (spec chụp cắt 
 | AC2 | Tầng 2 | Đúng 2 ô ảnh tỉ lệ 4:3 (sai số <0,01), có ảnh trong ô, có chữ góc gối (°) trên ảnh, "ĐIỂM CHÂN TRÁI/PHẢI" dưới ảnh kèm số hoặc lý do |
 | AC3 | Tầng 3 | 3 nhãn Nhịp chạy / Chân đặt trước hông / Gối lúc chạm đất; giá trị >=72px, màu thuộc {xanh, cam, xám}; "NÊN CẢI THIỆN" có câu, không chứa từ chê |
 | AC4 | Chỉ số phụ | Ảnh TV không có nhãn 6 chỉ số phụ; Chi tiết (bác sĩ) đủ 9 nhãn; PDF trong lần đẩy đầu có đủ 9 nhãn + "Kiểu tiếp đất" |
-| AC5 | Góc + khung | Chữ "Chạy bộ cùng Bác sĩ Kiên" ở góc, không logo, không chữ "Savita", "Ngày đo dd/mm/yyyy", bacsikien.com; canvas 1920x1080, hiển thị 16:9 (sai số <0,02), nằm trọn màn 1920x1080; không chữ nào <22px (ngưỡng qc đặt cho 3 m, TV 55" 1080p) |
+| AC5 | Góc + khung | Chữ "Hanoi Running Lab" ở góc, không logo, không chữ "Savita", "Ngày đo dd/mm/yyyy", bacsikien.com; canvas 1920x1080, hiển thị 16:9 (sai số <0,02), nằm trọn màn 1920x1080; không chữ nào <22px (ngưỡng qc đặt cho 3 m, TV 55" 1080p) |
 | CC1 | Hạng | Nhãn hạng khớp ngưỡng 85/70/55 với điểm tổng và từng chân |
 | CC1 bổ sung | Biên 84/85, 69/70, 54/55 | `test.fixme`: chờ hook `window.__gait.tierOf` |
 | AC6 | Header | #tolist, #notebtn, #tgdetail (trong #l3acts) nằm trong #topnav; không còn #next; #note là input ẩn; nút nav "Đo mới" có mặt; gọn chiều cao header, trên khung #res |
@@ -78,7 +78,7 @@ S-AC3, S-CC1..CC5 đang `test.fixme`: cần lỗi mạng giả mà docs/sync.js 
 
 | Mã | Bước | Kỳ vọng | Nguồn |
 |---|---|---|---|
-| BR-1 | Mở index | Title "Chạy bộ cùng Bác sĩ Kiên"; #topnav .logo b cùng chữ; không có ảnh logo | master 07/11 |
+| BR-1 | Mở index | Title "Hanoi Running Lab"; #topnav .logo b cùng chữ; không có ảnh logo | master 07/11 |
 | BR-2 | Mở demo.html | Như BR-1 | master 07/11 |
 | DM-AC1 | Index, bấm #demolink (trên #topnav) | Sang demo.html cùng tab, thấy h1 | master 07/11 |
 | DM-AC1b | 1440px, màn Danh sách | Nút Demo không tràn, cùng hàng, bấm được | tự suy ra |

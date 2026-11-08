@@ -12,6 +12,7 @@
     fps: 30,
     res: 720,
   };
+  const LOGO = new Image(); LOGO.onload = () => { if (S.result && $('L3').classList.contains('show')) drawResult(S.result); }; LOGO.src = 'logo.png';   // logo trên ảnh kết quả
   const CONTACT = 'bacsikien.com  ·  0345 901 772';   // in ở cuối trang 2 của PDF; sửa tại đây
   let SPEED0 = 1000 / (CFG.pace * 60);
   let SPEED = SPEED0;   // m/s
@@ -1087,7 +1088,8 @@
     // ---- đầu trang: tên, ngày đo, bacsikien.com ----
     const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 100);
-    c.fillStyle = '#fff'; font('700', 34); c.fillText('Chạy bộ cùng Bác sĩ Kiên', 48, 62);
+    if (LOGO.complete && LOGO.naturalWidth) { c.fillStyle = '#fff'; c.beginPath(); c.arc(68, 50, 30, 0, Math.PI * 2); c.fill(); c.drawImage(LOGO, 40, 22, 56, 56); }
+    c.fillStyle = '#fff'; font('700', 34); c.fillText('Hanoi Running Lab', 112, 62);
     const d = R.when ? new Date(R.when) : new Date();   // mở lại người cũ: giữ ngày đo
     c.textAlign = 'right'; c.fillStyle = '#fff'; font('700', 30); c.fillText('Ngày đo ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(), 1872, 50);
     c.fillStyle = TC.accent; font('600', 24); c.fillText('bacsikien.com', 1872, 84); c.textAlign = 'left';
@@ -1589,7 +1591,7 @@
     const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 110);
     c.fillStyle = '#fff'; c.font = '700 40px ' + FF; c.fillText('Ý nghĩa các chỉ số của bạn', 48, 66);
-    c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Chạy bộ cùng Bác sĩ Kiên', 1872, 52);
+    c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Hanoi Running Lab', 1872, 52);
     c.fillStyle = TC.soft; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
     const rows = [
       { k: 'cadence', t: 'Cadence (nhịp chạy)' }, { k: 'vert_osc', t: 'Nhấp nhô' }, { k: 'trunk', t: 'Nghiêng thân' },
@@ -1639,7 +1641,7 @@
     const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 110);
     c.fillStyle = '#fff'; c.font = '700 40px ' + FF; c.fillText('Bảng số đo chi tiết', 48, 66);
-    c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Chạy bộ cùng Bác sĩ Kiên', 1872, 52);
+    c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Hanoi Running Lab', 1872, 52);
     c.fillStyle = TC.soft; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
     const rows = [];
     const keys = ['cadence', 'vert_osc', 'trunk', 'knee_ic', 'shank_ic', 'overstride', 'knee_mid', 'hip_ext', 'knee_swing'];
@@ -1677,7 +1679,7 @@
     const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 110);
     c.fillStyle = '#fff'; c.font = '700 40px ' + FF; c.fillText('Điểm dáng chạy và bài tập gợi ý', 48, 66);
-    c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Chạy bộ cùng Bác sĩ Kiên', 1872, 52);
+    c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Hanoi Running Lab', 1872, 52);
     c.fillStyle = TC.soft; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
     const sc = scores(R);
     const box = (x, label, v, big) => {
@@ -1715,7 +1717,7 @@
     const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 110);
     c.fillStyle = '#fff'; c.font = '700 40px ' + FF; c.fillText('Nhìn từ sau lưng', 48, 66);
-    c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Chạy bộ cùng Bác sĩ Kiên', 1872, 52);
+    c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Hanoi Running Lab', 1872, 52);
     c.fillStyle = TC.soft; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
     drawBackPhoto(c, (S.photos || {}).B, 48, 134, 520, 860);
     const sc = scores(R), bs = sc.back ? sc.back.total : null;

@@ -30,7 +30,7 @@
 @media (max-width:640px){
   #topnav{gap:2px;padding:0 6px}
   #topnav .logo{margin-right:2px}
-  #topnav .logo img{width:30px;height:30px}
+  #topnav .logo img{width:36px;height:36px}
   #topnav button{padding:0 8px;font-size:13px}
   #listcnt{margin-left:4px;padding:0 6px}
   #syncst{display:none!important}

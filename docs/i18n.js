@@ -13,8 +13,8 @@
   var KEY = 'lang';
   var DICT = [
     // ===== Thương hiệu, thanh trên =====
-    [`CHẠY BỘ CÙNG BÁC SĨ KIÊN`, `RUN WITH DR. KIEN`],
-    [`Chạy bộ cùng Bác sĩ Kiên`, `Run with Dr. Kien`],
+    [`HANOI RUNNING LAB`, `HANOI RUNNING LAB`],
+    [`Hanoi Running Lab`, `Hanoi Running Lab`],
     [`Đo mới`, `New test`], [`Danh sách đã đo`, `Measured runners`], [`Danh sách`, `List`], [`Dữ liệu`, `Data`], [`Giới thiệu`, `About`],
     [`Mở Google Sheet ở tab mới`, `Open Google Sheet in a new tab`], [`Đóng`, `Close`],
     [`Chưa gửi `, `Not sent: `], [` người · tự gửi lại`, ` · will retry automatically`],
@@ -269,7 +269,7 @@
     [`Mã`, `Code`], [`Thời gian`, `Time`], [`Họ tên`, `Name`], [`SĐT/Zalo`, `Phone/Zalo`], [`Điểm`, `Score`], [`Kết luận`, `Conclusion`], [`Hạng`, `Rank`],
     [`Chưa có`, `None yet`], [`chưa có`, `none yet`],
     // ===== Trang Giới thiệu (demo.html) =====
-    [`Giới thiệu – Đánh giá dáng chạy bằng AI | Chạy bộ cùng Bác sĩ Kiên`, `About – AI running gait assessment | Run with Dr. Kien`],
+    [`Giới thiệu – Đánh giá dáng chạy bằng AI | Hanoi Running Lab`, `About – AI running gait assessment | Hanoi Running Lab`],
     [`Camera ghi lại khi bạn chạy trên máy chạy bộ, AI nhận diện khung xương, đo các góc khớp và so sánh hai chân. Kết quả có ngay sau buổi chạy.`, `A camera films you running on the treadmill; AI detects your skeleton, measures joint angles and compares both legs. Results are ready right after the run.`],
     [`Quy trình 3 bước`, `How it works in 3 steps`], [`Họ tên, chiều cao (không bắt buộc).`, `Name and height (optional).`], [`Chạy 2 phút`, `Run for 2 minutes`],
     [`Camera đặt ngang hông, có thể quay thêm góc sau lưng.`, `Camera placed at hip height from the side; you can also record a rear view.`], [`Nhận báo cáo`, `Get your report`],

@@ -1,21 +1,21 @@
-// Tab Demo (docs/demo.html) + thương hiệu "Chạy bộ cùng Bác sĩ Kiên". Viết 07/11/2026, CHƯA CHẠY.
+// Tab Demo (docs/demo.html) + thương hiệu "Hanoi Running Lab". Viết 07/11/2026, CHƯA CHẠY.
 // Nguồn: yêu cầu master 07/11/2026 (nút #demolink trên #topnav mở demo.html; demo.html 6 phần, 3 ảnh mẫu, nút "Đăng ký đo thử" về index.html#/, không nạp MediaPipe).
 const { test, expect } = require('@playwright/test');
 const H = require('./e2e_helpers');
 
 const MP = /vendor\/pose|mediapipe|pose\.js|\.wasm|\.tflite|pose_landmark/i;
 
-test.describe('Thương hiệu Chạy bộ cùng Bác sĩ Kiên', () => {
+test.describe('Thương hiệu Hanoi Running Lab', () => {
   test('BR-1 index: tiêu đề tab, chữ thương hiệu, không ảnh logo', async ({ page }) => {
     await page.goto('/index.html?mock=1');
-    await expect(page).toHaveTitle('Chạy bộ cùng Bác sĩ Kiên');
-    await expect(page.locator('#topnav .logo b')).toHaveText('Chạy bộ cùng Bác sĩ Kiên');
+    await expect(page).toHaveTitle('Hanoi Running Lab');
+    await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
     await expect(page.locator('#topnav .logo img')).toHaveCount(0);   // đã bỏ ảnh logo
   });
   test('BR-2 demo.html: cùng tiêu đề + chữ, không ảnh logo', async ({ page }) => {
     await page.goto('/demo.html');
-    await expect(page).toHaveTitle(/Chạy bộ cùng Bác sĩ Kiên/);
-    await expect(page.locator('#topnav .logo b')).toHaveText('Chạy bộ cùng Bác sĩ Kiên');
+    await expect(page).toHaveTitle(/Hanoi Running Lab/);
+    await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
     await expect(page.locator('#topnav .logo img')).toHaveCount(0);   // đã bỏ ảnh logo
   });
 });
