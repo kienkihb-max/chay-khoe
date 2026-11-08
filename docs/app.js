@@ -1574,7 +1574,7 @@
     strike: 'Phần bàn chân chạm đất trước: gót, giữa bàn hoặc mũi chân. Không có kiểu đúng tuyệt đối; quan trọng là chạm đất gần dưới thân người.',
   };
   function wrap(c, text, x, y, maxW, lh) {
-    const words = text.split(' '); let line = '';
+    const words = (window.I18N ? I18N.t(text) : text).split(' '); let line = '';
     for (const w of words) {
       const t = line ? line + ' ' + w : w;
       if (c.measureText(t).width > maxW && line) { c.fillText(line, x, y); y += lh; line = w; } else line = t;
@@ -1823,7 +1823,7 @@
     const rows = S.rows.slice().reverse().filter((r) => !q || (String(r.name) + ' ' + r.phone).toLowerCase().includes(q));
     const th = 'style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--leaf-pale);color:var(--moss);position:sticky;top:0"', td = 'style="padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top"';
     $('listbody').innerHTML = rows.length ? '<table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th ' + th + '>Mã</th><th ' + th + '>Thời gian</th><th ' + th + '>Họ tên</th><th ' + th + '>SĐT/Zalo</th><th ' + th + '>Điểm</th><th ' + th + '>Kết luận</th></tr>' +
-      rows.map((r) => '<tr data-id="' + esc(r.id) + '" style="cursor:pointer"><td ' + td + '>' + esc(r.id) + '</td><td ' + td + '>' + esc(r.time) + '</td><td ' + td + '><b>' + esc(r.name) + '</b></td><td ' + td + '>' + esc(r.phone) + '</td><td ' + td + '><b>' + esc(r.score_total) + '</b></td><td ' + td + '>' + esc(r.conclusion) + '</td></tr>').join('') + '</table>'
+      rows.map((r) => '<tr data-id="' + esc(r.id) + '" style="cursor:pointer"><td ' + td + '>' + esc(r.id) + '</td><td ' + td + '>' + esc(r.time) + '</td><td ' + td + '><b data-i18n-skip>' + esc(r.name) + '</b></td><td ' + td + '>' + esc(r.phone) + '</td><td ' + td + '><b>' + esc(r.score_total) + '</b></td><td ' + td + '>' + esc(r.conclusion) + '</td></tr>').join('') + '</table>'
       : '<div style="padding:40px;text-align:center;color:var(--mut)">' + (S.rows.length ? 'Không có kết quả khớp.' : 'Chưa có ai được đo.') + '</div>';
   }
   const listMsg = (t) => { const e = $('listmsg'); e.textContent = t; e.style.display = t ? 'block' : 'none'; };
@@ -1852,6 +1852,8 @@
   window.addEventListener('hashchange', route);
   // đổi giao diện: vẽ lại ảnh kết quả đang giữ (các trang PDF vẽ lúc xuất nên tự theo giao diện)
   Themes.onChange(() => { if (S.result) { try { drawResult(S.result); } catch (e) { console.warn('vẽ lại kết quả', e); } } });
+  // Đổi ngôn ngữ khi đang xem kết quả: vẽ lại ảnh kết quả theo ngôn ngữ mới
+  window.addEventListener('langchange', () => { if (S.result && $('L3').classList.contains('show') && !S.computing) drawResult(S.result); });
   $('listq').addEventListener('input', renderList);
 
   // ---------- Dữ liệu mẫu (chỉ khi ?mock=1): chạy đúng đường tính như lúc đo thật trên chuỗi người que sinh sẵn ----------
