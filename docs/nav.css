@@ -1,0 +1,23 @@
+/* nav.css - thanh trên dùng chung (Trang chủ | Kiến thức | Thư viện | Screening ▾ | VI/EN). Nạp SAU css của trang để ghi đè #topnav. */
+#topnav{overflow:visible}
+#topnav .navlinks{display:flex;align-items:center;gap:6px}
+#topnav .nvdrop{position:relative}
+#topnav .nvdrop>a.nv::after{content:"";margin-left:8px;border:4px solid transparent;border-top-color:currentColor;border-bottom:0}
+#topnav .nvmenu{display:none;position:absolute;top:100%;left:0;min-width:200px;padding:8px;margin-top:0;background:#fff;border:1px solid var(--nav-line);border-radius:14px;box-shadow:0 8px 24px var(--shadow)}
+#topnav .nvdrop:hover .nvmenu,#topnav .nvdrop:focus-within .nvmenu,#topnav .nvdrop.open .nvmenu{display:block}
+#topnav .nvmenu a{display:block;padding:10px 14px;border-radius:10px;font-size:15px;font-weight:600;color:var(--nav-ink);text-decoration:none;white-space:nowrap}
+#topnav .nvmenu a:hover,#topnav .nvmenu a.on{background:var(--nav-hover);color:var(--nav-hover-ink)}
+#navtoggle{display:none;margin-left:6px;width:40px;height:36px;border:1px solid var(--nav-line);background:#fff;border-radius:10px;cursor:pointer;color:var(--nav-ink);font-size:20px;line-height:1;padding:0}
+@media (max-width:760px){
+  #topnav{padding:0 10px;gap:0}
+  #topnav .logo{margin-right:auto}
+  #langsw{margin-left:0!important}
+  #langsw button{padding:0 9px!important}
+  #navtoggle{display:inline-block}
+  #topnav .navlinks{display:none;position:fixed;top:52px;left:0;right:0;flex-direction:column;align-items:stretch;gap:2px;padding:10px 12px 14px;background:#fff;border-bottom:1px solid var(--nav-line);box-shadow:0 8px 20px var(--shadow);max-height:calc(100vh - 52px);overflow-y:auto}
+  #topnav.open .navlinks{display:flex}
+  #topnav a.nv{height:42px!important;padding:0 14px!important;font-size:16px!important}
+  #topnav .nvdrop>a.nv::after{display:none}
+  #topnav .nvmenu{display:block;position:static;border:0;box-shadow:none;padding:2px 0 0 14px;min-width:0}
+}
+#topnav a.logo{text-decoration:none}

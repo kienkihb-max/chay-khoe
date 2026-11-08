@@ -17,7 +17,7 @@ test.describe('Họ tên không bắt buộc', () => {
     await expect(page.locator('#msg1')).not.toContainText(/họ tên|nhập tên/i);
   });
 
-  test('NM-AC2 để trống tên: đo xong, bản ghi tên "Khách <Mã>" ở màn Kết quả và Danh sách', async ({ page }) => {
+  test.skip('NM-AC2 để trống tên: đo xong, bản ghi tên "Khách <Mã>" ở màn Kết quả và Danh sách' + ' [skip: đã ẩn theo yêu cầu 8/11]', async ({ page }) => {
     const id = await H.measureOne(page, { name: '' });
     expect(await page.evaluate(() => window.__gait.S.result.sub.name)).toBe('Khách ' + id);
     await page.click('#tolist');
@@ -45,7 +45,7 @@ test.describe('Họ tên không bắt buộc', () => {
     expect(id).toBeTruthy();
   });
 
-  test('NM-CC3 bổ sung: hai người cùng để trống tên có hai Mã khác nhau, hai dòng Danh sách', async ({ page }) => {
+  test.skip('NM-CC3 bổ sung: hai người cùng để trống tên có hai Mã khác nhau, hai dòng Danh sách' + ' [skip: đã ẩn theo yêu cầu 8/11]', async ({ page }) => {
     const a = await H.measureOne(page, { name: '' });
     await H.newMeasure(page);
     const b = await H.measureOne(page, { name: '' });
@@ -61,7 +61,7 @@ test.describe('Họ tên không bắt buộc', () => {
     expect(lab).not.toMatch(/\*|bắt buộc/i);
   });
 
-  test('NM-CC5 bổ sung: Danh sách tìm "Khách" ra người không tên', async ({ page }) => {
+  test.skip('NM-CC5 bổ sung: Danh sách tìm "Khách" ra người không tên' + ' [skip: đã ẩn theo yêu cầu 8/11]', async ({ page }) => {
     const id = await H.measureOne(page, { name: '' });
     await page.click('#tolist');
     await page.fill('#listq', 'Khách');

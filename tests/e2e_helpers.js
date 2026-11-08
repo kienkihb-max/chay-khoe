@@ -60,7 +60,7 @@ async function installSpies(page) {
 
 // Mở app ở chế độ giả: camera giả + pose giả + sheet giả. Đo ngắn: thu từ giây 4, phân tích 8 giây.
 async function openApp(page, hash = '#/') {
-  await page.goto('/index.html?mock=1&total=20&rec=4&clip=8' + hash);
+  await page.goto('/screening.html?mock=1&total=20&rec=4&clip=8' + hash);
   await page.waitForFunction(() => !document.getElementById('go').textContent.includes('chuẩn bị'), null, { timeout: 30000 });
 }
 

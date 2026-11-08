@@ -1518,9 +1518,9 @@
     if (location.hash !== want) return;   // trong lúc đọc, người dùng đã chuyển màn khác
     // bản ghi phải khớp đúng dòng (cùng giờ đo, cùng tên): tránh mở nhầm người khi danh sách bị xoá rồi đánh mã lại
     if (!rec || !rec.R || rec.time !== row.time || rec.name !== row.name) {
-      history.replaceState(null, '', '#/list');
-      $('listq').value = ''; renderList(); show('L4');
-      listMsg(row ? 'Không có dữ liệu chi tiết của ' + row.id + ' · ' + row.name + ' (người này đo trước khi app lưu kết quả chi tiết), nên không mở lại được màn kết quả. Thông tin tóm tắt vẫn có trong danh sách và Google Sheet.' : 'Không tìm thấy mã ' + id + ' trong danh sách.');
+      history.replaceState(null, '', '#/');   // 8/11: màn danh sách đã ẩn
+      show('L1'); refreshL1();
+      $('msg1').textContent = row ? 'Không có dữ liệu chi tiết của ' + row.id + ' · ' + row.name + ' (người này đo trước khi app lưu kết quả chi tiết), nên không mở lại được màn kết quả. Thông tin tóm tắt vẫn có trong Google Sheet.' : 'Không tìm thấy mã ' + id + '.';
       return;
     }
     const photos = {};
@@ -1815,7 +1815,6 @@
     e.textContent = n ? 'Chưa gửi ' + n + ' người · tự gửi lại' : '';
   }
   setInterval(showSync, 3000);
-  $('datalink').addEventListener('click', () => window.open(SHEET_URL, '_blank', 'noopener'));
   $('tgdetail').addEventListener('click', () => setDetail($('detail').style.display !== 'block'));
 
   // ---------- Cột gửi lên Google Sheet ----------
@@ -1847,7 +1846,7 @@
   const listMsg = (t) => { const e = $('listmsg'); e.textContent = t; e.style.display = t ? 'block' : 'none'; };
   $('tolist').addEventListener('click', () => go('#/list'));
   document.querySelectorAll('#topnav button[data-nav]').forEach((b) => b.addEventListener('click', () => {
-    // Từ màn Kết quả bấm "Đo mới": xoá form người trước (việc trước đây của nút "Đo người tiếp theo")
+    // Từ màn Kết quả bấm "Screening": xoá form người trước (việc trước đây của nút "Đo người tiếp theo")
     if (b.dataset.nav === '#/' && $('L3').classList.contains('show')) { ['name', 'phone', 'height', 'pain', 'note'].forEach((i) => ($(i).value = '')); $('msg1').textContent = ''; S.sess = null; }
     go(b.dataset.nav);
   }));
@@ -1863,7 +1862,7 @@
       if (S.result && S.result.sub.id === id && $('L3').classList.contains('show')) return;   // vừa đo xong, đã vẽ sẵn
       openResult(id); return;
     }
-    if (h === '#/list') { listMsg(''); $('listq').value = ''; renderList(); show('L4'); return; }
+    if (h === '#/list') { history.replaceState(null, '', '#/'); show('L1'); refreshL1(); return; }   // 8/11: ẩn màn Danh sách (code giữ nguyên), vào bằng link thì về Screening
     show('L1'); refreshL1();
   }
   function go(h) { if (location.hash === h) route(); else location.hash = h; }

@@ -2,7 +2,7 @@
 // Chỉ một giao diện thì không hiện nút "Giao diện"; lựa chọn cũ không còn (vd 'do') phải quay về Xanh.
 const { test, expect } = require('@playwright/test');
 
-for (const url of ['/index.html?mock=1', '/demo.html']) {
+for (const url of ['/screening.html?mock=1', '/index.html']) {
   test('TH-1 ' + url + ': chỉ một giao diện, không có nút Giao diện, data-theme=xanh', async ({ page }) => {
     await page.goto(url);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'xanh');

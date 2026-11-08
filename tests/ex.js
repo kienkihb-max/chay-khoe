@@ -4,7 +4,7 @@ const {chromium}=require('playwright');
  const p=await (await b.newContext({viewport:{width:1920,height:1080},acceptDownloads:true,permissions:['camera']})).newPage();
  p.on('pageerror',e=>console.log('PAGEERR',e.message));
  await p.route('**/vendor/pose/pose.js',r=>r.fulfill({contentType:'text/javascript',body:require('fs').readFileSync('/tmp/gt/stub_pose.js','utf8')}));
- await p.goto('http://localhost:8099/index.html?total=40&rec=4&clip=12');
+ await p.goto('http://localhost:8099/screening.html?total=40&rec=4&clip=12');
  await p.waitForFunction(()=>!document.getElementById('go').textContent.includes('chuẩn bị'),null,{timeout:15000});
  await p.fill('#name','Nguyễn Văn A');await p.fill('#height','162');
  await p.click('#go'); await p.waitForSelector('#rvok',{state:'visible',timeout:70000}); await p.click('#rvok');   // màn xem lại: chốt góc

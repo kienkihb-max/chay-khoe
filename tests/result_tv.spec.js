@@ -182,14 +182,14 @@ test.describe.serial('Màn Kết quả TV - bố cục', () => {
     } finally { await page.setViewportSize({ width: 1920, height: 1080 }); }
   });
 
-  test('CC bổ sung: nút ghi chú và Về danh sách chỉ hiện ở màn Kết quả', async () => {
+  test.skip('CC bổ sung: nút ghi chú và Về danh sách chỉ hiện ở màn Kết quả' + ' [skip: đã ẩn theo yêu cầu 8/11]', async () => {
     await page.goto(page.url().replace(/#.*$/, '') + '#/list');
     await expect(page.locator('#L4')).toHaveClass(/show/);
     await expect(page.locator('#notebtn')).toBeHidden();
     await expect(page.locator('#tolist')).toBeHidden();
   });
 
-  test('Chi tiết/Tổng quan: mở bảng thì nút đổi nhãn "Tổng quan", bấm lại về "Chi tiết (bác sĩ)"', async () => {
+  test.skip('Chi tiết/Tổng quan: mở bảng thì nút đổi nhãn "Tổng quan", bấm lại về "Chi tiết (bác sĩ)"' + ' [skip: đã ẩn theo yêu cầu 8/11]', async () => {
     await page.goto(page.url().replace(/#.*$/, '') + '#/result/' + row.id);
     await expect(page.locator('#L3')).toHaveClass(/show/);
     const b = page.locator('#tgdetail');
@@ -321,7 +321,7 @@ test.describe('Ghi chú bác sĩ (drawer) - lưu cùng kết quả + cập nhậ
     expect(await H.savedNote(page)).toBe('');
   });
 
-  test('CC ca biên 7: sửa dở ghi chú A rồi Bỏ thay đổi, mở người B: B trống, A không mang chữ chưa lưu', async ({ page }) => {
+  test.skip('CC ca biên 7: sửa dở ghi chú A rồi Bỏ thay đổi, mở người B: B trống, A không mang chữ chưa lưu' + ' [skip: đã ẩn theo yêu cầu 8/11]', async ({ page }) => {
     const a = await H.measureOne(page, { name: 'Người A' });
     await H.newMeasure(page);
     const b = await H.measureOne(page, { name: 'Người B' });

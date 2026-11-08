@@ -10,7 +10,7 @@ const shot = async (loc, name) => { if (process.env.SHOT_DIR) await loc.screensh
 
 test.describe('Đổi ngôn ngữ EN/VI', () => {
   test('L-1 mặc định VI, bấm EN đổi chữ ngay (không tải lại), bấm VI trả đúng chữ gốc', async ({ page }) => {
-    await page.goto('/index.html?mock=1');
+    await page.goto('/screening.html?mock=1');
     await expect(page.locator('#langsw [data-lang="vi"]')).toHaveClass(/on/);
     await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
     const before = await page.locator('#L1').innerText();
@@ -18,7 +18,7 @@ test.describe('Đổi ngôn ngữ EN/VI', () => {
     await page.click('#langsw [data-lang="en"]');
     await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
     expect(await page.evaluate(() => window.__marker)).toBe(1);   // không tải lại
-    await expect(page.locator('#topnav [data-nav="#/"]')).toHaveText('New test');
+    await expect(page.locator('#topnav [data-nav="#/"]')).toHaveText('Screening');
     await expect(page.locator('#langsw [data-lang="en"]')).toHaveClass(/on/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('#name')).toHaveAttribute('placeholder', 'Nguyen Van A');
@@ -33,22 +33,21 @@ test.describe('Đổi ngôn ngữ EN/VI', () => {
   });
 
   test('L-2 nhớ lựa chọn sau khi tải lại, cả hai trang; localStorage bị chặn không làm hỏng', async ({ page }) => {
-    await page.goto('/index.html?mock=1');
+    await page.goto('/screening.html?mock=1');
     await page.click('#langsw [data-lang="en"]');
     await page.reload();
     await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
-    await page.goto('/demo.html');
+    await page.goto('/index.html');
     await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
-    await expect(page.locator('#topnav a.nv.on')).toHaveText('About');
+    await expect(page.locator('#topnav a.nv.on')).toHaveText('Home');
     await page.click('#langsw [data-lang="vi"]');
-    await expect(page.locator('#topnav a.nv.on')).toHaveText('Giới thiệu');
+    await expect(page.locator('#topnav a.nv.on')).toHaveText('Trang chủ');
   });
 
-  test('L-3 demo.html ở EN: không còn tiếng Việt (trừ tên tài liệu trích dẫn), 375px không tràn ngang', async ({ page }) => {
+  test('L-3 index.html (Trang chủ) ở EN: không còn tiếng Việt (trừ tên tài liệu trích dẫn), 375px không tràn ngang', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.addInitScript(() => localStorage.setItem('lang', 'en'));
-    await page.goto('/demo.html');
-    await page.locator('details.more').evaluateAll((d) => d.forEach((x) => (x.open = true)));
+    await page.goto('/index.html');
     const txt = await page.evaluate(() => document.body.innerText + ' ' + [...document.images].map((i) => i.alt).join(' '));
     expect(txt.split('\n').filter((l) => VI.test(l)), 'dòng còn tiếng Việt').toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);

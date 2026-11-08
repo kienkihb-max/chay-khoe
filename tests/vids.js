@@ -4,7 +4,7 @@ const {chromium}=require('playwright');
  const p=await (await b.newContext({viewport:{width:1920,height:1080},acceptDownloads:true,permissions:['camera']})).newPage();
  p.on('pageerror',e=>console.log('PAGEERR',e.message));
  await p.route('**/vendor/pose/pose.js',r=>r.fulfill({contentType:'text/javascript',body:require('fs').readFileSync('/tmp/gt/stub_slow4.js','utf8')}));
- await p.goto('http://localhost:8099/index.html');
+ await p.goto('http://localhost:8099/screening.html');
  await p.waitForFunction(()=>!document.getElementById('go').textContent.includes('chuẩn bị'),null,{timeout:15000});
  await p.click('#mFile'); await p.fill('#name','Tran Thi B');await p.fill('#height','158');
  await p.setInputFiles('#vfile','/tmp/gt/long.mp4'); await p.waitForTimeout(800);

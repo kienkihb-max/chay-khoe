@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Các chỉ số dáng chạy chính | Hanoi Running Lab</title>
+<meta name="description" content="Định nghĩa, cách đo, ý nghĩa và ngưỡng tham khảo của các chỉ số dáng chạy trong Screening, kèm tài liệu tham khảo.">
+<link rel="stylesheet" href="sub.css">
+<link rel="stylesheet" href="../nav.css">
+<script src="../themes.js"></script>
+</head>
+<body>
+<nav id="topnav"><a class="logo" href="../index.html"><img src="../logo.png" alt="Hanoi Running Lab"><b>Hanoi Running Lab</b></a><div class="navlinks" id="navlinks"><a class="nv" href="../index.html">Trang chủ</a><div class="nvdrop"><a class="nv go on" aria-current="page" href="../screening/huong-dan.html">Screening</a><div class="nvmenu"><a href="../screening/huong-dan.html">Hướng dẫn</a><a class="on" aria-current="page" href="../screening/chi-so.html">Các chỉ số</a><a href="../screening.html#/">Đo ngay</a></div></div><a class="nv" href="../blog/">Kiến thức</a><a class="nv" href="../thu-vien-anh/">Thư viện ảnh</a></div><span id="langsw" role="group" aria-label="Language"><button type="button" data-lang="vi">VI</button><button type="button" data-lang="en">EN</button></span><button type="button" id="navtoggle" aria-label="Menu" aria-controls="navlinks" aria-expanded="false">☰</button></nav>
+<div class="subnav"><div class="wrap"><span class="sl">Screening</span><a href="huong-dan.html">Hướng dẫn</a><a class="on" href="chi-so.html" aria-current="page">Các chỉ số</a><a class="now" href="../screening.html#/">Đo ngay</a></div></div>
+
+<header class="pagehead"><div class="wrap">
+  <p class="eyebrow">Screening · Các chỉ số</p>
+  <h1>Các chỉ số dáng chạy chính</h1>
+  <p>Screening ước lượng các chỉ số động học 2D từ video: khung xương được nhận diện bằng mô hình tư thế [9], sau đó tính góc và khoảng cách tại các mốc của chu kỳ chạy. Số trong ngoặc vuông là tài liệu ở cuối trang.</p>
+  <ul class="toc"><li><a href="#chi-so">Chỉ số</a></li><li><a href="#ket-qua-mau">Kết quả mẫu</a></li><li><a href="#tai-lieu">Tài liệu tham khảo</a></li></ul>
+</div></header>
+
+<main class="wrap prose">
+<div class="callout warn" style="margin-top:24px"><b>Lưu ý:</b> khoảng tham khảo dưới đây là ngưỡng làm việc của app, chưa phải chuẩn y khoa. Một số ngưỡng chưa có nghiên cứu hỗ trợ trực tiếp. Phân tích 2D từ một góc quay có sai số do góc đặt camera và độ chính xác của mô hình tư thế.</div>
+<section id="chi-so"><h2>Chỉ số</h2>
+<div class="cards mx">
+<article class="card mc dark" id="cs1"><h3>Nhịp chạy (cadence)</h3><p><b>Định nghĩa:</b> Số bước mỗi phút.</p><p><b>Cách đo:</b> Đếm số lần bàn chân chạm đất theo thời gian trong đoạn phân tích, quy ra bước/phút.</p><p><b>Ý nghĩa:</b> Nhịp thấp thường đi kèm bước dài, chân đặt xa trước thân; tăng nhịp 5–10% có thể giảm tải gối và hông.</p><p><b>Ngưỡng tham khảo:</b> 165–180 bước/phút (phạt điểm khi thấp hơn).</p><span class="ref">Tài liệu: <a class="cite" href="#r1">[1]</a> <a class="cite" href="#r2">[2]</a></span></article>
+<article class="card mc " id="cs2"><h3>Chân đặt trước hông (overstride)</h3><p><b>Định nghĩa:</b> Khoảng cách ngang từ bàn chân đến hông lúc chạm đất.</p><p><b>Cách đo:</b> Khung hình chạm đất: hiệu tọa độ ngang bàn chân – hông, quy ra cm theo chiều cao người chạy. Cần góc bên.</p><p><b>Ý nghĩa:</b> Chân đặt quá xa phía trước tạo lực phanh và tăng tải gối.</p><p><b>Ngưỡng tham khảo:</b> −5 đến 10 cm (phạt điểm khi lớn hơn 10 cm).</p><span class="ref">Tài liệu: <a class="cite" href="#r3">[3]</a> <a class="cite" href="#r1">[1]</a> <a class="cite" href="#r4">[4]</a></span></article>
+<article class="card mc dark" id="cs3"><h3>Góc gối lúc chạm đất</h3><p><b>Định nghĩa:</b> Độ gập của gối ngay khi bàn chân chạm đất.</p><p><b>Cách đo:</b> Góc giữa đùi và cẳng chân tại khung hình chạm đất (0° là duỗi thẳng).</p><p><b>Ý nghĩa:</b> Gối hơi gập giúp hấp thụ lực va chạm; gối quá duỗi làm lực dồn lên khớp.</p><p><b>Ngưỡng tham khảo:</b> 10–25°.</p><span class="ref">Tài liệu: <a class="cite" href="#r3">[3]</a> <a class="cite" href="#r4">[4]</a></span></article>
+<article class="card mc " id="cs4"><h3>Góc cẳng chân lúc chạm đất</h3><p><b>Định nghĩa:</b> Độ nghiêng của cẳng chân so với phương thẳng đứng lúc chạm đất.</p><p><b>Cách đo:</b> Góc giữa đường gối–cổ chân và phương dọc tại khung hình chạm đất.</p><p><b>Ý nghĩa:</b> Cẳng chân đưa mạnh ra trước là dấu hiệu overstride.</p><p><b>Ngưỡng tham khảo:</b> 0–12°.</p><span class="ref">Tài liệu: <a class="cite" href="#r3">[3]</a> <a class="cite" href="#r7">[7]</a></span></article>
+<article class="card mc dark" id="cs5"><h3>Gập gối giữa pha trụ</h3><p><b>Định nghĩa:</b> Độ gập gối tối đa khi chân chống đỡ cơ thể.</p><p><b>Cách đo:</b> Giá trị lớn nhất của góc gối trong pha trụ.</p><p><b>Ý nghĩa:</b> Cho biết gối hấp thụ lực nhiều hay ít.</p><p><b>Ngưỡng tham khảo:</b> 30–50°.</p><span class="ref">Tài liệu: <span class="cite" style="color:var(--mut)">chưa có trích dẫn</span></span></article>
+<article class="card mc " id="cs6"><h3>Độ nghiêng thân trước</h3><p><b>Định nghĩa:</b> Góc thân so với phương thẳng đứng.</p><p><b>Cách đo:</b> Góc đường hông–vai so với phương dọc tại các khung hình chạm đất, lấy giá trị giữa (trung vị) qua các bước.</p><p><b>Ý nghĩa:</b> Thân quá thẳng dễ đặt chân xa trước; gập nhiều tăng tải hông và lưng.</p><p><b>Ngưỡng tham khảo:</b> 4–10°.</p><span class="ref">Tài liệu: <span class="cite" style="color:var(--mut)">chưa có trích dẫn</span></span></article>
+<article class="card mc dark" id="cs7"><h3>Duỗi hông lúc rời đất</h3><p><b>Định nghĩa:</b> Độ duỗi hông khi chân đẩy rời mặt đất.</p><p><b>Cách đo:</b> Góc đùi so với thân tại khung hình rời đất.</p><p><b>Ý nghĩa:</b> Duỗi hạn chế có thể liên quan độ linh hoạt cơ gập hông hoặc sức mạnh mông.</p><p><b>Ngưỡng tham khảo:</b> 5–20°.</p><span class="ref">Tài liệu: <span class="cite" style="color:var(--mut)">chưa có trích dẫn</span></span></article>
+<article class="card mc " id="cs8"><h3>Thời gian chạm đất</h3><p><b>Định nghĩa:</b> Thời gian bàn chân tiếp xúc mặt máy mỗi bước.</p><p><b>Cách đo:</b> Hiệu thời điểm rời đất và chạm đất, xác định theo mốc chuyển động bàn chân [8].</p><p><b>Ý nghĩa:</b> Chạm đất lâu thường kèm bước dài và phanh.</p><p><b>Ngưỡng tham khảo:</b> 200–300 ms (ước lượng, chưa kiểm chứng).</p><span class="ref">Tài liệu: <a class="cite" href="#r8">[8]</a></span></article>
+<article class="card mc dark" id="cs9"><h3>Cân bằng trái–phải</h3><p><b>Định nghĩa:</b> Độ lệch nhịp bước và thời gian chạm đất giữa hai chân.</p><p><b>Cách đo:</b> So sánh giá trị hai chân, tính phần trăm chênh lệch.</p><p><b>Ý nghĩa:</b> Hai chân khác nhau nhiều có thể do mệt, yếu một bên hoặc né đau.</p><p><b>Ngưỡng tham khảo:</b> Lệch nhịp dưới 4%, lệch thời gian chạm đất dưới 8% (ước lượng, chưa kiểm chứng).</p><span class="ref">Tài liệu: <span class="cite" style="color:var(--mut)">chưa có trích dẫn</span></span></article>
+</div></section>
+
+<section id="ket-qua-mau"><h2>Kết quả mẫu</h2>
+<p>Ba báo cáo minh họa (dữ liệu mẫu, không phải người thật).</p>
+<div class="samples">
+  <figure class="sample"><img src="../demo/ket-qua-a.png" alt="Kết quả mẫu Người chạy A: 76 điểm, hạng Tốt" loading="lazy"><figcaption><span class="rk t">Hạng Tốt · 76/100</span><br>Nhịp chạy tốt (172 bước/phút), gối chạm đất tốt (25°). Nên bước ngắn lại một chút, đặt chân gần dưới hông.</figcaption></figure>
+  <figure class="sample"><img src="../demo/ket-qua-b.png" alt="Kết quả mẫu Người chạy B: 62 điểm, hạng Khá" loading="lazy"><figcaption><span class="rk k">Hạng Khá · 62/100</span><br>Nhịp hơi thấp (162 bước/phút), chân đặt xa trước hông (28 cm).</figcaption></figure>
+  <figure class="sample"><img src="../demo/ket-qua-c.png" alt="Kết quả mẫu Người chạy C: 53 điểm, hạng Cần cải thiện" loading="lazy"><figcaption><span class="rk c">Cần cải thiện · 53/100</span><br>Nhịp thấp (144 bước/phút), chân đặt xa trước hông (27 cm), nên tăng nhịp.</figcaption></figure>
+</div>
+
+</section>
+
+<section id="tai-lieu"><h2>Tài liệu tham khảo</h2>
+<ol class="refs">
+<li id="r1">Heiderscheit BC, Chumanov ES, Michalski MP, Wille CM, Ryan MB. Effects of step rate manipulation on joint mechanics during running. Med Sci Sports Exerc. 2011;43(2):296–302.<span>Hỗ trợ: tăng nhịp 5–10% giảm tải gối, hông.</span></li>
+<li id="r2">Schubert AG, Kempf J, Heiderscheit BC. Influence of stride frequency and length on running mechanics: a systematic review. Sports Health. 2014;6(3):210–217.<span>Hỗ trợ: nhịp chạy, độ dài bước.</span></li>
+<li id="r3">Wille CM, Lenhart RL, Wang S, Thelen DG, Heiderscheit BC. Ability of sagittal kinematic variables to estimate ground reaction forces and joint kinetics in running. J Orthop Sports Phys Ther. 2014;44(10):825–830.<span>Hỗ trợ: chân đặt trước hông, góc cẳng chân và góc gối lúc chạm đất.</span></li>
+<li id="r4">Souza RB. An evidence-based videotaped running biomechanics analysis. Phys Med Rehabil Clin N Am. 2016;27(1):217–236.<span>Hỗ trợ: quy trình quay video và các chỉ số nhìn từ mặt bên.</span></li>
+<li id="r5">Pipkin A, Kotecki K, Hetzel S, Heiderscheit B. Reliability of a qualitative video analysis for running. J Orthop Sports Phys Ther. 2016;46(7):556–561.<span>Hỗ trợ: độ tin cậy của phân tích video.</span></li>
+<li id="r6">Dingenen B, Malliaras P, Janssen T, Ceyssens L, Vanelderen R, Barton CJ. Two-dimensional video analysis can discriminate differences in running kinematics between recreational runners with and without running-related knee injury. Phys Ther Sport. 2019;38:184–191.<span>Hỗ trợ: video 2D thấy khác biệt (hông/khung chậu giữa pha trụ) giữa người có và không đau gối.</span></li>
+<li id="r7">Lieberman DE, Venkadesan M, Werbel WA, et al. Foot strike patterns and collision forces in habitually barefoot versus shod runners. Nature. 2010;463:531–535.<span>Hỗ trợ: kiểu tiếp đất của bàn chân.</span></li>
+<li id="r8">Zeni JA Jr, Richards JG, Higginson JS. Two simple methods for determining gait events during treadmill and overground walking using kinematic data. Gait Posture. 2008;27(4):710–714.<span>Hỗ trợ: xác định mốc chạm đất.</span></li>
+<li id="r9">Bazarevsky V, Grishchenko I, Raveendran K, et al. BlazePose: On-device real-time body pose tracking. arXiv:2006.10204; 2020.<span>Hỗ trợ: mô hình nhận dạng tư thế của MediaPipe.</span></li>
+</ol></section>
+
+<div class="pagenav"><a href="huong-dan.html">← Hướng dẫn</a><a href="../screening.html#/">Đo ngay →</a></div>
+</main>
+<footer class="foot">Kết quả mang tính sàng lọc, không thay thế chẩn đoán y khoa.</footer>
+<script src="../i18n.js"></script>
+<script src="../nav.js"></script>
+</body>
+</html>

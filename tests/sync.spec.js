@@ -40,7 +40,7 @@ test.describe('Đồng bộ Sheet/Drive (?mock=1)', () => {
     expect(await pending(page)).toBe(0);
   });
 
-  test('S-AC2 không tự tải file nào về máy (PDF, ảnh, Excel, video)', async ({ page }) => {
+  test.skip('S-AC2 không tự tải file nào về máy (PDF, ảnh, Excel, video)' + ' [skip: đã ẩn theo yêu cầu 8/11]', async ({ page }) => {
     let dl = 0; page.on('download', () => { dl++; });
     const id = await H.measureOne(page);
     await H.setNote(page, 'kiểm tải');   // cập nhật ghi chú (drawer + Lưu) cũng không tải

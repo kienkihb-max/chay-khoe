@@ -104,7 +104,7 @@
     document.addEventListener('click', function (e) { if (!menu.contains(e.target)) closeMenu(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
     window.addEventListener('resize', closeMenu);
-    // index.html: chèn trước #syncst (cuối thanh trên); demo.html: cuối thanh trên
+    // screening.html: chèn trước #syncst (cuối thanh trên); index.html: cuối thanh trên
     var anchor = document.getElementById('syncst');
     if (anchor && anchor.parentNode === nav) nav.insertBefore(btn, anchor); else nav.appendChild(btn);
     document.body.appendChild(menu);

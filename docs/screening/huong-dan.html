@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hướng dẫn thực hiện Screening dáng chạy | Hanoi Running Lab</title>
+<meta name="description" content="Chuẩn hóa cách ghi hình để có kết quả phân tích đáng tin cậy hơn.">
+<link rel="stylesheet" href="sub.css">
+<link rel="stylesheet" href="../nav.css">
+<script src="../themes.js"></script>
+</head>
+<body>
+<nav id="topnav"><a class="logo" href="../index.html"><img src="../logo.png" alt="Hanoi Running Lab"><b>Hanoi Running Lab</b></a><div class="navlinks" id="navlinks"><a class="nv" href="../index.html">Trang chủ</a><div class="nvdrop"><a class="nv go on" aria-current="page" href="../screening/huong-dan.html">Screening</a><div class="nvmenu"><a class="on" aria-current="page" href="../screening/huong-dan.html">Hướng dẫn</a><a href="../screening/chi-so.html">Các chỉ số</a><a href="../screening.html#/">Đo ngay</a></div></div><a class="nv" href="../blog/">Kiến thức</a><a class="nv" href="../thu-vien-anh/">Thư viện ảnh</a></div><span id="langsw" role="group" aria-label="Language"><button type="button" data-lang="vi">VI</button><button type="button" data-lang="en">EN</button></span><button type="button" id="navtoggle" aria-label="Menu" aria-controls="navlinks" aria-expanded="false">☰</button></nav>
+<div class="subnav"><div class="wrap"><span class="sl">Screening</span><a class="on" href="huong-dan.html" aria-current="page">Hướng dẫn</a><a href="chi-so.html">Các chỉ số</a><a class="now" href="../screening.html#/">Đo ngay</a></div></div>
+
+<header class="pagehead"><div class="wrap">
+  <p class="eyebrow">SCREENING · HƯỚNG DẪN</p>
+  <h1>Hướng dẫn thực hiện Screening dáng chạy</h1>
+  <p class="hd-tag">Chuẩn hóa cách ghi hình để có kết quả phân tích đáng tin cậy hơn.</p>
+  <p>Running Gait Screening của Hanoi Running Lab sử dụng công nghệ nhận diện tư thế (Pose Estimation) để phân tích các đặc điểm chuyển động khi chạy bộ thông qua video.</p>
+  <p>Để hệ thống nhận diện chính xác các điểm khớp và trích xuất chỉ số, người thực hiện cần chuẩn bị không gian, thiết bị và góc quay phù hợp.</p>
+  <p class="hd-time">Thời gian thực hiện: khoảng 2 phút.</p>
+</div></header>
+
+<div class="wrap hd">
+<aside class="hd-toc"><nav aria-label="Nội dung hướng dẫn"><p class="hd-toch">Nội dung hướng dẫn</p>
+<ol>
+  <li><a href="#chuan-bi">Chuẩn bị trước khi đo</a></li>
+  <li><a href="#camera">Bố trí điện thoại và camera</a></li>
+  <li><a href="#toc-do">Lựa chọn tốc độ máy chạy</a></li>
+  <li><a href="#cac-buoc">Các bước thực hiện trong ứng dụng</a></li>
+  <li><a href="#doc-bao-cao">Cách đọc và hiểu báo cáo</a></li>
+  <li><a href="#hoi-dap">Câu hỏi thường gặp</a></li>
+</ol></nav></aside>
+
+<main class="prose hd-main">
+<section id="chuan-bi"><h2><span class="n">01.</span> CHUẨN BỊ TRƯỚC KHI ĐO</h2>
+<div class="two">
+<div class="card"><h3>Trang phục</h3>
+<ul>
+  <li>Mặc trang phục thể thao vừa vặn, không quá rộng.</li>
+  <li>Ưu tiên quần áo có độ tương phản với màu nền.</li>
+  <li>Tránh trang phục che khuất vùng hông, đầu gối và cổ chân.</li>
+  <li>Sử dụng giày chạy bộ quen thuộc để hạn chế thay đổi điều kiện vận động.</li>
+</ul></div>
+<div class="card"><h3>Không gian ghi hình</h3>
+<ul>
+  <li>Đảm bảo đủ ánh sáng, ưu tiên ánh sáng đồng đều.</li>
+  <li>Chọn phông nền đơn giản, ít chi tiết.</li>
+  <li>Không để người hoặc vật thể khác che khuất cơ thể.</li>
+  <li>Đảm bảo toàn bộ cơ thể, từ đầu đến bàn chân, nằm trong khung hình.</li>
+</ul></div>
+<div class="card"><h3>Khởi động</h3>
+<p>Khởi động nhẹ và chạy làm quen với máy trước khi ghi hình. Duy trì tốc độ ổn định để cơ thể thích nghi với điều kiện vận động.</p>
+<p>Không nên bắt đầu ghi hình ngay khi vừa bước lên máy chạy bộ.</p></div>
+<div class="card"><h3>Thiết bị</h3>
+<ul>
+  <li>Điện thoại thông minh hoặc camera có khả năng quay video.</li>
+  <li>Chân máy hoặc giá đỡ cố định.</li>
+  <li>Camera được đặt chắc chắn, không rung lắc trong quá trình ghi hình.</li>
+</ul></div>
+</div></section>
+
+<section id="camera"><h2><span class="n">02.</span> BỐ TRÍ ĐIỆN THOẠI VÀ CAMERA</h2>
+<p>Góc quay là yếu tố quan trọng ảnh hưởng đến khả năng nhận diện khung xương và chất lượng phân tích.</p>
+<div class="two">
+<div class="card hd-side"><h3>Góc bên (Side View) – Góc quay chính</h3>
+<p>Đây là góc quay ưu tiên trong quy trình Screening.</p>
+<p class="hd-lab">Cách bố trí:</p>
+<ul>
+  <li>Đặt camera ở phía bên cạnh máy chạy bộ.</li>
+  <li>Vị trí camera ngang tầm hông người chạy.</li>
+  <li>Hướng camera vuông góc với hướng di chuyển.</li>
+  <li>Giữ camera song song với mặt sàn.</li>
+  <li>Khoảng cách đủ xa để ghi hình toàn bộ cơ thể.</li>
+</ul>
+<p class="hd-lab">Các chỉ số có thể phân tích:</p>
+<ul class="chips">
+  <li>Cadence – Nhịp bước chạy.</li>
+  <li>Ground Contact Time – Thời gian tiếp xúc mặt đất.</li>
+  <li>Knee Flexion – Góc gấp gối.</li>
+  <li>Trunk Lean – Góc nghiêng thân người.</li>
+  <li>Foot Placement – Vị trí bàn chân khi tiếp đất.</li>
+</ul></div>
+<div class="card hd-rear"><h3>Góc sau lưng (Rear View) – Góc quay bổ sung</h3>
+<p>Góc quay sau lưng giúp quan sát các đặc điểm chuyển động trong mặt phẳng trán.</p>
+<p class="hd-lab">Cách bố trí:</p>
+<ul>
+  <li>Đặt camera phía sau máy chạy bộ.</li>
+  <li>Camera nằm chính giữa hướng chạy.</li>
+  <li>Chiều cao camera ngang vùng hông.</li>
+  <li>Giữ camera cân bằng, không nghiêng sang hai bên.</li>
+  <li>Đảm bảo nhìn rõ hai chân trong toàn bộ quá trình ghi hình.</li>
+</ul>
+<p class="hd-lab">Các đặc điểm có thể quan sát:</p>
+<ul class="chips">
+  <li>Pelvic Movement – Chuyển động vùng chậu.</li>
+  <li>Trunk Movement – Chuyển động thân người.</li>
+  <li>Left–Right Symmetry – Đặc điểm đối xứng hai bên.</li>
+  <li>Lower Limb Alignment – Sự sắp xếp tương đối của chi dưới.</li>
+</ul></div>
+</div>
+<div class="callout"><h3>Lưu ý</h3>
+<p>Ứng dụng có thể tự nhận diện góc quay từ video. Nếu hệ thống nhận diện chưa chính xác, sử dụng chức năng Đổi để lựa chọn thủ công giữa Side View và Rear View.</p>
+<p>Không nên sử dụng video quay xiên hoặc camera di chuyển trong quá trình ghi hình.</p></div>
+</section>
+
+<section id="toc-do"><h2><span class="n">03.</span> LỰA CHỌN TỐC ĐỘ MÁY CHẠY</h2>
+<h3>Chạy ở tốc độ quen thuộc và ổn định</h3>
+<p>Lựa chọn tốc độ chạy phù hợp với khả năng hiện tại, gần với tốc độ chạy tập luyện thường ngày.</p>
+<p>Người chạy cần duy trì được tốc độ trong toàn bộ thời gian ghi hình mà không phải gắng sức hoặc thay đổi kỹ thuật một cách chủ động.</p>
+<p class="hd-lab">Nguyên tắc khi lựa chọn tốc độ:</p>
+<ul>
+  <li>Chạy nhẹ vài phút trước khi bắt đầu ghi hình.</li>
+  <li>Chọn tốc độ có thể duy trì thoải mái.</li>
+  <li>Giữ nguyên tốc độ trong suốt lượt đo.</li>
+  <li>Giữ nguyên độ dốc máy chạy.</li>
+  <li>Không cố tình tăng cadence hoặc thay đổi cách tiếp đất để đạt điểm số cao hơn.</li>
+</ul>
+<div class="callout"><h3>Vì sao cần giữ tốc độ ổn định?</h3>
+<p>Các thông số như cadence, thời gian tiếp xúc mặt đất và góc khớp có thể thay đổi theo tốc độ chạy <a class="cite" href="chi-so.html#tai-lieu">[1]</a>.</p>
+<p>Do đó, khi muốn so sánh kết quả giữa các lần Screening, cần cố gắng duy trì cùng tốc độ, độ dốc và điều kiện ghi hình.</p>
+<p>Khuyến nghị ghi lại tốc độ máy chạy trong mỗi lần đo.</p></div>
+</section>
+
+<section id="cac-buoc"><h2><span class="n">04.</span> CÁC BƯỚC THỰC HIỆN TRONG ỨNG DỤNG</h2>
+<div class="hd-steps">
+<div class="card"><h3>Bước 1. Đăng ký thông tin</h3>
+<p>Nhập các thông tin cơ bản:</p>
+<ul>
+  <li>Họ và tên.</li>
+  <li>Chiều cao (không bắt buộc).</li>
+</ul>
+<p>Thông tin chiều cao hỗ trợ quy đổi khoảng cách từ hình ảnh sang đơn vị centimet khi thuật toán có sử dụng thông số này.</p></div>
+<div class="card"><h3>Bước 2. Ghi hình chuyển động</h3>
+<ul>
+  <li>Bố trí camera theo hướng dẫn.</li>
+  <li>Chọn góc quay phù hợp.</li>
+  <li>Bắt đầu chạy ở tốc độ đã lựa chọn.</li>
+  <li>Ghi hình liên tục trong khoảng 2 phút.</li>
+</ul>
+<p>Trong quá trình ghi hình, giữ tư thế chạy tự nhiên, không cố tình điều chỉnh động tác.</p>
+<p>Ứng dụng thực hiện nhận diện khung xương và xử lý video theo thuật toán được tích hợp.</p></div>
+<div class="card"><h3>Bước 3. Nhận báo cáo</h3>
+<p>Sau khi hoàn tất phân tích, hệ thống hiển thị báo cáo bao gồm:</p>
+<ul>
+  <li>Điểm tổng hợp theo thuật toán.</li>
+  <li>Các chỉ số vận động chính.</li>
+  <li>Kết quả phân tích từng bên.</li>
+  <li>Những chỉ số nằm ngoài khoảng tham khảo.</li>
+  <li>Nhận xét và khuyến nghị tham khảo.</li>
+</ul>
+<p>Báo cáo có thể được xuất dưới dạng PDF hoặc Excel nếu chức năng này được hỗ trợ trong phiên bản ứng dụng.</p></div>
+</div></section>
+
+<section id="doc-bao-cao"><h2><span class="n">05.</span> CÁCH ĐỌC VÀ HIỂU BÁO CÁO</h2>
+<h3>Điểm tổng hợp (0–100)</h3>
+<p>Điểm tổng hợp phản ánh mức độ phù hợp của các chỉ số được hệ thống đánh giá so với những khoảng tham khảo đã thiết lập.</p>
+<p class="hd-lab">Các mức phân loại trong ứng dụng:</p>
+<ul class="chips">
+  <li>Tốt.</li>
+  <li>Khá.</li>
+  <li>Cần cải thiện.</li>
+</ul>
+<p>Đây là điểm số nội bộ của công cụ, không phải thang điểm y khoa đã được chuẩn hóa hoặc kiểm định lâm sàng.</p>
+<p>Điểm số cần được xem xét cùng các chỉ số thành phần, không nên sử dụng độc lập để đánh giá chất lượng dáng chạy.</p>
+<h3>So sánh chân trái và chân phải</h3>
+<p>Báo cáo cung cấp các thông số riêng biệt cho hai bên cơ thể.</p>
+<p>Sự khác biệt giữa hai chân có thể xuất hiện ngay cả ở người chạy khỏe mạnh. Mức độ chênh lệch cần được diễn giải trong bối cảnh tốc độ, tiền sử vận động và tình trạng chức năng.</p>
+<p>Không phải mọi sự bất đối xứng đều là bất thường hoặc cần can thiệp.</p>
+<h3>Chỉ số ngoài khoảng tham khảo</h3>
+<p>Một chỉ số nằm ngoài khoảng tham khảo không đồng nghĩa với việc người chạy đang có bệnh lý hoặc chắc chắn có nguy cơ chấn thương.</p>
+<p>Đây là thông tin giúp xác định những đặc điểm chuyển động cần được tìm hiểu thêm.</p>
+<p>Để hiểu chính xác từng thông số, xem tại:</p>
+<a class="hd-btn2" href="chi-so.html">CÁC CHỈ SỐ PHÂN TÍCH – METRICS &amp; REFERENCES</a>
+</section>
+
+<section id="hoi-dap"><h2><span class="n">06.</span> CÂU HỎI THƯỜNG GẶP</h2>
+<details><summary>1. Tôi có cần chạy nhanh khi thực hiện Screening không?</summary><p>Không. Nên lựa chọn tốc độ chạy quen thuộc, thoải mái và có thể duy trì ổn định trong suốt lượt đo.</p></details>
+<details><summary>2. Tôi có thể sử dụng điện thoại để ghi hình không?</summary><p>Có. Điện thoại thông minh có thể sử dụng nếu camera đủ rõ, được cố định chắc chắn và đặt đúng vị trí.</p></details>
+<details><summary>3. Tôi có cần quay cả hai góc không?</summary><p>Góc bên là góc quay chính. Góc sau lưng là góc bổ sung, tùy thuộc vào các chỉ số mà phiên bản ứng dụng hỗ trợ phân tích.</p></details>
+<details><summary>4. Vì sao cần mặc quần áo ôm vừa người?</summary><p>Trang phục gọn gàng giúp hạn chế che khuất các điểm khớp, hỗ trợ mô hình nhận diện vị trí cơ thể chính xác hơn.</p></details>
+<details><summary>5. Điểm Screening thấp có nghĩa là tôi chạy sai kỹ thuật không?</summary><p>Không. Điểm số chỉ phản ánh kết quả đối chiếu các chỉ số với khoảng tham khảo của ứng dụng. Không tồn tại một kiểu dáng chạy duy nhất phù hợp với tất cả mọi người.</p></details>
+<details><summary>6. Kết quả có thể dự đoán nguy cơ chấn thương không?</summary><p>Không thể dự đoán nguy cơ chấn thương chỉ từ một lần phân tích video. Chấn thương chạy bộ chịu ảnh hưởng của nhiều yếu tố như tải lượng tập luyện, khả năng thích nghi, tiền sử chấn thương, sức mạnh cơ và tình trạng sức khỏe.</p></details>
+<details><summary>7. Bao lâu nên thực hiện Screening một lần?</summary><p>Có thể thực hiện định kỳ khi muốn theo dõi sự thay đổi của các đặc điểm vận động. Khi so sánh, cần giữ điều kiện đo tương đồng, đặc biệt là tốc độ, độ dốc và góc camera.</p></details>
+</section>
+
+<section id="disclaimer"><div class="callout warn"><h3>DISCLAIMER – GIỚI HẠN SỬ DỤNG</h3>
+<p>Running Gait Screening là công cụ sàng lọc và phân tích một số đặc điểm chuyển động thông qua video 2D.</p>
+<p>Kết quả mang tính tham khảo, không thay thế thăm khám lâm sàng, chẩn đoán y khoa hoặc đánh giá chức năng vận động chuyên sâu.</p>
+<p>Các khoảng tham khảo trong ứng dụng không phải tiêu chuẩn chẩn đoán bệnh lý. Kết quả nằm trong khoảng tham khảo không đồng nghĩa với việc không có nguy cơ chấn thương; ngược lại, kết quả ngoài khoảng tham khảo không đồng nghĩa với việc có bệnh lý.</p>
+<p>Khi có đau hoặc biểu hiện bất thường trong quá trình vận động, người chạy nên được nhân viên y tế đánh giá phù hợp.</p></div></section>
+
+<div class="hd-end"><a class="hd-go" href="../screening.html#/">Thực hiện Screening</a></div>
+</main>
+</div>
+<footer class="foot"><b>HANOI RUNNING LAB</b><br>Where Running Meets Science.</footer>
+<script src="../i18n.js"></script>
+<script src="../nav.js"></script>
+</body>
+</html>
