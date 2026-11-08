@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script>if(location.hash.indexOf("#/")===0)location.replace("screening.html"+location.search+location.hash)</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hanoi Running Lab – Phòng nghiên cứu và phân tích dáng chạy</title>
+<title>Hanoi Running Lab – Hiểu dáng chạy qua dữ liệu chuyển động</title>
 <meta name="description" content="Hiểu cách bạn chạy. Đo lường chuyển động. Tiếp cận bằng chứng khoa học. Hanoi Running Lab: phòng nghiên cứu và phân tích dáng chạy bằng thị giác máy tính.">
 <style>
 :root{--moss:#1F4D2B;--moss2:#2A6A3B;--leaf:#A9D69B;--leaf-soft:#E3F1DC;--leaf-pale:#F3F9F0;--ink:#1B1F1C;--mut:#5C685F;--line:#DCE6D8;--bg:#F3F9F0;--on-dark-mut:#CFE6C8;--shadow:rgba(31,77,43,.14);--moss3:#3B7D4A;--moss-rgb:31,77,43;--moss2-rgb:42,106,59;--teal3:#2E7D3F;--teal2:#3E9A4F;--fline:#C5D4C0;--fbg:#FAFDF8;--dash:#8FB088;--dis:#B9CDB4;--dk:8,19,11;--dk2:20,40,25;--nav-bg:#fff;--nav-ink:#1B1F1C;--nav-hover:#E3F1DC;--nav-hover-ink:#1F4D2B;--nav-line:#DCE6D8;--nav-logo:#1F4D2B;--font:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
@@ -116,12 +116,15 @@ footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text
 .card.dark .cite{color:var(--leaf)}
 
 /* ---- Home học thuật ---- */
-.hero h1{text-transform:none;font-size:42px;max-width:820px}
+.hero h1{text-transform:none;font-size:clamp(28px,4vw,48px);max-width:none;white-space:nowrap}
 .herogrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
-.heroimg{margin:0}.heroimg img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:50% 45%;border-radius:20px;box-shadow:0 18px 40px rgba(0,0,0,.35)}
-@media (max-width:900px){.herogrid{grid-template-columns:1fr;gap:28px}.heroimg img{aspect-ratio:4/3;object-position:50% 45%}}
+.heroimg{margin:0}.heroimg figcaption{margin-top:12px;text-align:center;font-size:15px;font-weight:600;color:rgba(255,255,255,.9);letter-spacing:.02em}.heroimg img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:50% 50%;border-radius:20px;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+@media (max-width:900px){.herogrid{grid-template-columns:1fr;gap:28px}.heroimg img{aspect-ratio:4/3;object-position:50% 20%}}
 .herogrid a.herocta{font-size:21px;padding:18px 36px;white-space:nowrap}@media (max-width:480px){.herogrid a.herocta{white-space:normal;font-size:18px;padding:16px 24px}}
-.hero .tag{font-size:20px;font-weight:600;line-height:1.4;color:#fff;margin:0 0 18px;max-width:760px}
+.hero p.punch{font-size:22px;font-weight:700;line-height:1.35;color:#fff;margin:0 0 10px}
+.trust{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:rgba(255,255,255,.85)}.trust li::before{content:"✓ ";color:#b9e4a6;font-weight:700}
+.sign{text-align:right;font-weight:600;font-style:italic;margin:24px 0 0;color:var(--moss,#2d4a2b)}
+.hero .tag{font-size:20px;font-weight:600;font-style:italic;line-height:1.4;color:#fff;margin:0 0 18px;max-width:760px}
 .hero p.lead{max-width:720px;margin:0 0 14px;font-size:17px}
 .sub{font-size:18px;font-weight:600;font-style:italic;color:var(--moss2);margin:-12px 0 20px}
 .sec-h3{font-size:20px;color:var(--moss);margin:0 0 10px}
@@ -164,69 +167,51 @@ footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text
 <nav id="topnav"><a class="logo" href="index.html"><img src="logo.png" alt="Hanoi Running Lab"><b>Hanoi Running Lab</b></a><div class="navlinks" id="navlinks"><a class="nv on" aria-current="page" href="index.html">Trang chủ</a><div class="nvdrop"><a class="nv go" href="screening/huong-dan.html">Screening</a><div class="nvmenu"><a href="screening/huong-dan.html">Hướng dẫn</a><a href="screening/chi-so.html">Các chỉ số</a><a href="screening.html#/">Đo ngay</a></div></div><a class="nv" href="blog/">Kiến thức</a><a class="nv" href="thu-vien-anh/">Thư viện ảnh</a></div><span id="langsw" role="group" aria-label="Language"><button type="button" data-lang="vi">VI</button><button type="button" data-lang="en">EN</button></span><button type="button" id="navtoggle" aria-label="Menu" aria-controls="navlinks" aria-expanded="false">☰</button></nav>
 
 <header class="hero"><div class="wrap herogrid"><div class="herotext">
-  <p class="eyebrow">HANOI RUNNING LAB</p>
-  <h1>Phòng nghiên cứu và phân tích dáng chạy</h1>
-  <p class="tag">Hiểu cách bạn chạy. Đo lường chuyển động. Tiếp cận bằng chứng khoa học.</p>
-  <p class="lead">Hanoi Running Lab là không gian nghiên cứu và ứng dụng công nghệ trong phân tích vận động chạy bộ. Chúng tôi sử dụng thị giác máy tính (Computer Vision) để ghi nhận, phân tích các đặc điểm chuyển động thông qua video, từ đó cung cấp những chỉ số giúp người chạy hiểu rõ hơn về cơ chế vận động của mình.</p>
-  <p class="lead">Mỗi chỉ số đều được giải thích bằng định nghĩa, phương pháp đo và tài liệu khoa học liên quan. Mục tiêu không phải tìm kiếm một dáng chạy hoàn hảo, mà là hiểu chuyển động, nhận diện những đặc điểm đáng chú ý và có thêm cơ sở để điều chỉnh tập luyện.</p>
+  <h1 data-i18n-skip>Hanoi Running Lab</h1>
+  <p class="tag">Hiểu dáng chạy qua dữ liệu chuyển động</p>
+  <p class="punch">Không cần phòng lab. Không cần cảm biến. Chỉ cần một chiếc điện thoại.</p>
+  <p class="lead">Quay 2 phút trên máy chạy bộ, nhận báo cáo kèm định nghĩa từng chỉ số và tài liệu tham khảo.</p>
   <a class="herocta" href="screening.html">SCREENING – PHÂN TÍCH DÁNG CHẠY</a>
-  </div><figure class="heroimg"><img src="img/home-sieu-am.jpg" width="720" height="1080" alt="Bác sĩ siêu âm khớp gối cho người chạy tại giải chạy"></figure>
+  <ul class="trust"><li>9 tài liệu tham khảo công khai</li><li>Video xử lý ngay trên máy, không gửi đi</li><li>Đội y tế các giải chạy</li></ul>
+  </div><figure class="heroimg"><img src="img/home-moi.jpg" width="720" height="900" alt="Bác sĩ Lê Trung Kiên tại Hanoi International Marathon"><figcaption>ThS. BS. Lê Trung Kiên</figcaption></figure>
 </div></header>
 
 <main class="wrap">
-<section><h2>Sứ mệnh</h2>
-<p class="sub">Running is movement. Understanding it is science.</p>
-<div class="prose">
-<p>Chạy bộ là một hoạt động vận động phức hợp, trong đó cơ thể liên tục phối hợp giữa các khớp, cơ bắp và hệ thần kinh để tạo ra chuyển động.</p>
-<p>Một thay đổi nhỏ trong cách vận động có thể ảnh hưởng đến hiệu suất, tải trọng cơ học và khả năng thích nghi của cơ thể.</p>
-<p>Tuy nhiên, phân tích dáng chạy không nhất thiết phải giới hạn trong những phòng thí nghiệm chuyển động đắt tiền.</p>
-<p>Hanoi Running Lab hướng đến việc đưa các phương pháp phân tích vận động đến gần hơn với cộng đồng chạy bộ thông qua công nghệ dễ tiếp cận, phương pháp đo minh bạch và nền tảng bằng chứng khoa học.</p>
-<p>Chúng tôi theo đuổi ba nguyên tắc:</p></div>
-<ul class="prin">
-  <li><b>Đo lường khách quan</b>Sử dụng dữ liệu và công nghệ thay vì chỉ dựa vào quan sát chủ quan.</li>
-  <li><b>Minh bạch khoa học</b>Giải thích cách đo, ý nghĩa và giới hạn của từng chỉ số.</li>
-  <li><b>Ứng dụng thực tiễn</b>Chuyển dữ liệu thành thông tin có ích cho việc tập luyện và chăm sóc sức khỏe vận động.</li>
-</ul>
-</section>
-
-<section><h2>Công nghệ và phương pháp</h2>
-<h3 class="sec-h3">Từ một đoạn video đến dữ liệu chuyển động</h3>
-<div class="prose"><p>Hanoi Running Lab ứng dụng công nghệ nhận diện tư thế cơ thể (Pose Estimation) để phân tích chuyển động chạy bộ qua bốn bước:</p></div>
+<section><h2>Cách hoạt động</h2>
 <ol class="tl">
-  <li><span class="no">01</span><b>Video capture – Ghi hình</b><p>Camera cố định ghi lại chuyển động của người chạy trên máy chạy bộ, ưu tiên góc quay bên và có thể bổ sung góc quay phía sau.</p></li>
-  <li><span class="no">02</span><b>Pose estimation – Nhận diện tư thế</b><p>Mô hình MediaPipe BlazePose <a class="cite" href="screening/chi-so.html#r9">[9]</a> nhận diện và xác định vị trí các điểm giải phẫu trên cơ thể qua từng khung hình. Quá trình xử lý được thực hiện trực tiếp trên thiết bị.</p></li>
-  <li><span class="no">03</span><b>Biomechanical analysis – Phân tích chuyển động</b><p>Trích xuất các đặc điểm chuyển động như cadence, thời gian tiếp xúc mặt đất, góc khớp, vị trí bàn chân so với hông và sự khác biệt giữa hai bên cơ thể.</p></li>
-  <li><span class="no">04</span><b>Evidence-based interpretation – Diễn giải dữ liệu</b><p>Đối chiếu các chỉ số với tài liệu nghiên cứu và khoảng tham khảo phù hợp, từ đó đưa ra báo cáo giúp người chạy hiểu rõ hơn về đặc điểm vận động của mình.</p></li>
+  <li><span class="no">01</span><b>Video capture – Ghi hình</b><p>Camera cố định ghi lại chuyển động của bạn trên máy chạy bộ.</p></li>
+  <li><span class="no">02</span><b>Pose estimation – Nhận diện tư thế</b><p>Mô hình nhận diện tư thế xác định vị trí các điểm giải phẫu ngay trên thiết bị.</p></li>
+  <li><span class="no">03</span><b>Biomechanical analysis – Phân tích chuyển động</b><p>Trích xuất nhịp chạy, góc khớp và sự khác biệt giữa hai bên cơ thể.</p></li>
+  <li><span class="no">04</span><b>Evidence-based interpretation – Diễn giải dữ liệu</b><p>Đối chiếu chỉ số với tài liệu nghiên cứu để đưa ra báo cáo dễ hiểu.</p></li>
 </ol>
-<div class="limit"><h3>Giới hạn của phương pháp</h3>
-<p>Phân tích video 2D không thay thế hệ thống phân tích chuyển động 3D hoặc đánh giá lâm sàng. Kết quả có thể chịu ảnh hưởng bởi góc camera, điều kiện ghi hình, trang phục và sai số của mô hình nhận diện.</p>
-<p>Các khoảng tham khảo không mặc nhiên là ngưỡng chẩn đoán hoặc tiêu chuẩn xác định nguy cơ chấn thương.</p>
-<p>Chúng tôi công khai định nghĩa, phương pháp tính và tài liệu tham khảo để người dùng có thể hiểu đúng ý nghĩa của dữ liệu.</p></div>
+<p class="note">Phân tích video 2D mang tính tham khảo, không thay thế đánh giá lâm sàng.</p>
 <a class="btn2" href="screening/chi-so.html">Xem hệ thống chỉ số và tài liệu khoa học</a>
 </section>
 
 <section><h2>Khám phá Hanoi Running Lab</h2>
 <div class="doors">
   <div class="door scr"><span class="no">01. Screening</span><h3>Phân tích dáng chạy</h3>
-    <p>Công cụ sàng lọc dáng chạy ứng dụng Computer Vision. Ghi hình trên máy chạy bộ, phân tích các chỉ số chuyển động và nhận báo cáo trong khoảng 2 phút.</p>
-    <p>Kết quả mang tính tham khảo, hỗ trợ tìm hiểu đặc điểm vận động, không thay thế chẩn đoán hoặc tư vấn y khoa.</p>
+    <p>Ghi hình trên máy chạy bộ và nhận báo cáo chỉ số trong khoảng 2 phút.</p>
     <a class="btn2" href="screening.html">Thực hiện Screening</a></div>
   <div class="door"><span class="no">02. Knowledge</span><h3>Thư viện kiến thức</h3>
-    <p>Tổng hợp các bài viết về cơ sinh học chạy bộ, vận động học, chấn thương thể thao, phục hồi chức năng và y học thể thao.</p>
-    <p>Nội dung được xây dựng trên cơ sở tài liệu khoa học, hướng đến việc chuyển hóa kiến thức chuyên môn thành thông tin dễ hiểu và có thể ứng dụng trong thực tế.</p>
+    <p>Bài viết về cơ sinh học chạy bộ, chấn thương và y học thể thao.</p>
     <a class="btn2" href="blog/">Khám phá kiến thức</a></div>
   <div class="door"><span class="no">03. Gallery</span><h3>Thư viện hình ảnh</h3>
-    <p>Lưu giữ hình ảnh hoạt động y tế tại các giải chạy, chương trình chăm sóc vận động viên, workshop và các hoạt động giáo dục sức khỏe thể thao.</p>
+    <p>Hình ảnh hoạt động y tế tại các giải chạy và workshop.</p>
     <a class="btn2" href="thu-vien-anh/">Khám phá thư viện ảnh</a></div>
 </div></section>
 
-<section><h2>Triết lý của chúng tôi</h2>
-<p class="sub">Better understanding. Smarter running.</p>
-<div class="prose">
-<p>Không có một kiểu dáng chạy duy nhất phù hợp với tất cả mọi người.</p>
-<p>Một chỉ số riêng lẻ không thể giải thích toàn bộ cơ chế vận động. Một sai khác về kỹ thuật cũng không đồng nghĩa với chấn thương.</p>
-<p>Điều quan trọng là hiểu được mối liên hệ giữa chuyển động, khả năng thích nghi, tải lượng tập luyện và tình trạng sức khỏe của từng người chạy.</p>
-<p>Hanoi Running Lab tin rằng khoa học không chỉ nằm trong phòng thí nghiệm. Khoa học cần được chuyển hóa thành những công cụ và kiến thức thiết thực, giúp mỗi người chạy hiểu cơ thể mình tốt hơn.</p></div>
+<section><h2>Sứ mệnh</h2>
+<p class="sub">Running is movement. Understanding it is science.</p>
+<div class="prose"><p>Chúng tôi theo đuổi ba nguyên tắc:</p></div>
+<ul class="prin">
+  <li><b>Đo lường khách quan</b>Sử dụng dữ liệu và công nghệ thay vì chỉ dựa vào quan sát chủ quan.</li>
+  <li><b>Minh bạch khoa học</b>Giải thích cách đo, ý nghĩa và giới hạn của từng chỉ số.</li>
+  <li><b>Ứng dụng thực tiễn</b>Chuyển dữ liệu thành thông tin có ích cho việc tập luyện và chăm sóc sức khỏe vận động.</li>
+</ul>
+<div class="prose" style="margin-top:22px"><p>Không có một kiểu dáng chạy duy nhất phù hợp với tất cả mọi người.</p></div>
+<p class="sign">— ThS. BS. Lê Trung Kiên, Người sáng lập Hanoi Running Lab</p>
+<a class="btn2" href="gioi-thieu.html">Đọc thêm về Hanoi Running Lab →</a>
 </section>
 </main>
 

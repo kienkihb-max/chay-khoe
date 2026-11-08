@@ -12,7 +12,7 @@ const CLUSTERS = { 'dang-chay': 'Dáng chạy', 'chan-thuong': 'Chấn thương'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'content', 'blog');
 const OUT = join(ROOT, 'docs', 'blog');
-const STATIC_PAGES = ['', 'screening/huong-dan.html', 'screening/chi-so.html', 'screening.html', 'blog/', 'thu-vien-anh/'];
+const STATIC_PAGES = ['', 'screening/huong-dan.html', 'screening/chi-so.html', 'screening.html', 'blog/', 'thu-vien-anh/', 'gioi-thieu.html'];
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const fmtDate = (d) => d.split('-').reverse().join('/');

@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Giới thiệu về Hanoi Running Lab</title>
+<meta name="description" content="Sứ mệnh, công nghệ và phương pháp, triết lý của Hanoi Running Lab: phòng nghiên cứu và phân tích dáng chạy bằng thị giác máy tính.">
+<link rel="icon" href="logo-128.png">
+<style>
+:root{--moss:#1F4D2B;--moss2:#2A6A3B;--leaf:#A9D69B;--leaf-soft:#E3F1DC;--leaf-pale:#F3F9F0;--ink:#1B1F1C;--mut:#5C685F;--line:#DCE6D8;--bg:#F3F9F0;--on-dark-mut:#CFE6C8;--shadow:rgba(31,77,43,.14);--moss3:#3B7D4A;--moss-rgb:31,77,43;--moss2-rgb:42,106,59;--teal3:#2E7D3F;--teal2:#3E9A4F;--fline:#C5D4C0;--fbg:#FAFDF8;--dash:#8FB088;--dis:#B9CDB4;--dk:8,19,11;--dk2:20,40,25;--nav-bg:#fff;--nav-ink:#1B1F1C;--nav-hover:#E3F1DC;--nav-hover-ink:#1F4D2B;--nav-line:#DCE6D8;--nav-logo:#1F4D2B;--font:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;padding-top:52px}
+#topnav{position:fixed;left:0;right:0;top:0;height:52px;z-index:20;background:var(--nav-bg);border-bottom:1px solid var(--nav-line);box-shadow:0 2px 10px var(--shadow);display:flex;align-items:center;gap:6px;padding:0 20px;overflow-x:auto}
+.logo{display:flex;align-items:center;gap:10px;margin-right:24px;flex-shrink:0}
+.logo img{width:44px;height:44px;display:block;border-radius:50%;background:#fff}
+.logo b{font-size:17px;font-weight:700;color:var(--nav-logo);white-space:nowrap}
+#topnav a.nv{display:inline-flex;align-items:center;height:36px;padding:0 18px;font-size:15px;font-weight:600;color:var(--nav-ink);text-decoration:none;border-radius:999px;white-space:nowrap;flex-shrink:0}
+#topnav a.nv:hover{background:var(--nav-hover);color:var(--nav-hover-ink)}
+#langsw{margin-left:auto;display:flex;gap:2px;flex-shrink:0}
+#langsw button{display:inline-flex;align-items:center;height:36px;padding:0 14px;font-size:15px;font-weight:600;font-family:inherit;border:0;cursor:pointer;background:transparent;color:var(--ink);border-radius:999px}
+#langsw button.on{background:var(--moss);color:#fff}
+#topnav a.nv.on{background:var(--nav-hover);color:var(--nav-hover-ink)}
+#topnav a.nv.go{background:var(--moss);color:#fff;font-weight:700}
+#topnav a.nv.go:hover{background:var(--moss2);color:#fff}
+.hero a.herocta{display:inline-block;margin-top:30px;background:var(--leaf);color:var(--moss);font-weight:800;font-size:26px;text-decoration:none;padding:20px 64px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.28);text-transform:uppercase;letter-spacing:.04em}
+.hero a.herocta:hover{background:#fff}
+@media (max-width:1100px){.logo b{display:none}.logo{margin-right:8px}}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+section{padding:56px 0 0}
+h2{font-size:28px;margin:0 0 22px;color:var(--title,var(--moss));font-weight:800;text-transform:uppercase;letter-spacing:-.005em}
+.hero{background:linear-gradient(170deg,var(--moss) 0%,var(--moss) 55%,var(--moss3) 100%);color:#fff;padding:64px 0}
+.hero .eyebrow{font-size:13px;font-weight:700;letter-spacing:.14em;color:var(--leaf);margin:0 0 14px}
+.hero h1{font-size:44px;line-height:1.1;margin:0 0 18px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;max-width:760px}
+.hero p.lead{font-size:18px;line-height:1.55;color:var(--on-dark-mut);margin:0;max-width:640px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.step{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 2px 10px var(--shadow)}
+.step .ic{width:64px;height:64px;border-radius:50%;background:var(--leaf-soft);display:flex;align-items:center;justify-content:center;margin-bottom:14px;position:relative}
+.step .ic svg{width:34px;height:34px;stroke:var(--moss);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.step .no{position:absolute;top:-6px;right:-6px;width:26px;height:26px;border-radius:50%;background:var(--moss);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.step h3{margin:0 0 8px;font-size:20px;color:var(--title,var(--moss))}
+.step p{margin:0;color:var(--mut);line-height:1.5;font-size:15px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:var(--leaf-soft);border-radius:16px;padding:22px}
+.card.dark{background:var(--moss);color:#fff}
+.card h3{margin:0 0 8px;font-size:18px;color:var(--title,var(--moss))}
+.card.dark h3{color:#fff;text-transform:uppercase}
+.card p{margin:0;font-size:15px;line-height:1.5;color:var(--mut)}
+.card.dark p{color:var(--on-dark-mut)}
+.samples{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.sample{margin:0;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 2px 10px var(--shadow)}
+.sample img{display:block;width:100%;height:auto}
+.sample figcaption{padding:14px 16px 16px;font-size:15px;line-height:1.45}
+.sample .rk{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:6px}
+.rk.t{background:var(--leaf-soft);color:var(--title,var(--moss))}.rk.k{background:#F8EBD2;color:#9A5F0A}.rk.c{background:#F7DAD5;color:#C73E2E}
+.note{color:var(--mut);font-size:13px;margin:12px 0 0}
+details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:0;margin-bottom:10px}
+summary{cursor:pointer;padding:16px 20px;font-weight:700;font-size:16px;color:var(--title,var(--moss));list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:22px;line-height:1;color:var(--title2,var(--moss2))}
+details[open] summary::after{content:"–"}
+details p{margin:0;padding:0 20px 18px;color:var(--mut);line-height:1.55}
+.cta{margin-top:56px;background:var(--moss);color:#fff;text-align:center;padding:48px 24px 40px}
+.cta a.btn{display:inline-block;background:#fff;color:var(--title,var(--moss));font-weight:600;font-size:15px;text-decoration:none;padding:9px 24px;border-radius:999px}
+.cta a.btn:hover{background:var(--leaf)}
+.cta p{margin:20px auto 0;color:var(--on-dark-mut);font-size:14px}
+.mc h3{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.mc .ref{display:block;margin-top:8px;font-size:13px;color:var(--title2,var(--moss2));font-weight:600}
+.card.dark.mc .ref{color:var(--leaf)}
+.mc p+p{margin-top:6px}
+.refs{margin:0;padding:0;list-style:none;counter-reset:r}
+.refs li{counter-increment:r;position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px 14px 52px;margin-bottom:10px;font-size:14px;line-height:1.5;color:var(--ink);overflow-wrap:anywhere}
+.refs li::before{content:"[" counter(r) "]";position:absolute;left:16px;top:14px;font-weight:700;color:var(--title,var(--moss))}
+.refs li span{display:block;color:var(--mut);margin-top:4px}
+.more{background:none;border:0;margin:14px 0 0}.more>summary{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:#fff;padding:10px 18px;margin-bottom:14px}.more[open]>summary{margin-bottom:16px}
+.lead2{color:var(--mut);line-height:1.55;margin:0 0 18px;max-width:760px}
+@media (max-width:900px){.steps,.cards,.samples{grid-template-columns:1fr 1fr}.hero h1{font-size:34px}}
+@media (max-width:600px){.steps,.cards,.samples{grid-template-columns:1fr}.hero{padding:44px 0}.hero h1{font-size:28px}h2{font-size:23px}.wrap{padding:0 16px}#topnav{padding:0 12px}}
+/* ---- bổ sung cho nhóm Screening (trang con) và Home học thuật ---- */
+.nv.on.go{background:var(--moss)!important;color:#fff!important}
+.subnav{position:sticky;top:52px;z-index:15;background:#fff;border-bottom:1px solid var(--line)}
+.subnav .wrap{display:flex;align-items:center;gap:6px;overflow-x:auto;min-height:48px}
+.subnav .sl{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--moss2);text-transform:uppercase;margin-right:10px;white-space:nowrap}
+.subnav a{display:inline-flex;align-items:center;height:34px;padding:0 16px;border-radius:999px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none;white-space:nowrap;flex-shrink:0}
+.subnav a:hover{background:var(--leaf-soft);color:var(--moss)}
+.subnav a.on{background:var(--leaf-soft);color:var(--moss);font-weight:800}
+.subnav a.now{margin-left:auto;background:var(--moss);color:#fff;font-weight:700}
+.subnav a.now:hover{background:var(--moss2);color:#fff}
+.pagehead{padding:40px 0 4px}
+.pagehead .eyebrow{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--moss2);margin:0 0 8px;text-transform:uppercase}
+.pagehead h1{font-size:34px;line-height:1.15;margin:0 0 12px;color:var(--moss);font-weight:800}
+.pagehead p{margin:0;color:var(--mut);line-height:1.6;max-width:720px;font-size:16px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0;padding:0;list-style:none}
+.toc a{display:inline-block;padding:7px 14px;border:1px solid var(--line);background:#fff;border-radius:999px;font-size:14px;font-weight:600;color:var(--moss);text-decoration:none}
+.toc a:hover{background:var(--leaf-soft)}
+section{scroll-margin-top:110px}
+.prose p{line-height:1.65;margin:0 0 12px;max-width:760px}
+.prose ul,.prose ol{margin:0 0 14px;padding-left:22px;line-height:1.65;max-width:760px}
+.prose li{margin-bottom:6px}
+.callout{background:#fff;border:1px solid var(--line);border-left:4px solid var(--moss2);border-radius:12px;padding:14px 18px;margin:0 0 14px;line-height:1.6;max-width:760px;font-size:15px}
+.callout.warn{border-left-color:#C98A1B;background:#FFF9EC}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.tbl{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:15px}
+.tbl th,.tbl td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+.tbl th{background:var(--leaf-soft);color:var(--moss);font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+.tblwrap{overflow-x:auto}
+.tbl tr:last-child td{border-bottom:0}
+.cite{font-size:13px;font-weight:700;color:var(--moss2);text-decoration:none;white-space:nowrap}
+.cite:hover{text-decoration:underline}
+.pagenav{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:40px}
+.pagenav a{color:var(--moss);font-weight:700;text-decoration:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 20px}
+.pagenav a:hover{background:var(--leaf-soft)}
+footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text-align:center;padding:28px 24px;font-size:14px}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+@media (max-width:600px){.pagehead h1{font-size:27px}.subnav .sl{display:none}#topnav a.nv{padding:0 11px;font-size:14px}}
+.card.dark .cite{color:var(--leaf)}
+
+/* ---- Home học thuật ---- */
+.hero h1{text-transform:none;font-size:clamp(28px,4vw,48px);max-width:none;white-space:nowrap}
+.herogrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
+.heroimg{margin:0}.heroimg figcaption{margin-top:12px;text-align:center;font-size:15px;font-weight:600;color:rgba(255,255,255,.9);letter-spacing:.02em}.heroimg img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:50% 50%;border-radius:20px;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+@media (max-width:900px){.herogrid{grid-template-columns:1fr;gap:28px}.heroimg img{aspect-ratio:4/3;object-position:50% 20%}}
+.herogrid a.herocta{font-size:21px;padding:18px 36px;white-space:nowrap}@media (max-width:480px){.herogrid a.herocta{white-space:normal;font-size:18px;padding:16px 24px}}
+.hero p.punch{font-size:22px;font-weight:700;line-height:1.35;color:#fff;margin:0 0 10px}
+.trust{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:rgba(255,255,255,.85)}.trust li::before{content:"✓ ";color:#b9e4a6;font-weight:700}
+.sign{text-align:right;font-weight:600;font-style:italic;margin:24px 0 0;color:var(--moss,#2d4a2b)}
+.hero .tag{font-size:20px;font-weight:600;font-style:italic;line-height:1.4;color:#fff;margin:0 0 18px;max-width:760px}
+.hero p.lead{max-width:720px;margin:0 0 14px;font-size:17px}
+.sub{font-size:18px;font-weight:600;font-style:italic;color:var(--moss2);margin:-12px 0 20px}
+.sec-h3{font-size:20px;color:var(--moss);margin:0 0 10px}
+.prose p{max-width:820px}
+.prin{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:18px 0 0;padding:0;list-style:none}
+.prin li{background:#fff;border:1px solid var(--line);border-top:4px solid var(--moss2);border-radius:14px;padding:18px;box-shadow:0 2px 10px var(--shadow);line-height:1.5;color:var(--mut);font-size:15px}
+.prin b{display:block;color:var(--moss);font-size:17px;margin-bottom:6px}
+.tl{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0 0;padding:0;list-style:none}
+.tl li{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 2px 10px var(--shadow);font-size:15px;line-height:1.5;color:var(--mut)}
+.tl .no{display:block;font-size:28px;font-weight:800;color:var(--leaf);-webkit-text-stroke:1px var(--moss2);margin-bottom:6px;line-height:1}
+.tl b{display:block;color:var(--moss);font-size:16px;margin-bottom:6px}
+.tl p{margin:0}
+.limit{margin:22px 0 0;background:#FFF9EC;border:1px solid #E8D5A6;border-left:4px solid #C98A1B;border-radius:12px;padding:16px 20px;max-width:900px}
+.limit h3{margin:0 0 8px;font-size:17px;color:#7A4E0B}
+.limit p{margin:0 0 8px;line-height:1.6;font-size:15px}
+.limit p:last-child{margin:0}
+.btn2{display:inline-block;margin-top:22px;background:var(--moss);color:#fff;font-weight:700;font-size:16px;text-decoration:none;padding:13px 26px;border-radius:999px}
+.btn2:hover{background:var(--moss2)}
+.doors{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.door{display:flex;flex-direction:column;background:var(--leaf-soft);border-radius:16px;padding:24px}
+.door .no{font-size:13px;font-weight:800;letter-spacing:.12em;color:var(--moss2)}
+.door h3{margin:4px 0 2px;font-size:22px;color:var(--moss)}
+.door .sub3{font-weight:700;color:var(--moss);margin:0 0 10px;font-size:15px}
+.door p{margin:0 0 12px;color:var(--mut);line-height:1.55;font-size:15px}
+.door .btn2{margin-top:auto;align-self:flex-start}
+.door.scr{background:var(--moss);color:#fff}
+.door.scr .no,.door.scr .sub3{color:var(--leaf)}
+.door.scr h3{color:#fff}
+.door.scr p{color:var(--on-dark-mut)}
+.door.scr .btn2{background:var(--leaf);color:var(--moss)}
+.door.scr .btn2:hover{background:#fff}
+.closing{margin-top:56px;background:var(--moss);color:#fff;text-align:center;padding:30px 24px;font-size:18px;font-weight:700;letter-spacing:.04em}
+@media (max-width:900px){.prin,.doors{grid-template-columns:1fr}.tl{grid-template-columns:1fr 1fr}.hero h1{font-size:32px}}
+@media (max-width:600px){.tl{grid-template-columns:1fr}.hero a.herocta{font-size:17px;padding:16px 24px}.hero h1{font-size:27px}}
+</style>
+<link rel="stylesheet" href="nav.css">
+<script src="themes.js"></script>
+</head>
+<body>
+<nav id="topnav"><a class="logo" href="index.html"><img src="logo.png" alt="Hanoi Running Lab"><b>Hanoi Running Lab</b></a><div class="navlinks" id="navlinks"><a class="nv" href="index.html">Trang chủ</a><div class="nvdrop"><a class="nv go" href="screening/huong-dan.html">Screening</a><div class="nvmenu"><a href="screening/huong-dan.html">Hướng dẫn</a><a href="screening/chi-so.html">Các chỉ số</a><a href="screening.html#/">Đo ngay</a></div></div><a class="nv" href="blog/">Kiến thức</a><a class="nv" href="thu-vien-anh/">Thư viện ảnh</a></div><span id="langsw" role="group" aria-label="Language"><button type="button" data-lang="vi">VI</button><button type="button" data-lang="en">EN</button></span><button type="button" id="navtoggle" aria-label="Menu" aria-controls="navlinks" aria-expanded="false">☰</button></nav>
+
+<header class="pagehead"><div class="wrap"><p class="eyebrow">Hanoi Running Lab</p><h1>Giới thiệu về Hanoi Running Lab</h1></div></header>
+
+<main class="wrap">
+<section><h2>Sứ mệnh</h2>
+<p class="sub">Running is movement. Understanding it is science.</p>
+<div class="prose">
+<p>Hanoi Running Lab là không gian nghiên cứu và ứng dụng công nghệ trong phân tích vận động chạy bộ. Chúng tôi sử dụng thị giác máy tính (Computer Vision) để ghi nhận, phân tích các đặc điểm chuyển động thông qua video, từ đó cung cấp những chỉ số giúp người chạy hiểu rõ hơn về cơ chế vận động của mình.</p>
+<p>Mỗi chỉ số đều được giải thích bằng định nghĩa, phương pháp đo và tài liệu khoa học liên quan. Mục tiêu không phải tìm kiếm một dáng chạy hoàn hảo, mà là hiểu chuyển động, nhận diện những đặc điểm đáng chú ý và có thêm cơ sở để điều chỉnh tập luyện.</p>
+<p>Chạy bộ là một hoạt động vận động phức hợp, trong đó cơ thể liên tục phối hợp giữa các khớp, cơ bắp và hệ thần kinh để tạo ra chuyển động.</p>
+<p>Một thay đổi nhỏ trong cách vận động có thể ảnh hưởng đến hiệu suất, tải trọng cơ học và khả năng thích nghi của cơ thể.</p>
+<p>Tuy nhiên, phân tích dáng chạy không nhất thiết phải giới hạn trong những phòng thí nghiệm chuyển động đắt tiền.</p>
+<p>Hanoi Running Lab hướng đến việc đưa các phương pháp phân tích vận động đến gần hơn với cộng đồng chạy bộ thông qua công nghệ dễ tiếp cận, phương pháp đo minh bạch và nền tảng bằng chứng khoa học.</p>
+<p>Chúng tôi theo đuổi ba nguyên tắc:</p></div>
+<ul class="prin">
+  <li><b>Đo lường khách quan</b>Sử dụng dữ liệu và công nghệ thay vì chỉ dựa vào quan sát chủ quan.</li>
+  <li><b>Minh bạch khoa học</b>Giải thích cách đo, ý nghĩa và giới hạn của từng chỉ số.</li>
+  <li><b>Ứng dụng thực tiễn</b>Chuyển dữ liệu thành thông tin có ích cho việc tập luyện và chăm sóc sức khỏe vận động.</li>
+</ul>
+<p class="sign">— ThS. BS. Lê Trung Kiên, Người sáng lập Hanoi Running Lab</p>
+</section>
+
+<section><h2>Công nghệ và phương pháp</h2>
+<h3 class="sec-h3">Từ một đoạn video đến dữ liệu chuyển động</h3>
+<div class="prose"><p>Hanoi Running Lab ứng dụng công nghệ nhận diện tư thế cơ thể (Pose Estimation) để phân tích chuyển động chạy bộ qua bốn bước:</p></div>
+<ol class="tl">
+  <li><span class="no">01</span><b>Video capture – Ghi hình</b><p>Camera cố định ghi lại chuyển động của người chạy trên máy chạy bộ, ưu tiên góc quay bên và có thể bổ sung góc quay phía sau.</p></li>
+  <li><span class="no">02</span><b>Pose estimation – Nhận diện tư thế</b><p>Mô hình MediaPipe BlazePose <a class="cite" href="screening/chi-so.html#r9">[9]</a> nhận diện và xác định vị trí các điểm giải phẫu trên cơ thể qua từng khung hình. Quá trình xử lý được thực hiện trực tiếp trên thiết bị.</p></li>
+  <li><span class="no">03</span><b>Biomechanical analysis – Phân tích chuyển động</b><p>Trích xuất các đặc điểm chuyển động như cadence, thời gian tiếp xúc mặt đất, góc khớp, vị trí bàn chân so với hông và sự khác biệt giữa hai bên cơ thể.</p></li>
+  <li><span class="no">04</span><b>Evidence-based interpretation – Diễn giải dữ liệu</b><p>Đối chiếu các chỉ số với tài liệu nghiên cứu và khoảng tham khảo phù hợp, từ đó đưa ra báo cáo giúp người chạy hiểu rõ hơn về đặc điểm vận động của mình.</p></li>
+</ol>
+<div class="limit"><h3>Giới hạn của phương pháp</h3>
+<p>Phân tích video 2D không thay thế hệ thống phân tích chuyển động 3D hoặc đánh giá lâm sàng. Kết quả có thể chịu ảnh hưởng bởi góc camera, điều kiện ghi hình, trang phục và sai số của mô hình nhận diện.</p>
+<p>Các khoảng tham khảo không mặc nhiên là ngưỡng chẩn đoán hoặc tiêu chuẩn xác định nguy cơ chấn thương.</p>
+<p>Chúng tôi công khai định nghĩa, phương pháp tính và tài liệu tham khảo để người dùng có thể hiểu đúng ý nghĩa của dữ liệu.</p></div>
+<a class="btn2" href="screening/chi-so.html">Xem hệ thống chỉ số và tài liệu khoa học</a>
+</section>
+
+<section><h2>Triết lý của chúng tôi</h2>
+<p class="sub">Better understanding. Smarter running.</p>
+<div class="prose">
+<p>Không có một kiểu dáng chạy duy nhất phù hợp với tất cả mọi người.</p>
+<p>Một chỉ số riêng lẻ không thể giải thích toàn bộ cơ chế vận động. Một sai khác về kỹ thuật cũng không đồng nghĩa với chấn thương.</p>
+<p>Điều quan trọng là hiểu được mối liên hệ giữa chuyển động, khả năng thích nghi, tải lượng tập luyện và tình trạng sức khỏe của từng người chạy.</p>
+<p>Hanoi Running Lab tin rằng khoa học không chỉ nằm trong phòng thí nghiệm. Khoa học cần được chuyển hóa thành những công cụ và kiến thức thiết thực, giúp mỗi người chạy hiểu cơ thể mình tốt hơn.</p></div>
+</section>
+
+<footer class="closing">HANOI RUNNING LAB – Where running meets science.</footer>
+<script src="i18n.js"></script>
+<script src="nav.js"></script>
+</body>
+</html>
