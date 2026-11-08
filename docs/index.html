@@ -117,6 +117,10 @@ footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text
 
 /* ---- Home học thuật ---- */
 .hero h1{text-transform:none;font-size:42px;max-width:820px}
+.herogrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
+.heroimg{margin:0}.heroimg img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:50% 45%;border-radius:20px;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+@media (max-width:900px){.herogrid{grid-template-columns:1fr;gap:28px}.heroimg img{aspect-ratio:4/3;object-position:50% 45%}}
+.herogrid a.herocta{font-size:21px;padding:18px 36px;white-space:nowrap}@media (max-width:480px){.herogrid a.herocta{white-space:normal;font-size:18px;padding:16px 24px}}
 .hero .tag{font-size:20px;font-weight:600;line-height:1.4;color:#fff;margin:0 0 18px;max-width:760px}
 .hero p.lead{max-width:720px;margin:0 0 14px;font-size:17px}
 .sub{font-size:18px;font-weight:600;font-style:italic;color:var(--moss2);margin:-12px 0 20px}
@@ -159,13 +163,14 @@ footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text
 <body>
 <nav id="topnav"><a class="logo" href="index.html"><img src="logo.png" alt="Hanoi Running Lab"><b>Hanoi Running Lab</b></a><div class="navlinks" id="navlinks"><a class="nv on" aria-current="page" href="index.html">Trang chủ</a><div class="nvdrop"><a class="nv go" href="screening/huong-dan.html">Screening</a><div class="nvmenu"><a href="screening/huong-dan.html">Hướng dẫn</a><a href="screening/chi-so.html">Các chỉ số</a><a href="screening.html#/">Đo ngay</a></div></div><a class="nv" href="blog/">Kiến thức</a><a class="nv" href="thu-vien-anh/">Thư viện ảnh</a></div><span id="langsw" role="group" aria-label="Language"><button type="button" data-lang="vi">VI</button><button type="button" data-lang="en">EN</button></span><button type="button" id="navtoggle" aria-label="Menu" aria-controls="navlinks" aria-expanded="false">☰</button></nav>
 
-<header class="hero"><div class="wrap">
+<header class="hero"><div class="wrap herogrid"><div class="herotext">
   <p class="eyebrow">HANOI RUNNING LAB</p>
   <h1>Phòng nghiên cứu và phân tích dáng chạy</h1>
   <p class="tag">Hiểu cách bạn chạy. Đo lường chuyển động. Tiếp cận bằng chứng khoa học.</p>
   <p class="lead">Hanoi Running Lab là không gian nghiên cứu và ứng dụng công nghệ trong phân tích vận động chạy bộ. Chúng tôi sử dụng thị giác máy tính (Computer Vision) để ghi nhận, phân tích các đặc điểm chuyển động thông qua video, từ đó cung cấp những chỉ số giúp người chạy hiểu rõ hơn về cơ chế vận động của mình.</p>
   <p class="lead">Mỗi chỉ số đều được giải thích bằng định nghĩa, phương pháp đo và tài liệu khoa học liên quan. Mục tiêu không phải tìm kiếm một dáng chạy hoàn hảo, mà là hiểu chuyển động, nhận diện những đặc điểm đáng chú ý và có thêm cơ sở để điều chỉnh tập luyện.</p>
   <a class="herocta" href="screening.html">SCREENING – PHÂN TÍCH DÁNG CHẠY</a>
+  </div><figure class="heroimg"><img src="img/home-sieu-am.jpg" width="720" height="1080" alt="Bác sĩ siêu âm khớp gối cho người chạy tại giải chạy"></figure>
 </div></header>
 
 <main class="wrap">
