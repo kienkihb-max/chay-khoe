@@ -181,11 +181,15 @@
   //  1. Ghép điểm thành hai chân trong từng khung: gót/mũi theo cổ chân gần nhất, gối theo độ dài cẳng chân sát độ dài điển hình.
   //  2. "Mặt đất" = đường thẳng ước từ điểm thấp nhất của bàn chân qua cả đoạn (đường nghiêng theo camera), lấy mức các lần trụ.
   //  3. Mỗi bước hông xuống thấp nhất một lần. Trong khoảng giữa hai đáy hông: IC = khung đầu bàn chân phía trước xuống tới mức
-  //     trụ của bước đó (± TOL_GROUND_CM); TO = khung cuối bàn chân trụ còn ở mức đó. Đo trên điểm thô (chưa lọc, chưa làm mượt).
+  //     trụ của bước đó (± TOL_GROUND_CM); TO = khung cuối bàn chân trụ còn ở mức đó (± TOL_LIFT_CM). Đo trên điểm thô (chưa lọc, chưa làm mượt).
   //  4. Hai lần trụ liền nhau là hai chân khác nhau (chạy luôn đổi chân). Chân nào là "phải" lấy theo nhãn MediaPipe đa số.
   //     Hạn chế: tên trái/phải chỉ đúng khi đa số khung MediaPipe gán đúng nhãn; hai chân hoán tên thì số vẫn đúng từng chân.
   //  5. Ghi lại P theo chân thật (mỗi khung: chân đang trụ/vừa nhấc của lần trụ đó mang tên chân đó) để phần đo và ảnh dùng.
   const TOL_GROUND_CM = 2.5;
+  // TO dùng ngưỡng rộng hơn IC: lúc trụ điểm gót/mũi của bàn chân trụ hay nằm cao hơn mức trụ (lấy max cả cửa sổ) khoảng 3 cm
+  // vì nhiễu, ngưỡng 2,5 cm làm TO rơi ngay khung IC (không có pha trụ, không đo được gối giữa trụ). 4 cm vẫn dưới
+  // độ nhấc gót lúc rời đất (>5 cm sau 1–2 khung).
+  const TOL_LIFT_CM = 4;
   // Bàn chân lúc trụ phải nằm trong TOL_BAND_CM so với mặt đất chung (rộng vì chân xa camera trông cao hơn chân gần 3–6 cm).
   const TOL_BAND_CM = 8;
   function findSteps(P0, fps, heightCm) {
@@ -254,7 +258,7 @@
       ga = (sy - gb * sx) / n;
     }
     const res0 = gy.map((y, k) => y - (ga + gb * gx[k]));
-    const g0 = percentile(res0, 85), tol = TOL_GROUND_CM * pxcm, band = TOL_BAND_CM * pxcm;
+    const g0 = percentile(res0, 85), tol = TOL_GROUND_CM * pxcm, tolLift = TOL_LIFT_CM * pxcm, band = TOL_BAND_CM * pxcm;
     const hgt = (l, i) => ga + gb * lx[l][i] + g0 - lo[l][i];    // độ cao bàn chân l so với mặt đất (px, dương = ở trên)
     // Mỗi bước hông xuống thấp nhất một lần (giữa pha trụ). Cửa sổ tìm IC của một bước = từ đáy hông trước (+2 khung) tới đáy này.
     const hy = new Float64Array(N);
@@ -297,7 +301,7 @@
       for (let i = s.ic + 1; i <= end && miss < 3; i++) {
         const p = ank(cur, i - 1), o = 1 - cur;
         if (D(ank(o, i), p) < D(ank(cur, i), p)) cur = o;
-        if (pt(slot(cur, 'heel', i), i)[1] >= s.Hv - tol || pt(slot(cur, 'toe', i), i)[1] >= s.Tv - tol) { last = i; miss = 0; } else miss++;
+        if (pt(slot(cur, 'heel', i), i)[1] >= s.Hv - tolLift || pt(slot(cur, 'toe', i), i)[1] >= s.Tv - tolLift) { last = i; miss = 0; } else miss++;
       }
       s.to = last;
       delete s.Hv; delete s.Tv;
@@ -359,6 +363,39 @@
   }
 
   // ---------- đo một bên ----------
+  // Ràng buộc độ dài xương đùi/cẳng chân: chiều dài chuẩn = trung vị trên các khung hông, gối, cổ chân đều rõ (≥ VIS_MIN)
+  // (không đủ khung rõ thì dùng mọi khung). Khung nào đùi hoặc cẳng lệch quá BONE_TOL thì đặt lại gối = giao hai đường tròn
+  // (hông, đùi kẹp) và (cổ chân, cẳng kẹp), chọn nghiệm gần gối đo; giữ nguyên hông và cổ chân. BONE_TOL 10% vì ảnh 2D
+  // làm độ dài chiếu đổi vài % khi chân xoay khỏi mặt phẳng ảnh; lệch hơn là do điểm gối nhiễu (hay gặp ở chân xa).
+  const BONE_TOL = 0.1;
+  function constrainBones(S, P, ids, N) {
+    const lt = new Float64Array(N), ls = new Float64Array(N), gt = [], gs = [];
+    for (let i = 0; i < N; i++) {
+      lt[i] = Math.hypot(S.hip.x[i] - S.knee.x[i], S.hip.y[i] - S.knee.y[i]);
+      ls[i] = Math.hypot(S.knee.x[i] - S.ank.x[i], S.knee.y[i] - S.ank.y[i]);
+      if (Math.min(P.v[ids.hip][i], P.v[ids.knee][i], P.v[ids.ank][i]) >= VIS_MIN) { gt.push(lt[i]); gs.push(ls[i]); }
+    }
+    const useG = gt.length >= Math.max(10, 0.2 * N);
+    const Lt = median(useG ? gt : Array.from(lt)), Ls = median(useG ? gs : Array.from(ls));
+    if (!(Lt > 0 && Ls > 0)) return;
+    const clamp = (v, L) => Math.max(L * (1 - BONE_TOL), Math.min(L * (1 + BONE_TOL), v));
+    for (let i = 0; i < N; i++) {
+      const A0 = clamp(lt[i], Lt), B0 = clamp(ls[i], Ls);
+      if (A0 === lt[i] && B0 === ls[i]) continue;
+      const hx = S.hip.x[i], hy = S.hip.y[i], ax = S.ank.x[i], ay = S.ank.y[i], kx = S.knee.x[i], ky = S.knee.y[i];
+      const dx = ax - hx, dy = ay - hy, dd = Math.hypot(dx, dy);
+      if (!(dd > 1e-6)) continue;
+      let A = A0, B = B0;
+      if (dd >= A + B) { const f = dd / (A + B); A *= f; B *= f; } // chân duỗi hết: gối nằm trên đoạn hông–cổ chân
+      else if (dd <= Math.abs(A - B)) continue;
+      const along = (dd * dd + A * A - B * B) / (2 * dd), h = Math.sqrt(Math.max(0, A * A - along * along));
+      const ux = dx / dd, uy = dy / dd, px = hx + ux * along, py = hy + uy * along;
+      const c1x = px - uy * h, c1y = py + ux * h, c2x = px + uy * h, c2y = py - ux * h;
+      const near1 = Math.hypot(c1x - kx, c1y - ky) <= Math.hypot(c2x - kx, c2y - ky);
+      S.knee.x[i] = near1 ? c1x : c2x; S.knee.y[i] = near1 ? c1y : c2y;
+    }
+  }
+
   function computeSide(P, fps, heightCm, speedMs, side, st) {
     const ids = IDX[side];
     const N = P.x[0].length;
@@ -376,15 +413,19 @@
       }
       return [xs, ys];
     };
-    // Lọc trung vị ~0,15 s bỏ điểm nhảy lẻ. Tráo nhãn trái/phải đã được findSteps gỡ (P ghi lại theo chân thật), nên điểm chân
-    // không cần lọc dài 0,25 s như trước (lọc dài làm trễ và bẹt góc quanh lúc chạm đất).
-    const mw = Math.max(3, Math.round(fps * 0.15) | 1), mwLeg = mw;
+    // Lọc trung vị bỏ điểm nhảy lẻ: hông/vai ~0,15 s; điểm chân ~0,1 s (3 khung ở 30 fps) vì gối/cổ chân đổi hướng nhanh quanh
+    // lúc chạm đất, cửa sổ dài làm bẹt đỉnh góc. Tráo nhãn trái/phải đã được findSteps gỡ (P ghi lại theo chân thật).
+    // Butterworth zero-phase 8 Hz cho điểm chân: nằm trong dải 6–10 Hz thường dùng cho động học chạy bộ.
+    const mw = Math.max(3, Math.round(fps * 0.15) | 1), mwLeg = Math.max(3, Math.round(fps * 0.1) | 1);
+    const FC_LEG = 8;
     const S = {};
     for (const k of keys) {
       const [xs, ys] = masked(ids[k]);
       const w = k === 'hip' || k === 'sh' ? mw : mwLeg;
-      S[k] = { x: smooth(interpNaN(medfilt(xs, w)), fps), y: smooth(interpNaN(medfilt(ys, w)), fps) };
+      const fc = k === 'hip' || k === 'sh' ? undefined : FC_LEG;
+      S[k] = { x: smooth(interpNaN(medfilt(xs, w)), fps, fc), y: smooth(interpNaN(medfilt(ys, w)), fps, fc) };
     }
+    constrainBones(S, P, ids, N);
     const [nx0] = masked(0);
     const noseX = interpNaN(nx0);
     const diffs = new Float64Array(N);
