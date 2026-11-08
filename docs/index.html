@@ -106,6 +106,8 @@ input:focus{outline:none;border-color:var(--moss2);box-shadow:0 0 0 4px rgba(42,
 body.onL3 #l3acts{display:flex}
 #l3acts .go{height:36px;padding:0 18px;font-size:15px;background:var(--moss);color:#fff;box-shadow:none}
 #l3acts .grp{gap:6px;flex-wrap:nowrap;padding-left:8px;border-left-color:var(--line)}
+#langsw{margin-left:auto;display:flex;gap:2px;align-items:center;flex-shrink:0}
+body.onL3 #langsw{margin-left:12px}
 #topnav button,#topnav .logo b,#syncst{white-space:nowrap}
 #topnav button,#topnav .logo,#topnav .logo i,#l3acts .grp{flex-shrink:0}
 #l3acts .grp{min-width:0;flex-shrink:1}
@@ -158,7 +160,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
       <button class="alt" id="notebtn">Thêm ghi chú</button>
       <button class="alt" id="tgdetail">Chi tiết (bác sĩ)</button>
     </div>
-  </div></nav>
+  </div><span id="langsw" role="group" aria-label="Language"><button type="button" data-lang="vi">VI</button><button type="button" data-lang="en">EN</button></span></nav>
 <input id="note" type="hidden">
 <div id="notebg"></div>
 <aside id="notedrawer" aria-hidden="true" role="dialog" aria-labelledby="notetitle">
@@ -259,6 +261,7 @@ body:has(#notedrawer.open) #notebg{opacity:1;pointer-events:auto}
 
 <script>document.write(/[?&]mock=1/.test(location.search) ? '<script src="mock_pose.js"><\/script>' : '<script src="vendor/tasks-vision/vision_bundle.js"><\/script>');</script>
 <script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="mock_data.js"><\/script>');</script>
+<script src="i18n.js"></script>
 <script src="reference.js"></script>
 <script src="gait.js"></script>
 <script src="score.js"></script>
