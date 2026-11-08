@@ -21,17 +21,17 @@ test.describe('Thương hiệu Chạy bộ cùng Bác sĩ Kiên', () => {
 });
 
 test.describe('Tab Demo', () => {
-  test('DM-AC1 index: nút Demo (#demolink) nằm trên #topnav, bấm mở demo.html trong cùng tab', async ({ page }) => {
+  test('DM-AC1 index: nút Giới thiệu (#demolink) nằm trên #topnav, bấm mở demo.html trong cùng tab', async ({ page }) => {
     await page.goto('/index.html?mock=1');
     const b = page.locator('#topnav #demolink');
     await expect(b).toBeVisible();
-    await expect(b).toHaveText('Demo');
+    await expect(b).toHaveText('Giới thiệu');
     await b.click();
     await page.waitForURL(/\/demo\.html/);
     await expect(page.locator('h1')).toContainText('Đánh giá dáng chạy bằng AI');
   });
 
-  test('DM-AC1b bổ sung: nút Demo cũng bấm được ở màn Danh sách và nằm cùng hàng nav (1440px)', async ({ page }) => {
+  test('DM-AC1b bổ sung: nút Giới thiệu cũng bấm được ở màn Danh sách và nằm cùng hàng nav (1440px)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/index.html?mock=1#/list');
     const nav = await page.locator('#topnav').boundingBox(), b = await page.locator('#demolink').boundingBox();
@@ -41,16 +41,24 @@ test.describe('Tab Demo', () => {
     await page.waitForURL(/\/demo\.html/);
   });
 
-  test('DM-AC2 demo.html có đủ 6 phần: hero, 3 bước, App đo gì, Kết quả mẫu, Câu hỏi thường gặp, chân trang CTA', async ({ page }) => {
+  test('DM-AC2 demo.html có đủ 8 phần: hero, 3 bước, App đo gì, Chỉ số quan trọng, Kết quả mẫu, Câu hỏi, Cơ sở khoa học, chân trang CTA', async ({ page }) => {
     await page.goto('/demo.html');
     await expect(page.locator('header.hero h1')).toBeVisible();
     const h2 = await page.locator('main section h2').allInnerTexts();
-    expect(h2).toEqual(['Quy trình 3 bước', 'App đo những gì', 'Kết quả mẫu', 'Câu hỏi thường gặp']);
+    expect(h2.map((x) => x.toLowerCase())).toEqual(['quy trình 3 bước', 'app đo những gì', 'các chỉ số quan trọng', 'kết quả mẫu', 'câu hỏi thường gặp', 'cơ sở khoa học']);
     await expect(page.locator('footer.cta')).toBeVisible();
-    expect(await page.locator('header.hero, main section, footer.cta').count(), 'tổng số phần').toBe(6);
+    expect(await page.locator('header.hero, main section, footer.cta').count(), 'tổng số phần').toBe(8);
     await expect(page.locator('.steps .step')).toHaveCount(3);
-    await expect(page.locator('.cards .card')).toHaveCount(6);
+    await expect(page.locator('.cards:not(.mx) .card')).toHaveCount(6);
+    await expect(page.locator('.cards.mx .card')).toHaveCount(9);
+    await expect(page.locator('.refs li')).toHaveCount(9);
     await expect(page.locator('details')).toHaveCount(3);
+  });
+
+  test('DM-CC4 375px không tràn ngang', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto('/demo.html');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
   });
 
   test('DM-AC3 3 ảnh mẫu tải được (naturalWidth > 0), có alt', async ({ page }) => {
@@ -88,9 +96,9 @@ test.describe('Tab Demo', () => {
     expect(await page.evaluate(() => typeof window.Pose + typeof window.__gait)).toBe('undefinedundefined');
   });
 
-  test('DM-CC1 bổ sung: nav trên demo.html: Demo đang chọn (aria-current), Đo mới / Danh sách đi về index.html', async ({ page }) => {
+  test('DM-CC1 bổ sung: nav trên demo.html: Giới thiệu đang chọn (aria-current), Đo mới / Danh sách đi về index.html', async ({ page }) => {
     await page.goto('/demo.html');
-    await expect(page.locator('#topnav a[aria-current="page"]')).toContainText('Demo');
+    await expect(page.locator('#topnav a[aria-current="page"]')).toContainText('Giới thiệu');
     expect(await page.getByRole('link', { name: 'Đo mới' }).getAttribute('href')).toBe('index.html#/');
     expect(await page.getByRole('link', { name: /Danh sách/ }).getAttribute('href')).toBe('index.html#/list');
     await page.getByRole('link', { name: /Danh sách/ }).click();
