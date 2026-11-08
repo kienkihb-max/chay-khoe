@@ -1,26 +1,22 @@
-// Tab Demo (docs/demo.html) + thương hiệu "Savita x Bác sĩ Kiên". Viết 07/11/2026, CHƯA CHẠY.
+// Tab Demo (docs/demo.html) + thương hiệu "Chạy bộ cùng Bác sĩ Kiên". Viết 07/11/2026, CHƯA CHẠY.
 // Nguồn: yêu cầu master 07/11/2026 (nút #demolink trên #topnav mở demo.html; demo.html 6 phần, 3 ảnh mẫu, nút "Đăng ký đo thử" về index.html#/, không nạp MediaPipe).
 const { test, expect } = require('@playwright/test');
 const H = require('./e2e_helpers');
 
 const MP = /vendor\/pose|mediapipe|pose\.js|\.wasm|\.tflite|pose_landmark/i;
 
-test.describe('Thương hiệu Savita x Bác sĩ Kiên', () => {
-  test('BR-1 index: tiêu đề tab, chữ logo, ảnh logo-savita.svg tải được', async ({ page }) => {
+test.describe('Thương hiệu Chạy bộ cùng Bác sĩ Kiên', () => {
+  test('BR-1 index: tiêu đề tab, chữ thương hiệu, không ảnh logo', async ({ page }) => {
     await page.goto('/index.html?mock=1');
-    await expect(page).toHaveTitle('Savita x Bác sĩ Kiên');
-    await expect(page.locator('#topnav .logo b')).toHaveText('Savita x Bác sĩ Kiên');
-    const img = page.locator('#topnav .logo img');
-    expect(await img.getAttribute('src')).toContain('logo-savita.svg');
-    await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth > 0)).toBeTruthy();
+    await expect(page).toHaveTitle('Chạy bộ cùng Bác sĩ Kiên');
+    await expect(page.locator('#topnav .logo b')).toHaveText('Chạy bộ cùng Bác sĩ Kiên');
+    await expect(page.locator('#topnav .logo img')).toHaveCount(0);   // đã bỏ ảnh logo
   });
-  test('BR-2 demo.html: cùng tiêu đề + logo', async ({ page }) => {
+  test('BR-2 demo.html: cùng tiêu đề + chữ, không ảnh logo', async ({ page }) => {
     await page.goto('/demo.html');
-    await expect(page).toHaveTitle(/Savita x Bác sĩ Kiên/);
-    await expect(page.locator('#topnav .logo b')).toHaveText('Savita x Bác sĩ Kiên');
-    const img = page.locator('#topnav .logo img');
-    expect(await img.getAttribute('src')).toContain('logo-savita.svg');
-    await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth > 0)).toBeTruthy();
+    await expect(page).toHaveTitle(/Chạy bộ cùng Bác sĩ Kiên/);
+    await expect(page.locator('#topnav .logo b')).toHaveText('Chạy bộ cùng Bác sĩ Kiên');
+    await expect(page.locator('#topnav .logo img')).toHaveCount(0);   // đã bỏ ảnh logo
   });
 });
 

@@ -102,8 +102,9 @@ test.describe.serial('Màn Kết quả TV - bố cục', () => {
 
   test('AC5 góc có logo, ngày đo, bacsikien.com; khung 16:9; chữ đọc được từ 3 m', async () => {
     const T = D.filter((d) => d.t != null);
-    // logo: chữ "Savita x Bác sĩ Kiên" hoặc ảnh logo vẽ ở góc trên (chưa chắc cách vẽ: cần chạy để xác nhận)
-    expect(T.some((d) => /Savita/i.test(d.t)) || D.some((d) => d.img && d.dy < 150 && d.dx < 400), 'logo Savita ở góc').toBeTruthy();
+    // tên thương hiệu vẽ ở góc trái trên, không còn ảnh logo
+    expect(T.some((d) => /Chạy bộ cùng Bác sĩ Kiên/.test(d.t)), 'chữ thương hiệu ở góc').toBeTruthy();
+    expect(T.some((d) => /Savita/i.test(d.t)), 'không còn chữ Savita').toBeFalsy();
     expect(T.some((d) => /CHẠY BỘ CÙNG BÁC SĨ KIÊN/.test(d.t)), 'chữ logo cũ đã bỏ').toBeFalsy();
     const today = await page.evaluate(() => { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); });
     expect(T.some((d) => d.t.includes(today)), 'ngày đo ' + today).toBeTruthy();
