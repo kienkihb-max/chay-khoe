@@ -28,6 +28,7 @@ body.hasnav #topnav{display:flex}
 #topnav .nvmenu a:hover{background:var(--nav-hover);color:var(--nav-hover-ink)}
 #topnav .logo{margin-right:24px}
 #topnav .logo img{width:44px;height:44px;border-radius:50%;background:#fff}
+#topnav .logo img.lockup{width:auto;height:40px;border-radius:0;background:none}
 #listcnt{display:inline-block;min-width:20px;margin-left:8px;padding:1px 7px;border-radius:999px;background:var(--leaf-soft);color:var(--title,var(--moss));font-size:12px;font-weight:700;line-height:18px}
 #topnav button{height:36px;padding:0 18px;font-size:15px;background:transparent;color:var(--nav-ink);border-radius:999px}
 #topnav button:hover{background:var(--nav-hover);color:var(--nav-hover-ink)}
@@ -122,7 +123,7 @@ body.onL3 #langsw{margin-left:12px}
 #topnav button,#topnav .logo b,#syncst{white-space:nowrap}
 #topnav button,#topnav .logo,#topnav .logo i,#l3acts .grp{flex-shrink:0}
 #l3acts .grp{min-width:0;flex-shrink:1}
-@media (max-width:1100px){#topnav .logo b{display:none}#topnav .logo{margin-right:8px}}
+@media (max-width:1180px){#topnav .logo b{display:none}#topnav .logo{margin-right:8px}}
 #notebg{position:fixed;inset:0;background:rgba(var(--dk2),.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:90}
 #notedrawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:#fff;box-shadow:-8px 0 30px rgba(var(--dk2),.2);transform:translateX(100%);transition:transform .22s;z-index:91;display:flex;flex-direction:column;gap:12px;padding:18px;visibility:hidden}
 #notedrawer.open{transform:none;visibility:visible}
@@ -186,7 +187,7 @@ body:not(.bs) #l3acts .grp{display:none}
 <script src="themes.js"></script>
 </head>
 <body>
-<nav id="topnav"><div class="logo"><img src="logo.png" alt="Hanoi Running Lab"><b>Hanoi Running Lab</b></div><button id="demolink" onclick="location.href='index.html'">Trang chủ</button><span class="nvdrop"><button data-nav="#/">Screening</button><span class="nvmenu"><a href="screening/huong-dan.html">Hướng dẫn</a><a href="screening/chi-so.html">Các chỉ số</a><a href="screening.html#/">Đo ngay</a></span></span><button onclick="location.href='blog/'">Kiến thức</button><button onclick="location.href='thu-vien-anh/'">Thư viện ảnh</button><button onclick="location.href='lien-he.html'">Liên hệ</button><button data-nav="#/list" hidden>Danh sách<span id="listcnt">0</span></button><span id="syncst" style="display:none;margin-left:8px;font-size:13px;font-weight:600;color:var(--amber)"></span>
+<nav id="topnav"><div class="logo"><img class="lockup" src="logo-savita-hrl.png" alt="Savita x Hanoi Running Lab"><b>SAVITA × HANOI RUNNING LAB</b></div><button id="demolink" onclick="location.href='index.html'">Trang chủ</button><span class="nvdrop"><button data-nav="#/">Screening</button><span class="nvmenu"><a href="screening/huong-dan.html">Hướng dẫn</a><a href="screening/chi-so.html">Các chỉ số</a><a href="screening.html#/">Đo ngay</a></span></span><button onclick="location.href='blog/'">Kiến thức</button><button onclick="location.href='thu-vien-anh/'">Thư viện ảnh</button><button onclick="location.href='lien-he.html'">Liên hệ</button><button data-nav="#/list" hidden>Danh sách<span id="listcnt">0</span></button><span id="syncst" style="display:none;margin-left:8px;font-size:13px;font-weight:600;color:var(--amber)"></span>
   <div class="acts" id="l3acts">
     <button class="alt" id="tolist" hidden>Về danh sách</button>
     <div class="grp">

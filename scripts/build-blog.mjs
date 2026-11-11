@@ -104,7 +104,7 @@ function render(md) {
 function nav(r, active) {
   // Thanh trên dùng chung với docs/index.html, docs/screening/*, docs/thu-vien-anh/* (CSS: docs/nav.css, JS: docs/nav.js). Sửa ở đây thì sửa cả các nơi kia.
   const on = (k) => (active === k ? ' on" aria-current="page' : '');
-  return '<nav id="topnav"><a class="logo" href="' + r + 'index.html"><img src="' + r + 'logo.png" alt="' + SITE_NAME + '"><b>' + SITE_NAME + '</b></a>' +
+  return '<nav id="topnav"><a class="logo" href="' + r + 'index.html"><img class="lockup" src="' + r + 'logo-savita-hrl.png" alt="Savita x ' + SITE_NAME + '"><b>SAVITA × HANOI RUNNING LAB</b></a>' +
     '<div class="navlinks" id="navlinks"><a class="nv" href="' + r + 'index.html">Trang chủ</a>' +
     '<div class="nvdrop"><a class="nv go" href="' + r + 'screening/huong-dan.html">Screening</a><div class="nvmenu"><a href="' + r + 'screening/huong-dan.html">Hướng dẫn</a><a href="' + r + 'screening/chi-so.html">Các chỉ số</a><a href="' + r + 'screening.html#/">Đo ngay</a></div></div>' +
     '<a class="nv' + on('blog') + '" href="' + r + 'blog/">Kiến thức</a>' +

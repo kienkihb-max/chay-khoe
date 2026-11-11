@@ -22,6 +22,12 @@
   #topnav .nvmenu{display:block;position:static;border:0;box-shadow:none;padding:2px 0 0 14px;min-width:0}
 }
 #topnav a.logo{text-decoration:none}
+/* Logo ghép SAVITA x Hanoi Running Lab: ảnh ngang, nền trong suốt, không bo tròn */
+#topnav .logo img.lockup{width:auto;height:40px;border-radius:0;background:none}
+#topnav .logo b{font-size:16px}
+@media (max-width:1180px){#topnav .logo b{display:none}}
+@media (min-width:761px) and (max-width:1180px){#topnav .logo{margin-right:8px}}
+@media (max-width:760px){#topnav .logo img.lockup{height:34px}}
 
 /* Phông thể thao cho tên lab và tiêu đề lớn (Exo 2 nghiêng). Chữ trong bài (.art, .cs) giữ phông thường. */
 h1,main h2:not(.art h2):not(.cs h2),#topnav .logo b{font-family:"Exo 2",var(--font,system-ui),sans-serif;font-style:italic;font-weight:900;letter-spacing:.005em}
