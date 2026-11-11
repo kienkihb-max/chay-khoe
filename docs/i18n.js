@@ -117,7 +117,7 @@
     [`Không đáng tin: `, `Unreliable: `], [`KHÔNG ĐÁNG TIN: `, `UNRELIABLE: `], [`có cờ tin cậy`, `has reliability flags`], [`Cờ tin cậy`, `Reliability flags`],
     [`Tên: Dưới ngưỡng tin cậy ±X / Nghi bắt sai mốc: lý do`, `Name: Below reliability threshold ±X / Suspected event mis-detection: reason`],
     [`Không thấy người trong hình (có `, `No person visible in the image (`], [` khung hình nhận diện được).`, ` frames detected).`],
-    [`Khung hình kém: `, `Poor video quality: `], [`Khung hình kém`, `Poor video quality`], [`% khung hình có điểm mờ bị bỏ`, `% of frames with blurry points dropped`], [`chỉ còn `, `only `],
+    [`Khung hình kém: `, `Poor video quality: `], [`Khung hình kém`, `Poor video quality`], [`% khung hình có điểm mờ bị bỏ`, `% of frames with blurry points dropped`], [`nhiều khung hình có điểm mờ`, `many frames have blurry points`], [`chỉ còn `, `only `],
     [`. Thử đo lại: đủ sáng, quay trọn người từ đầu đến chân, mặc quần áo khác màu nền.`, `. Try again: good light, film the whole body from head to toe, wear clothes that contrast with the background.`],
     [`Không nhận diện được người trong video (thiếu khung xương).`, `Could not detect a person in the video (no skeleton found).`],
     [`Mốc chạm đất có thể bắt sai (gối lúc chạm đất ngoài khoảng thường gặp, hoặc chân chạm sau hông nhiều)`, `Ground-contact events may be mis-detected (knee angle at initial contact outside the usual range, or the foot lands far behind the hip)`],
@@ -131,6 +131,10 @@
     [`Chân trái`, `Left leg`], [`Chân phải`, `Right leg`], [`chân trái`, `left leg`], [`chân phải`, `right leg`], [`Trái`, `Left`], [`Phải`, `Right`], [`trái`, `left`], [`phải`, `right`],
     [`Không đo được chân này`, `This leg could not be measured`], [`chân `, `leg `],
     // ===== Chỉ số (tên) =====
+    // Ô "Chỉ số đo được" ở trang chủ và bảng theo dõi trên màn đang đo
+    [`CHỈ SỐ ĐO ĐƯỢC`, `METRICS MEASURED`], [`Cadence · bước/phút`, `Cadence · steps/min`], [`Gập gối lúc chạm · độ`, `Knee flexion at contact · degrees`],
+    [`Nghiêng thân · độ`, `Trunk lean · degrees`], [`Đặt chân trước hông · cm`, `Foot landing ahead of hip · cm`], [`Đặt chân trước hông`, `Foot ahead of hip`],
+    [`Số bước`, `Steps`], [`Khung hình rõ`, `Clear frames`], [`Nhịp bước`, `Step timing`], [`6 giây gần nhất`, `last 6 s`], [`vùng tham khảo `, `reference range `],
     [`Cadence (nhịp chạy)`, `Cadence`], [`Nhịp chạy`, `Cadence`], [`bước/phút`, `steps/min`],
     [`Nhấp nhô (hông)`, `Vertical oscillation (hip)`], [`Nhấp nhô`, `Vertical oscillation`], [`Nghiêng thân trước`, `Forward trunk lean`], [`Nghiêng thân`, `Trunk lean`],
     [`Chân đặt trước hông`, `Foot ahead of hip (overstride)`], [`Tiếp đất trước thân`, `Landing ahead of body`], [`Gối lúc chạm đất`, `Knee at initial contact`],

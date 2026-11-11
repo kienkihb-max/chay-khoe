@@ -35,6 +35,20 @@
 #lvw em span{color:var(--on-dark-mut);font-weight:400}
 #lvwv{font-size:18px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
 #lvwave{display:block;width:100%;height:64px}
+/* Bảng theo dõi mở rộng: đồ thị cadence, nghiêng thân, vạch chạm đất (trong #lvw) và bảng trái/phải (#lvtbl). Chỉ hiện trên màn hình rộng và đủ cao. */
+#lvw>#lvtrend{display:block;margin-top:6px;padding-top:2px;border-top:1px solid rgba(255,255,255,.12)}
+#lvtrend>div{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:5px}
+#lvtrend span{font-size:11px;color:var(--on-dark-mut)}
+#lvtrend canvas{display:block;width:100%}
+#lvcad{height:52px}#lvtr{height:36px}#lvst{height:20px}
+#lvtbl{position:absolute;right:32px;top:404px;width:250px;border-collapse:separate;border-spacing:0;background:rgba(var(--dk),.75);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:6px 12px 8px;font-size:13px;color:#fff}
+#lvtbl[hidden]{display:none}
+#lvtbl th{font-size:12px;font-weight:700;text-align:right;padding:3px 0 3px 10px}
+#lvtbl td{padding:3px 0 3px 10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+#lvtbl td:first-child{padding-left:0;text-align:left;font-weight:500;color:var(--on-dark-mut);white-space:normal}
+#L2 #fpsb{display:none}   /* không hiện tốc độ nhận diện (thông số video) trên màn đo */
+@media (max-height:660px){#lvw>#lvtrend,#lvtbl{display:none}}
+@media (max-width:1100px){#lvw>#lvtrend,#lvtbl{display:none}}
 
 /* Điện thoại dọc: thẻ số thành một hàng dưới tên/đồng hồ, vòng đếm + sóng góc gối ở hàng thứ hai; để trống nửa dưới (chân, lúc chạm đất) */
 @media (max-width:640px){

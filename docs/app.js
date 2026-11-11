@@ -358,7 +358,8 @@
   const LV_WIN = 6, LEAF = '#A9D69B';
   // màu mức: cùng bộ màu trạng thái của dòng #ph trên màn đo (ok/wn/rec); camera.css có bản sao cho thẻ số (.lvc[data-lv])
   const LV_COL = { ok: '#33d6a0', mid: '#ffb03b', bad: '#ff5a45', none: LEAF };
-  const LV = { buf: [], wave: [], st: null, side: 'L', tCalc: -1e9, sec: null, wv: null };
+  const LV = { buf: [], wave: [], st: null, side: 'L', tCalc: -1e9, sec: null, wv: null, fix: null, hist: [], steps: { L: 0, R: 0 }, lastIc: { L: -1e9, R: -1e9 }, per: null };
+  const LV_LEG = { L: '#6AA8FF', R: '#FFA94D' };   // màu chân trái/phải trên đồ thị trực tiếp (xanh dương/cam, khác nhau cả về độ sáng)
   // Ngưỡng lấy từ reference.js (lo/hi), cách lệch giống điểm từng chỉ số (mScore): 100 = xanh, 1–99 = vàng, 0 (lệch >= 1 bề rộng khoảng) = đỏ.
   // Linh chốt 07/11 (phương án A): xanh trong lo–hi, vàng khi lệch < một bề rộng khoảng, đỏ khi lệch >= một bề rộng.
   function lvLevel(k, v) { const s = mScore(k, v); return s == null ? 'none' : s === 100 ? 'ok' : s > 0 ? 'mid' : 'bad'; }
@@ -370,7 +371,11 @@
   const lvBox = document.createElement('div'); lvBox.id = 'lv';
   lvBox.innerHTML = '<div id="lvrec" hidden><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19"/><circle id="lvarc" cx="22" cy="22" r="19" pathLength="100"/></svg><b id="lvsec"></b><span><i></i>REC</span></div>' +
     '<div id="lvcards">' + lvCardsHTML(LV_CARDS) + '</div>' +
-    '<div id="lvw"><div><em>Góc gối <span id="lvwside"></span></em><b id="lvwv"></b></div><canvas id="lvwave"></canvas></div>';
+    '<div id="lvw"><div><em>Góc gối <span id="lvwside"></span></em><b id="lvwv"></b></div><canvas id="lvwave"></canvas>' +
+    // Bảng theo dõi mở rộng (quay ngang, màn hình rộng): cadence và nghiêng thân từ đầu buổi, vạch chạm đất 6 giây gần nhất
+    '<div id="lvtrend"><div><em>Cadence</em><span id="lvcadr"></span></div><canvas id="lvcad"></canvas><div><em>Nghiêng thân</em><span id="lvtrr"></span></div><canvas id="lvtr"></canvas><div><em>Nhịp bước</em><span>6 giây gần nhất</span></div><canvas id="lvst"></canvas></div></div>' +
+    '<table id="lvtbl"><thead><tr><th></th><th style="color:' + LV_LEG.L + '">Trái</th><th style="color:' + LV_LEG.R + '">Phải</th></tr></thead><tbody>' +
+    [['knee', 'Gập gối lúc chạm'], ['ov', 'Đặt chân trước hông']]   /* bác sĩ Kiên 11/11: chỉ hiện số đo và đồ thị, không hiện thông số video hay tỷ lệ khung hình lỗi */.map(([k, t]) => '<tr><td>' + t + '</td><td data-c="' + k + 'L">–</td><td data-c="' + k + 'R">–</td></tr>').join('') + '</tbody></table>';
   $('L2').insertBefore(lvBox, $('chip'));
   const lvWaveCv = $('lvwave'), wctx = lvWaveCv.getContext('2d');
   const sideTxt = (s) => (s === 'L' ? 'chân trái' : 'chân phải');
@@ -389,9 +394,11 @@
   }
   function lvReset() {
     LV.buf = []; LV.wave = []; LV.st = null; LV.tCalc = -1e9; LV.wv = null; LV.side = 'L';
+    LV.fix = null; LV.hist = []; LV.steps = { L: 0, R: 0 }; LV.lastIc = { L: -1e9, R: -1e9 }; LV.per = null;
     const back = S.take === 'back', tk = S.take || 'side';
     if ((lvBox.dataset.take || 'side') !== tk) { lvBox.dataset.take = tk; $('lvcards').innerHTML = lvCardsHTML(back ? LV_CARDS_BACK : LV_CARDS); }
     $('lvw').hidden = back;   // sóng góc gối chỉ có nghĩa khi quay ngang
+    $('lvtbl').hidden = back; lvTable(); lvTrend(0);
     $('lvwv').textContent = ''; $('lvwside').textContent = ''; lvCards(); lvRec(null); wctx.clearRect(0, 0, lvWaveCv.width, lvWaveCv.height);
   }
   function lvCards() {
@@ -427,9 +434,17 @@
           const cm = Gait.combine(res, SPEED).common;
           const side = res.L && res.R ? (res.L.extra.vis >= res.R.extra.vis ? 'L' : 'R') : res.L ? 'L' : 'R';
           LV.side = side; LV.st = { cadence: cm.cadence, trunk: cm.trunk, knee_ic: res[side].metrics.knee_ic, hip_ext: res[side].metrics.hip_ext };
+          // Bảng mở rộng: sóng gối hai chân theo nhãn đã gỡ nhầm trái/phải (arrays.kneeFlex), lịch sử cadence/nghiêng thân, đếm bước.
+          const t0w = LV.buf[0].t;
+          LV.fix = { t0: t0w, tEnd: t, L: res.L ? res.L.arrays.kneeFlex : null, R: res.R ? res.R.arrays.kneeFlex : null, ic: { L: res.L ? res.L.arrays.ic.map((i) => t0w + i / 30) : [], R: res.R ? res.R.arrays.ic.map((i) => t0w + i / 30) : [] } };
+          LV.hist.push({ t, cad: cm.cadence, trunk: cm.trunk });
+          // đếm bước dồn: chỉ nhận lần chạm đất mới hơn lần đã đếm 0,25 giây và đã lùi khỏi mép cửa sổ 0,4 giây (mép cửa sổ còn đổi)
+          for (const sd of ['L', 'R']) for (const ti of LV.fix.ic[sd]) if (ti > LV.lastIc[sd] + 0.25 && ti <= t - 0.4) { LV.steps[sd]++; LV.lastIc[sd] = ti; }
+          LV.per = {};
+          for (const sd of ['L', 'R']) LV.per[sd] = res[sd] ? { knee: res[sd].metrics.knee_ic, ov: res[sd].metrics.overstride, clear: 1 - res[sd].extra.badFrac } : null;
         }
       } catch (e) { LV.st = null; }
-      lvCards();
+      lvCards(); if (S.take !== 'back') { lvTable(); lvTrend(t); }
     }
     if (S.take === 'back') return;   // không có sóng góc gối khi quay sau lưng
     const side = LV.st ? LV.side : lm ? lvPickSide(lm) : LV.side;
@@ -454,7 +469,7 @@
     }
     return st;
   }
-  function lvWave(tNow) {   // sóng góc gối 6 giây gần nhất, trục 0–130°
+  function lvWave(tNow) {   // sóng góc gối 6 giây gần nhất, trục 0–130°: hai chân theo nhãn đã gỡ nhầm (mỗi giây cập nhật), đuôi mới nhất là điểm thô của chân đang theo dõi
     const dpr = window.devicePixelRatio || 1, w = Math.round(lvWaveCv.clientWidth * dpr), h = Math.round(lvWaveCv.clientHeight * dpr);
     if (!w || !h) return;
     if (lvWaveCv.width !== w || lvWaveCv.height !== h) { lvWaveCv.width = w; lvWaveCv.height = h; }
@@ -462,11 +477,53 @@
     c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = dpr;
     for (const g of [0, 60, 120]) { const y = Math.round(h - 2 * dpr - (g / 130) * (h - 4 * dpr)) + 0.5; c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
     const X = (t) => w - ((tNow - t) / LV_WIN) * w, Y = (v) => h - 2 * dpr - (Math.max(0, Math.min(130, v)) / 130) * (h - 4 * dpr);
-    c.beginPath(); let pen = false;
-    for (const q of LV.wave) { if (q.v == null) { pen = false; continue; } const x = X(q.t), y = Y(q.v); if (pen) c.lineTo(x, y); else c.moveTo(x, y); pen = true; }
     c.lineJoin = 'round'; c.lineCap = 'round';
-    c.strokeStyle = 'rgba(169,214,155,.28)'; c.lineWidth = 6 * dpr; c.stroke();   // quầng sáng
-    c.strokeStyle = LEAF; c.lineWidth = 2 * dpr; c.stroke();
+    const line = (pts, col, lw) => {
+      c.beginPath(); let pen = false;
+      for (const q of pts) { if (q.v == null || Number.isNaN(q.v)) { pen = false; continue; } const x = X(q.t), y = Y(q.v); if (pen) c.lineTo(x, y); else c.moveTo(x, y); pen = true; }
+      c.strokeStyle = col; c.lineWidth = lw * dpr; c.stroke();
+    };
+    const fx = LV.fix, side = LV.st ? LV.side : null;
+    if (fx) for (const sd of ['L', 'R']) {
+      const a = fx[sd]; if (!a) continue;
+      const pts = []; for (let i = 0; i < a.length; i++) { const t = fx.t0 + i / 30; if (t >= tNow - LV_WIN) pts.push({ t, v: a[i] }); }
+      line(pts, LV_LEG[sd], 2);
+    }
+    const tail = fx ? LV.wave.filter((q) => q.t >= fx.tEnd) : LV.wave;
+    line(tail, side ? LV_LEG[side] : LEAF, 2);
+  }
+  function lvTable() {
+    const set = (k, txt) => { const el = lvBox.querySelector('[data-c="' + k + '"]'); if (el && el.textContent !== txt) el.textContent = txt; };
+    const num = (v, f) => (v == null || Number.isNaN(v) ? '–' : f(v));
+    for (const sd of ['L', 'R']) {
+      const p = LV.per && LV.per[sd];
+      set('knee' + sd, num(p && p.knee, (v) => Math.round(v) + '°'));
+      set('ov' + sd, num(p && p.ov, (v) => Math.round(v) + ' cm'));
+      set('n' + sd, LV.per ? String(LV.steps[sd]) : '–');
+      set('clear' + sd, num(p && p.clear, (v) => Math.round(v * 100) + '%'));
+    }
+  }
+  // Đồ thị cadence và nghiêng thân từ đầu buổi (mỗi giây một điểm ước tính), dải mờ = khoảng tham chiếu trong reference.js; vạch chạm đất 6 giây gần nhất.
+  function lvTrend(tNow) {
+    const dpr = window.devicePixelRatio || 1;
+    const prep = (id) => { const cv = $(id), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr); if (!w || !h) return null; if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } const c = cv.getContext('2d'); c.clearRect(0, 0, w, h); return { c, w, h }; };
+    const H = LV.hist, tA = H.length ? H[0].t : 0, tB = Math.max(tNow, tA + 30);
+    const series = (id, key, lo, hi, yMin, yMax, col) => {
+      const g = prep(id); if (!g) return;
+      const { c, w, h } = g, X = (t) => ((t - tA) / (tB - tA)) * w, Y = (v) => h - dpr - ((Math.max(yMin, Math.min(yMax, v)) - yMin) / (yMax - yMin)) * (h - 2 * dpr);
+      if (lo != null && hi != null) { c.fillStyle = 'rgba(124,255,107,.14)'; c.fillRect(0, Y(hi), w, Y(lo) - Y(hi)); }
+      c.beginPath(); let pen = false;
+      for (const q of H) { const v = q[key]; if (v == null || Number.isNaN(v)) { pen = false; continue; } if (pen) c.lineTo(X(q.t), Y(v)); else c.moveTo(X(q.t), Y(v)); pen = true; }
+      c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = col; c.lineWidth = 2 * dpr; c.stroke();
+    };
+    const rc = REF.cadence || {}, rt = REF.trunk || {};
+    const cads = H.map((q) => q.cad).filter((v) => v != null && !Number.isNaN(v));   // trục cadence nới theo số đo để đường không dính mép
+    series('lvcad', 'cad', rc.lo, rc.hi, Math.min(130, Math.min.apply(null, cads.concat(130)) - 8), Math.max(200, Math.max.apply(null, cads.concat(200)) + 8), '#7CFF6B');
+    series('lvtr', 'trunk', rt.lo, rt.hi, 0, 20, '#5FE0C2');
+    $('lvcadr').textContent = rc.lo != null ? 'vùng tham khảo ' + rc.lo + '–' + rc.hi : '';
+    $('lvtrr').textContent = rt.lo != null ? 'vùng tham khảo ' + rt.lo + '–' + rt.hi + '°' : '';
+    const g = prep('lvst'); if (!g || !LV.fix) return;
+    for (const sd of ['L', 'R']) { g.c.fillStyle = LV_LEG[sd]; for (const ti of LV.fix.ic[sd]) { const x = g.w - ((tNow - ti) / LV_WIN) * g.w; if (x >= 0) g.c.fillRect(Math.round(x) - 2 * dpr, sd === 'L' ? 0 : g.h / 2 + dpr, 4 * dpr, g.h / 2 - dpr); } }
   }
 
   function drawLive(lm) {
@@ -1255,7 +1312,7 @@
     const bf = Math.max(...ex.map((e) => (e.badFrac == null ? 0 : e.badFrac)));
     const steps = R.back ? Math.min(...['L', 'R'].map((s) => (R.back.extra.steps && R.back.extra.steps[s] != null ? R.back.extra.steps[s] : Infinity))) : Math.min(...ex.map((e) => e.nSteps));
     const why = [];
-    if (bf > Gait.BAD_FRAC_MAX) why.push(Math.round(bf * 100) + '% khung hình có điểm mờ bị bỏ');
+    if (bf > Gait.BAD_FRAC_MAX) why.push('nhiều khung hình có điểm mờ');   // không nêu tỷ lệ %: con số lấy theo chân xa camera nên dễ gây hiểu lầm
     if (steps < Gait.MIN_STEPS) why.push('chỉ còn ' + steps + ' bước');
     return why.length ? 'Khung hình kém: ' + why.join(', ') + '. Thử đo lại: đủ sáng, quay trọn người từ đầu đến chân, mặc quần áo khác màu nền.' : '';
   }
