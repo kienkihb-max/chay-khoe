@@ -120,7 +120,7 @@ function page({ r, title, desc, canonical, og, ldjson, active, main, skipTitle, 
     '<meta property="og:title" content="' + esc(title) + '">\n<meta property="og:description" content="' + esc(desc) + '">\n<meta property="og:url" content="' + esc(canonical) + '">\n' +
     '<meta property="og:image" content="' + SITE_URL + '/' + (image || 'logo.png') + '">\n<meta name="twitter:card" content="' + (image ? 'summary_large_image' : 'summary') + '">\n' +
     (ldjson ? '<script type="application/ld+json">' + JSON.stringify(ldjson, null, 1).replace(/</g, '\\u003c') + '</script>\n' : '') +
-    '<link rel="icon" href="' + r + 'logo-128.png">\n<link rel="stylesheet" href="' + r + 'site.css">\n<link rel="stylesheet" href="' + r + 'nav.css">\n<script src="' + r + 'themes.js"></script>\n</head>\n<body>\n' +
+    '<link rel="icon" href="' + r + 'logo-128.png">\n<link rel="stylesheet" href="' + r + 'site.css">\n<link rel="stylesheet" href="' + r + 'nav.css">\n<link rel="stylesheet" href="' + r + 'speedrun.css">\n<script src="' + r + 'themes.js"></script>\n</head>\n<body>\n' +
     nav(r, active) + '\n' + main + '\n<script src="' + r + 'i18n.js"></script>\n<script src="' + r + 'nav.js"></script>\n</body>\n</html>\n';
 }
 

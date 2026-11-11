@@ -166,19 +166,26 @@ footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text
 .credit{max-width:1100px;margin:14px auto 0;padding:0 24px;text-align:center;font-size:13px;color:#666}.credit a{color:inherit;text-decoration:underline}
 </style>
 <link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="speedrun.css">
 <script src="themes.js"></script>
 </head>
 <body>
 <nav id="topnav"><a class="logo" href="index.html"><img class="mk" src="logo-savita-mark.png" alt="Savita"><b>SAVITA</b><span class="lx" aria-hidden="true">×</span><img class="mk hrl" src="logo-hrl-mark.png" alt="Hanoi Running Lab"><b>HANOI RUNNING LAB</b></a><div class="navlinks" id="navlinks"><a class="nv on" aria-current="page" href="index.html">Trang chủ</a><div class="nvdrop"><a class="nv go" href="screening/huong-dan.html">Screening</a><div class="nvmenu"><a href="screening/huong-dan.html">Hướng dẫn</a><a href="screening/chi-so.html">Các chỉ số</a><a href="screening.html#/">Đo ngay</a></div></div><a class="nv" href="blog/">Kiến thức</a><a class="nv" href="thu-vien-anh/">Thư viện ảnh</a><a class="nv" href="lien-he.html">Liên hệ</a></div><span id="langsw" role="group" aria-label="Language"><button type="button" data-lang="vi">VI</button><button type="button" data-lang="en">EN</button></span><button type="button" id="navtoggle" aria-label="Menu" aria-controls="navlinks" aria-expanded="false">☰</button></nav>
 
-<header class="hero"><div class="wrap herogrid"><div class="herotext">
-  <h1 data-i18n-skip>Hanoi Running Lab</h1>
-  <p class="tag">Hiểu dáng chạy qua dữ liệu chuyển động</p>
-  <p class="lead">Không cần phòng lab hay cảm biến. Quay 2 phút bằng điện thoại trên máy chạy bộ, nhận báo cáo kèm định nghĩa từng chỉ số và tài liệu tham khảo.</p>
-  <a class="herocta" href="screening.html">SCREENING – PHÂN TÍCH DÁNG CHẠY</a>
-  <ul class="trust"><li>9 tài liệu tham khảo công khai</li><li>Video không rời khỏi máy</li><li>Có báo cáo sau khoảng 2 phút</li><li>Không cần cài app</li></ul>
-  </div><figure class="heroimg"><img class="herophoto" src="img/hero-chay.jpg" width="1600" height="1067" alt="Chân người chạy tiếp đất trên đường chạy điền kinh"></figure>
-</div></header>
+<header class="sr-hero" id="srhero">
+  <div class="sr-left">
+    <div class="sr-title sr-w1"><i class="sr-line" aria-hidden="true" style="top:14%;width:46px"></i><i class="sr-line" aria-hidden="true" style="top:34%;width:30px;animation-delay:.35s"></i><i class="sr-line" aria-hidden="true" style="top:58%;width:54px;animation-delay:.7s"></i><i class="sr-line" aria-hidden="true" style="top:80%;width:36px;animation-delay:1.05s"></i>
+      <h1 data-i18n-skip>Hanoi<br>Running Lab</h1></div>
+    <div class="sr-tagbox sr-w2"><p class="tag">Hiểu dáng chạy qua dữ liệu chuyển động</p></div>
+    <p class="lead sr-w3">Không cần phòng lab hay cảm biến. Quay 2 phút bằng điện thoại trên máy chạy bộ, nhận báo cáo kèm định nghĩa từng chỉ số và tài liệu tham khảo.</p>
+    <div class="sr-ctawrap"><a class="sr-cta" href="screening.html" aria-label="Screening – phân tích dáng chạy"><span class="sr-fr"><span class="sr-in" data-i18n-skip><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#7CFF6B"/><path d="M10 7.5l7 4.5-7 4.5z" fill="#0E1D14"/></svg>SCREENING</span></span></a></div>
+  </div>
+  <div class="sr-photo"><img class="sr-lay" id="srimg" src="img/hero-chay.jpg" width="1600" height="1067" alt="Chân người chạy tiếp đất trên đường chạy điền kinh"></div>
+  <div class="sr-tint" aria-hidden="true"></div>
+  <div class="sr-band" aria-hidden="true"><div class="sr-lay" id="srband"><div class="sr-bandin"><div class="sr-track" data-i18n-skip><span>ANALYSIS / MOTION / DATA / PEAK PERFORMANCE / ANALYSIS / MOTION / DATA / PEAK PERFORMANCE / </span><span>ANALYSIS / MOTION / DATA / PEAK PERFORMANCE / ANALYSIS / MOTION / DATA / PEAK PERFORMANCE / </span></div></div></div></div>
+  <div class="sr-chip"><div class="sr-lay" id="srchip"><b>CHỈ SỐ ĐO ĐƯỢC</b><ul><li>Cadence · bước/phút</li><li>Gập gối lúc chạm · độ</li><li>Nghiêng thân · độ</li><li>Đặt chân trước hông · cm</li></ul></div></div>
+</header>
+<ul class="sr-strip"><li>9 tài liệu tham khảo công khai</li><li>Video không rời khỏi máy</li><li>Có báo cáo sau khoảng 2 phút</li><li>Không cần cài app</li></ul>
 
 <main class="wrap">
 <section><h2>Cách hoạt động</h2>
@@ -209,6 +216,14 @@ footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text
 <p class="credit">Ảnh: <span data-i18n-skip><a href="https://unsplash.com/photos/runners-legs-in-motion-on-a-track-MP38AUvIilY" target="_blank" rel="noopener">Jakub Balon</a></span> / Unsplash</p>
 
 <footer class="closing">HANOI RUNNING LAB – Where running meets science.</footer>
+<script>
+/* Parallax theo chuột ở phần đầu trang: ảnh, băng chéo và ô chỉ số dịch lệch nhau. Tắt khi người dùng chọn giảm chuyển động. */
+(function(){var h=document.getElementById('srhero');if(!h||(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches))return;
+var L=[['srimg',-16,-16],['srband',22,13],['srchip',-35,-26]].map(function(a){return [document.getElementById(a[0]),a[1],a[2]]});
+function set(x,y){L.forEach(function(a){if(a[0])a[0].style.transform='translate('+(x*a[1]).toFixed(1)+'px,'+(y*a[2]).toFixed(1)+'px)'})}
+h.addEventListener('mousemove',function(e){var r=h.getBoundingClientRect();if(r.width&&r.height)set((e.clientX-r.left)/r.width-.5,(e.clientY-r.top)/r.height-.5)});
+h.addEventListener('mouseleave',function(){set(0,0)});})();
+</script>
 <script src="i18n.js"></script>
 <script src="nav.js"></script>
 </body>
