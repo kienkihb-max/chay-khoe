@@ -789,10 +789,12 @@
           pickBackPhoto(frames, S.result).then(() => { S.photosReady = true; });
           S.computing = false; return;
         }
-        const { res, errs } = Gait.computeBoth(P, FPS, S.sub.height, SPEED);
+        // PF = P đã ghi lại theo chân thật (findSteps gỡ chỗ MediaPipe tráo nhãn trái/phải). Ảnh minh hoạ phải vẽ bằng PF,
+        // vẽ bằng P thô thì ở khung bị tráo nhãn khung xương "chân trái" nằm trên chân phải hoặc ghép gối chân này với bàn chân kia.
+        const { res, errs, P: PF } = Gait.computeBoth(P, FPS, S.sub.height, SPEED);
         const comb = Gait.combine(res, SPEED);
         let ex = null; try { ex = Gait.computeExtra(P, FPS, res, comb.common, SPEED); } catch (e) { ex = null; }
-        S.result = { angle: 'side', res, errs, comb, P, N, t0, sub: S.sub, ex, fat: null, q: qualityCheck(frames, FPS, res, comb) };
+        S.result = { angle: 'side', res, errs, comb, P: PF || P, N, t0, sub: S.sub, ex, fat: null, q: qualityCheck(frames, FPS, res, comb) };
         S.photos = {};
         pickPhotos(frames, S.result).then(() => { S.photosReady = true; });
       } catch (e) { S.error = e.message; }
@@ -804,12 +806,15 @@
     const withImg = frames.filter((f) => f.blob);
     for (const s of Object.keys(R.res)) {
       const ic = R.res[s].arrays.ic; if (!ic.length) continue;
-      // chọn lần chạm đất ở giữa đoạn thu
-      const i = ic[Math.floor(ic.length / 2)];
-      const tt = R.t0 + i / (S.fps || CFG.fps);
-      let best = null, bd = 1e9;
-      for (const f of withImg) { const d = Math.abs(f.t - tt); if (d < bd) { bd = d; best = f; } }
+      // Chỉ 1/3 số khung có lưu ảnh. Chọn lần chạm đất gần giữa đoạn thu nhất mà ĐÚNG khung đó có ảnh, để khung xương khớp hình.
+      // Không có lần nào trùng thì lấy lần ở giữa và vẽ khung xương của chính khung có ảnh (lệch tối đa 1 khung so với lúc chạm đất).
+      const fps = S.fps || CFG.fps, mid = Math.floor(ic.length / 2);
+      const near = (i) => { const tt = R.t0 + i / fps; let best = null, bd = 1e9; for (const f of withImg) { const d = Math.abs(f.t - tt); if (d < bd) { bd = d; best = f; } } return { best, bd }; };
+      let i = ic[mid], pk = near(i);
+      for (const c of ic.slice().sort((p, q) => Math.abs(p - ic[mid]) - Math.abs(q - ic[mid]))) { const n = near(c); if (n.best && n.bd < 0.5 / fps) { i = c; pk = n; break; } }
+      const best = pk.best;
       if (!best) continue;
+      if (pk.bd >= 0.5 / fps) i = Math.max(0, Math.min(R.N - 1, Math.round((best.t - R.t0) * fps)));
       const bmp = await createImageBitmap(best.blob);
       const lm = {};
       for (const k of Object.keys(Gait.IDX[s])) { const j = Gait.IDX[s][k]; lm[k] = [R.P.x[j][i], R.P.y[j][i]]; }
