@@ -22,12 +22,15 @@
   #topnav .nvmenu{display:block;position:static;border:0;box-shadow:none;padding:2px 0 0 14px;min-width:0}
 }
 #topnav a.logo{text-decoration:none}
-/* Logo ghép SAVITA x Hanoi Running Lab: ảnh ngang, nền trong suốt, không bo tròn */
-#topnav .logo img.lockup{width:auto;height:40px;border-radius:0;background:none}
+/* Logo ghép: [Savita] SAVITA × [HRL] HANOI RUNNING LAB - dấu × nằm giữa hai thương hiệu */
+#topnav .logo{gap:9px}
+#topnav .logo img.mk{width:auto;height:38px;border-radius:0;background:none}
+#topnav .logo img.mk.hrl{height:30px}
+#topnav .logo .lx{font:700 20px/1 Arial,sans-serif;color:var(--mut,#5C685F);margin:0 5px}
 #topnav .logo b{font-size:16px}
 @media (max-width:1180px){#topnav .logo b{display:none}}
 @media (min-width:761px) and (max-width:1180px){#topnav .logo{margin-right:8px}}
-@media (max-width:760px){#topnav .logo img.lockup{height:34px}}
+@media (max-width:760px){#topnav .logo{gap:6px}#topnav .logo img.mk{height:32px}#topnav .logo img.mk.hrl{height:26px}#topnav .logo .lx{margin:0 2px}}
 
 /* Phông thể thao cho tên lab và tiêu đề lớn (Exo 2 nghiêng). Chữ trong bài (.art, .cs) giữ phông thường. */
 h1,main h2:not(.art h2):not(.cs h2),#topnav .logo b{font-family:"Exo 2",var(--font,system-ui),sans-serif;font-style:italic;font-weight:900;letter-spacing:.005em}

@@ -9,14 +9,14 @@ test.describe('Thương hiệu Hanoi Running Lab', () => {
   test('BR-1 index: tiêu đề tab, chữ thương hiệu, có ảnh logo', async ({ page }) => {
     await page.goto('/screening.html?mock=1');
     await expect(page).toHaveTitle('Hanoi Running Lab');
-    await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
-    await expect(page.locator('#topnav .logo img')).toHaveCount(1);   // có ảnh logo docs/logo.png
+    await expect(page.locator('#topnav .logo b').last()).toHaveText(/hanoi running lab/i);
+    await expect(page.locator('#topnav .logo img')).toHaveCount(2);   // 2 biểu tượng: Savita + HRL
   });
   test('BR-2 demo.html: cùng tiêu đề + chữ, có ảnh logo', async ({ page }) => {
     await page.goto('/index.html');
     await expect(page).toHaveTitle(/Hanoi Running Lab/);
-    await expect(page.locator('#topnav .logo b')).toHaveText('Hanoi Running Lab');
-    await expect(page.locator('#topnav .logo img')).toHaveCount(1);   // có ảnh logo docs/logo.png
+    await expect(page.locator('#topnav .logo b').last()).toHaveText(/hanoi running lab/i);
+    await expect(page.locator('#topnav .logo img')).toHaveCount(2);   // 2 biểu tượng: Savita + HRL
   });
 });
 
