@@ -120,7 +120,7 @@ footer.foot{margin-top:56px;background:var(--moss);color:var(--on-dark-mut);text
 .herogrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
 .heroimg{margin:0}.heroimg figcaption{margin-top:12px;text-align:center;font-size:15px;font-weight:600;color:rgba(255,255,255,.9);letter-spacing:.02em}.heroimg img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:50% 50%;border-radius:20px;box-shadow:0 18px 40px rgba(0,0,0,.35)}
 @media (max-width:900px){.herogrid{grid-template-columns:1fr;gap:28px}.heroimg img{aspect-ratio:4/3;object-position:50% 20%}}
-.herogrid a.herocta{font-size:21px;padding:18px 36px;white-space:nowrap}@media (max-width:480px){.herogrid a.herocta{white-space:normal;font-size:18px;padding:16px 24px}}
+.herogrid a.herocta{font-size:clamp(15px,1.75vw,21px);padding:clamp(14px,1.5vw,18px) clamp(18px,2.6vw,36px);white-space:normal;text-align:center;text-wrap:balance;max-width:100%;box-sizing:border-box}@media (max-width:900px){.herogrid a.herocta{font-size:20px;padding:17px 32px}}@media (max-width:480px){.herogrid a.herocta{white-space:normal;font-size:18px;padding:16px 24px}}
 .hero p.punch{font-size:22px;font-weight:700;line-height:1.35;color:#fff;margin:0 0 10px}
 .trust{list-style:none;margin:18px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:14px;color:rgba(255,255,255,.85)}.trust li::before{content:"✓ ";color:#b9e4a6;font-weight:700}
 .sign{text-align:right;font-weight:600;font-style:italic;margin:24px 0 0;color:var(--moss,#2d4a2b)}
