@@ -93,7 +93,7 @@ a{color:#B6F5A6}
 .sr-band{animation:sr-in .5s ease .6s both}
 .sr-chip{animation:sr-in .6s ease .9s both}
 
-@media (max-width:1000px){
+@media (max-width:1080px){
   .sr-hero{height:auto;display:flex;flex-direction:column}
   .sr-tint,.sr-band,.sr-line{display:none}
   .sr-left{width:100%;height:auto;padding:36px 20px 26px}
