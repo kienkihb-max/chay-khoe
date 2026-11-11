@@ -72,7 +72,7 @@ async function measureOne(page, p = {}) {
   const name = p.name === undefined ? 'Nguyễn Văn Hùng' : p.name;
   await page.fill('#name', name);
   if (p.height !== '') await page.fill('#height', String(p.height || 172));
-  if (p.pain) await page.fill('#pain', p.pain);
+  if (p.pain) await page.evaluate((v) => { document.getElementById('pain').value = v; }, p.pain);   // ô #pain đã ẩn khỏi màn đầu
   await page.click('#go');
   await page.locator('#rvok').waitFor({ state: 'visible', timeout: 120000 });
   await page.click('#rvok');

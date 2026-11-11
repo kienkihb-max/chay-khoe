@@ -236,12 +236,12 @@ body:not(.bs) #l3acts .grp{display:none}
       </div>
       <div class="modes"><button id="mLive" class="on">Quay trực tiếp</button><button id="mFile">Tải video lên</button></div>
       <div class="fld"><label>GÓC QUAY</label><div class="hint">Tự nhận góc bên (ngang hông) hoặc sau lưng khi bắt đầu đo.</div><div class="hint" id="angst"></div></div>
-      <div class="fld"><label for="name">HỌ VÀ TÊN</label><input id="name" type="text" autocomplete="off" placeholder="Nguyễn Văn A"></div>
-      <div class="fld"><label for="phone">SỐ ĐIỆN THOẠI / ZALO (TÙY CHỌN)</label><input id="phone" type="tel" autocomplete="off" placeholder="09xx xxx xxx"></div>
       <div class="two">
+        <div class="fld"><label for="name">HỌ VÀ TÊN</label><input id="name" type="text" autocomplete="off" placeholder="Nguyễn Văn A"></div>
         <div class="fld"><label for="height">CHIỀU CAO (CM, TÙY CHỌN)</label><input id="height" type="number" min="100" max="230" placeholder="165 nếu bỏ trống"><div class="hint">Giúp kết quả chính xác hơn. Mặc định 165 cm.</div></div>
-        <div class="fld"><label for="pain">TIỀN SỬ ĐAU, CHẤN THƯƠNG (NẾU CÓ)</label><input id="pain" type="text" autocomplete="off" placeholder="Để trống nếu không"></div>
       </div>
+      <!-- Màn đầu chỉ hỏi tên + chiều cao. SĐT/Zalo hỏi ở màn Kết quả (form #regf). Hai ô ẩn dưới đây giữ lại để app.js không phải đổi. -->
+      <input id="phone" type="hidden"><input id="pain" type="hidden">
       <div id="filebox">
         <div class="fld"><label for="vfile" id="vflab">FILE VIDEO (quay ngang hông hoặc sau lưng, thấy cả hai chân)</label><input id="vfile" type="file" accept="video/*"><div class="hint" id="vinfo">Chưa chọn video</div></div>
         <div class="two">
