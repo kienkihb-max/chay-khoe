@@ -35,7 +35,7 @@
       const m = (Math.abs(l) + Math.abs(r)) / 2; if (!(m > 0)) return null;
       const v = Math.round((Math.abs(l - r) / m) * 100); return { v, t: v + '%' };
     }
-    if (unit === 'cm') { const v = Math.round(Math.abs(l - r) * 10) / 10; return { v, t: v.toFixed(1) + ' cm' }; }
+    if (unit === 'cm') { const v = Math.round(Math.abs(l - r) * 10) / 10; return { v, t: v.toFixed(1).replace('.', ',') + ' cm' }; }
     const v = Math.round(Math.abs(l - r)); return { v, t: v + (unit === '°' ? '°' : ' ' + unit) };
   }
   // Câu mô tả một chỉ số: định nghĩa + (nếu có hai chân đủ tin cậy) một câu so phải với trái.
@@ -67,30 +67,48 @@
     const M = GREF().metrics || {}, DS = (GREF().display || {}).strike || {};
     return RV_ROWS.map((row) => {
       const ref = row.k === 'strike' ? DS : M[row.k] || {};
-      const out = { k: row.k, nm: row.nm, d: row.d, wide: row.k === 'cadence' || row.k === 'vert_osc', cells: [DASH, DASH], rf: ref.ref_txt || '', src: ref.ref_src || '', v: {} };
+      const out = { k: row.k, nm: row.nm, d: row.d, wide: row.k === 'cadence' || row.k === 'vert_osc', cells: [DASH, DASH], rf: ref.ref_txt || '', src: ref.ref_src || '', v: {}, star: {} };
       if (out.wide) out.cells = [DASH];
       if (row.k === 'strike') {
         out.cells = ['L', 'R'].map((s) => {
           const e = R.res[s] && R.res[s].extra, ok = e && e.strike && !e.lowConf;
-          out.v[s] = ok ? String(e.strike).toLowerCase() : null; return ok ? { t: e.strike, dim: false } : DASH;
+          out.v[s] = ok ? String(e.strike).toLowerCase() : null;
+          if (e && e.strike && e.lowConf) { out.star[s] = 1; return { t: e.strike + '*', dim: true }; }   // chân ít bước vẫn hiện, mờ + dấu *
+          return ok ? { t: e.strike, dim: false } : DASH;
         });
         return out;
       }
       const D = App.rvData(R, row.k); if (!D) return out;
       out.redo = D.redo;
       const u = D.unit === '°' ? '°' : ' ' + D.unit;
-      const cell = (v, dim) => (D.redo || dim || !Number.isFinite(v) ? DASH : { t: App.rvNum(v, D.unit) + u, dim: false });
+      // Có số thì luôn hiện; chưa đủ tin cậy (dim) thì số mờ + '*' (chú thích ở rvFoot). Chỉ '–' khi không có số hoặc nhịp cần đo lại.
+      const cell = (v, dim, s) => { if (D.redo || !Number.isFinite(v)) return DASH; if (dim) { out.star[s] = 1; return { t: App.rvNum(v, D.unit) + u + '*', dim: true }; } return { t: App.rvNum(v, D.unit) + u, dim: false }; };
       if (D.common) {
         const v = row.k === 'cadence' ? App.rvCad(R) : D.legs[0].v, dim = D.legs[0].dim;
-        out.cells = [cell(v, dim)]; out.v.C = D.redo || dim || !Number.isFinite(v) ? null : v;
+        out.cells = [cell(v, dim, 'C')]; out.v.C = D.redo || dim || !Number.isFinite(v) ? null : v;
       } else {
         out.cells = ['L', 'R'].map((s) => {
           const l = D.legs.find((x) => x.s === s);
-          out.v[s] = l && !l.dim && Number.isFinite(l.v) ? l.v : null; return l ? cell(l.v, l.dim) : DASH;
+          out.v[s] = l && !l.dim && Number.isFinite(l.v) ? l.v : null; return l ? cell(l.v, l.dim, s) : DASH;
         });
       }
       return out;
     });
+  }
+  // Hai nhóm bảng: chỉ số chung (một giá trị) và so sánh chân Trái | Phải. Dùng chung #rview và rvsheet.js.
+  function rvGroups(rows) {
+    return [{ key: 'C', title: 'Chỉ số chung', rows: rows.filter((r) => r.wide) }, { key: 'LR', title: 'So sánh chân Trái | Phải', rows: rows.filter((r) => !r.wide) }].filter((g) => g.rows.length);
+  }
+  // Chú thích dưới bảng cho ô có dấu '*' (null nếu không có ô nào).
+  function rvFoot(R, rows) {
+    const pr = [], nm = { L: 'trái', R: 'phải' };
+    for (const s of ['L', 'R']) {
+      if (!rows.some((r) => r.star && r.star[s])) continue;
+      const e = R.res[s] && R.res[s].extra;
+      pr.push('Chân ' + nm[s] + (e && e.lowConf && Number.isFinite(e.nSteps) ? ' chỉ đo được ' + e.nSteps + ' bước' : ' chưa đủ tin cậy'));
+    }
+    if (rows.some((r) => r.star && r.star.C)) pr.push('Chỉ số chung chưa đủ tin cậy');
+    return pr.length ? '* ' + pr.join('; ') + ', số chỉ để tham khảo' : null;
   }
   // Nhãn hạng và câu dưới điểm: nhẹ nhàng; hạng thấp nhất của score.js tên 'Nguy cơ' nên màn này hiện 'Nên chú ý thêm'.
   const RV_BADGE = { good: 'Tốt', fair: 'Khá', improve: 'Cần cải thiện', risk: 'Nên chú ý thêm' };
@@ -138,5 +156,5 @@
     list.push(focus.length ? 'Gợi ý nhẹ: có thể thử tập trung vào ' + focus.slice(0, 2).join(' và ') + ' khi tập.' : 'Gợi ý nhẹ: có thể giữ thói quen chạy hiện tại và đo lại sau vài tuần để so sánh.');
     return list;
   }
-  Object.assign(App, { RV_TXT, rvDiff, rvSentence, RV_ROWS, rvRows, RV_BADGE, rvScoreLine, rvAdvice });
+  Object.assign(App, { RV_TXT, rvDiff, rvSentence, RV_ROWS, rvRows, rvGroups, rvFoot, RV_BADGE, rvScoreLine, rvAdvice });
 })(window.App);

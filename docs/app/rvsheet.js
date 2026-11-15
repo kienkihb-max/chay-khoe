@@ -48,24 +48,34 @@
       c.fillStyle = TC.accent; rr(c, nx, 228, bw, 44, 22); c.fill(); c.fillStyle = TC.brand; c.fillText(b, nx + 20, 259);
     }
     c.fillStyle = '#eaf5e3'; font('500', 26); wrap(c, App.rvScoreLine(sc.total), nx, tt ? 316 : 290, RX + RW - 36 - nx, 34);
-    // ---- bảng 5 chỉ số: Chỉ số | Trái | Phải | Tham chiếu (nguồn dòng nhỏ) ----
-    const TY = 412, RH = 78, cols = [RX, RX + 430, RX + 640, RX + 850], CW = [430, 210, 210, RW - 850];
-    card(RX, TY, RW, 44 + RH * rows.length);
-    c.fillStyle = MUT; font('700', 18);
-    ['CHỈ SỐ', 'TRÁI', 'PHẢI', 'THAM CHIẾU'].forEach((t, i) => c.fillText(t, cols[i] + 24, TY + 30));
-    rows.forEach((r, i) => {
-      const y = TY + 44 + i * RH;
-      c.strokeStyle = LINE; c.lineWidth = 1.5; c.beginPath(); c.moveTo(RX + 16, y); c.lineTo(RX + RW - 16, y); c.stroke();
-      c.fillStyle = INK; font('700', 25); c.fillText(r.nm, cols[0] + 24, y + 34, CW[0] - 40);
-      c.fillStyle = MUT; font('400', 18); c.fillText(r.d, cols[0] + 24, y + 60, CW[0] - 40);
-      font('700', 30);
-      if (r.wide) { c.fillStyle = r.cells[0].dim ? '#9AA59D' : TC.brand; c.textAlign = 'center'; c.fillText(r.cells[0].t, cols[1] + (CW[1] + CW[2]) / 2, y + 50); }
-      else r.cells.forEach((cl, j) => { c.fillStyle = cl.dim ? '#9AA59D' : TC.brand; c.textAlign = 'center'; c.fillText(cl.t, cols[1 + j] + CW[1 + j] / 2, y + 50, CW[1 + j] - 20); });
-      c.textAlign = 'left'; c.fillStyle = INK; font('600', 22); c.fillText(r.rf || '–', cols[3] + 24, y + 36, CW[3] - 40);
-      if (r.src) { c.fillStyle = MUT; font('italic 400', 17); c.fillText(r.src, cols[3] + 24, y + 62, CW[3] - 40); }
+    // ---- bảng 5 chỉ số, hai nhóm: Chỉ số chung (Giá trị | Tham chiếu) và So sánh chân (Trái | Phải | Tham chiếu); '*' = số mờ chưa đủ tin cậy ----
+    const TY = 412, RH = 64, HH2 = 40, GAP = 10, cols = [RX, RX + 430, RX + 640, RX + 850], CW = [430, 210, 210, RW - 850];
+    const groups = App.rvGroups(rows), foot = App.rvFoot(R, rows), FH = foot ? 30 : 0;
+    card(RX, TY, RW, groups.length * HH2 + RH * rows.length + GAP * (groups.length - 1) + FH + 6);
+    let gy = TY;
+    groups.forEach((g, gi) => {
+      if (gi) { c.strokeStyle = LINE; c.lineWidth = 3; c.beginPath(); c.moveTo(RX + 16, gy + GAP / 2); c.lineTo(RX + RW - 16, gy + GAP / 2); c.stroke(); gy += GAP; }
+      const one = g.key === 'C', mid = cols[1] + (CW[1] + CW[2]) / 2;
+      font('800', 19); c.fillStyle = TC.brand; c.textAlign = 'left'; c.fillText(g.title, cols[0] + 24, gy + 28);
+      font('700', 18); c.fillStyle = MUT; c.textAlign = 'center';
+      if (one) c.fillText('GIÁ TRỊ', mid, gy + 28); else { c.fillText('TRÁI', cols[1] + CW[1] / 2, gy + 28); c.fillText('PHẢI', cols[2] + CW[2] / 2, gy + 28); }
+      c.textAlign = 'left'; c.fillText('THAM CHIẾU', cols[3] + 24, gy + 28);
+      g.rows.forEach((r, i) => {
+        const y = gy + HH2 + i * RH;
+        c.strokeStyle = LINE; c.lineWidth = 1.5; c.beginPath(); c.moveTo(RX + 16, y); c.lineTo(RX + RW - 16, y); c.stroke();
+        c.fillStyle = INK; font('700', 24); c.fillText(r.nm, cols[0] + 24, y + 28, CW[0] - 40);
+        c.fillStyle = MUT; font('400', 18); c.fillText(r.d, cols[0] + 24, y + 52, CW[0] - 40);
+        font('700', 30); c.textAlign = 'center';
+        if (one) { c.fillStyle = r.cells[0].dim ? '#9AA59D' : TC.brand; c.fillText(r.cells[0].t, mid, y + 42, CW[1] + CW[2] - 20); }
+        else r.cells.forEach((cl, j) => { c.fillStyle = cl.dim ? '#9AA59D' : TC.brand; c.fillText(cl.t, cols[1 + j] + CW[1 + j] / 2, y + 42, CW[1 + j] - 20); });
+        c.textAlign = 'left'; c.fillStyle = INK; font('600', 22); c.fillText(r.rf || '–', cols[3] + 24, y + 30, CW[3] - 40);
+        if (r.src) { c.fillStyle = MUT; font('italic 400', 17); c.fillText(r.src, cols[3] + 24, y + 54, CW[3] - 40); }
+      });
+      gy += HH2 + RH * g.rows.length;
     });
+    if (foot) { c.fillStyle = MUT; font('italic 400', 19); c.textAlign = 'left'; c.fillText(foot, RX + 24, gy + 24, RW - 48); }
     // ---- kết luận tổng kết ----
-    const KY = TY + 44 + RH * rows.length + 16, KH = 1044 - KY;
+    const KY = gy + FH + 6 + 16, KH = 1044 - KY;
     card(RX, KY, RW, KH); c.fillStyle = TC.brand; font('700', 24); c.fillText('Kết luận tổng kết', RX + 28, KY + 38);
     c.save(); c.beginPath(); c.rect(RX, KY, RW, KH - 6); c.clip();
     let y = KY + 72; font('400', 21);

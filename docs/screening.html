@@ -94,6 +94,9 @@ input:focus{outline:none;border-color:var(--moss2);box-shadow:0 0 0 4px rgba(var
 #L2{background:rgb(var(--dk));color:#fff}
 #v2,#ov{position:absolute;inset:0;width:100%;height:100%}
 #v2{object-fit:contain}
+#L2::after{content:"";position:absolute;inset:0;border:6px solid var(--leaf);z-index:3;pointer-events:none}   /* khung viền xanh thương hiệu quanh màn đo (cũng vẽ vào video) */
+#l2logo{position:absolute;left:50%;top:22px;transform:translateX(-50%);height:46px;width:auto;z-index:2;pointer-events:none}
+#dlvid[hidden]{display:none}
 #L2::before{content:"";position:absolute;left:0;right:0;top:0;height:170px;background:linear-gradient(180deg,rgba(var(--dk),.85),transparent);z-index:1;pointer-events:none}
 #chip{position:absolute;left:32px;top:28px;z-index:2;display:flex;align-items:center;gap:14px;font-size:30px;font-weight:700}
 #chip small{font-size:15px;font-weight:700;letter-spacing:.08em;background:rgba(255,255,255,.16);backdrop-filter:blur(6px);border-radius:999px;padding:5px 13px}
@@ -139,12 +142,17 @@ input:focus{outline:none;border-color:var(--moss2);box-shadow:0 0 0 4px rgba(var
 #rview .score .badge{display:inline-block;font-size:20px;font-weight:800;color:var(--moss);background:var(--leaf);padding:5px 18px;border-radius:999px}
 #rview .score p{margin:10px 0 0;font-size:19px;color:#eaf5e3}
 #rview .tb{background:var(--white);border-radius:18px;box-shadow:0 2px 12px var(--shadow);padding:6px 20px}
-#rview .tb .r{display:grid;grid-template-columns:1.5fr .8fr .8fr 1.5fr;gap:12px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+#rview .tb .r{display:grid;grid-template-columns:1.3fr 1fr 1fr 1.3fr;gap:12px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+#rview .tb .rg.g1 .r{grid-template-columns:1.3fr 2fr 1.3fr}
+#rview .tb .rg+.rg{margin-top:14px;padding-top:6px;border-top:3px solid var(--line)}
+#rview .tb .rg h3{margin:8px 0 0;font-size:15px;font-weight:800;color:var(--moss)}
+#rview .tb .r>*{min-width:0}
+#rview .tb .r.hd span:not(:first-child):not(:last-child){text-align:center}
+#rview .tb .fn{margin:10px 0 4px;font-size:14px;color:var(--mut)}
 #rview .tb .r.hd{border-top:0;padding:10px 0 6px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
 #rview .tb .nm b{display:block;font-size:18px;line-height:1.3}
 #rview .tb .nm span{display:block;font-size:14px;color:var(--mut);line-height:1.35}
 #rview .tb .c{font-size:24px;font-weight:800;color:var(--moss);text-align:center;white-space:nowrap}
-#rview .tb .c.wide{grid-column:span 2}
 #rview .tb .c.dim{color:var(--dis)}
 #rview .tb .rf{font-size:16px;font-weight:600;line-height:1.35}
 #rview .tb .rf em{display:block;font-size:13px;font-weight:400;color:var(--mut)}
@@ -363,6 +371,7 @@ body:not(.bs) #l3acts .grp{display:none}
 <section class="layer" id="L2">
   <video id="v2" autoplay muted playsinline></video>
   <canvas id="ov"></canvas>
+  <img id="l2logo" src="logo-hrl-mark.png" alt="Hanoi Running Lab">
   <div id="chip"><span id="who"></span><small id="idl"></small><button id="angchg" hidden title="Đổi góc quay (chọn tay)">Đổi</button></div>
   <div class="cd"><div id="count">2:00</div><em>CÒN LẠI</em></div>
   <div id="fpsb"></div>
@@ -376,9 +385,11 @@ body:not(.bs) #l3acts .grp{display:none}
   <div id="l3cta">
     <div class="ctah">
       <h3>Nhận báo cáo chi tiết</h3>
+      <p class="hint" id="dlvidnote" hidden></p>
       <p class="hint">Ảnh chỉ số cơ bản tải được ngay. Báo cáo chi tiết do bác sĩ gửi riêng qua Zalo.</p>
       <div class="ctab">
         <button class="alt" id="dlimg" type="button">Tải ảnh kết quả</button>
+        <button class="alt" id="dlvid" type="button" hidden>Tải video</button>
         <a class="go" id="zbook" href="https://zalo.me/0345901772" target="_blank" rel="noopener">Đặt lịch đánh giá chuyên sâu</a>
       </div>
     </div>
@@ -403,6 +414,7 @@ body:not(.bs) #l3acts .grp{display:none}
 <script src="chips.js"></script>
 <!-- app.js cũ đã tách thành docs/app/*.js; phải nạp đúng thứ tự này (xem đầu app/core.js) -->
 <script src="app/core.js"></script>
+<script src="app/capture.js"></script>
 <script src="app/form.js"></script>
 <script src="app/live.js"></script>
 <script src="app/run.js"></script>

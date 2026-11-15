@@ -149,7 +149,7 @@
     two('contact_ms', f0); one('flight_ms', f0); one('duty', f1); one('step_cv', f1); one('step_asym', f1); one('contact_asym', f1);
     two('hip_flex', f0); two('heel_kick', f1); two('arm_swing', f0); two('elbow', f0); two('head_fwd', f1);
     if (R.fat) {
-      const sgn = (v, u) => (v > 0 ? '+' : '') + v.toFixed(1) + ' ' + u;
+      const sgn = (v, u) => (v > 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' ' + u;
       out.push({ label: 'Cuối buổi so với đầu buổi: nhịp chạy', unit: '', a: sgn(R.fat.d_cadence, 'bước/phút'), b: '', ref: '', st: Math.abs(R.fat.d_cadence) > 6 ? 'thay đổi nhiều' : 'ổn định', ok: Math.abs(R.fat.d_cadence) <= 6, common: true });
       out.push({ label: 'Cuối buổi so với đầu buổi: nhấp nhô', unit: '', a: sgn(R.fat.d_vert, 'cm'), b: '', ref: '', st: Math.abs(R.fat.d_vert) > 1.5 ? 'thay đổi nhiều' : 'ổn định', ok: Math.abs(R.fat.d_vert) <= 1.5, common: true });
     }
@@ -195,7 +195,7 @@
         if (x.k && x.n.L !== undefined) anyTwo = true;
         h += x.k ? row(lbl, x.k, x.n, x.a, x.b) : '<tr><td>' + lbl + '</td><td>' + x.a + '</td><td>' + x.b + '</td><td></td><td><span class="chip" style="color:' + (x.ok ? GREEN : AMBER) + ';background:' + (x.ok ? '#E3F1DC' : '#FBEBCF') + '">' + x.st + '</span></td></tr>';
       }
-      for (const s of ['L', 'R']) if (R.res[s]) h += '<tr><td>Chân ' + (s === 'L' ? 'trái' : 'phải') + ': số bước · độ tin cậy</td><td colspan="4">' + R.res[s].extra.nSteps + ' bước · vis ' + R.res[s].extra.vis.toFixed(2) + (R.res[s].extra.vis < Gait.VIS_MIN ? ' (thấp)' : '') + '</td></tr>';
+      for (const s of ['L', 'R']) if (R.res[s]) h += '<tr><td>Chân ' + (s === 'L' ? 'trái' : 'phải') + ': số bước · độ tin cậy</td><td colspan="4">' + R.res[s].extra.nSteps + ' bước · vis ' + R.res[s].extra.vis.toFixed(2).replace('.', ',') + (R.res[s].extra.vis < Gait.VIS_MIN ? ' (thấp)' : '') + '</td></tr>';
       h += '</table>';
     }
     if (R.back) {   // khối Nhìn từ sau: chỉ số từng chân + chỉ số chung; ngưỡng đang tạm

@@ -73,6 +73,17 @@
   // theo bề rộng ảnh (s = 1 khi rộng 600). Ô số: góc cẳng chân lúc chạm (shank_ic) ở cổ chân, gập gối giữa pha trụ (knee_mid) ở gối,
   // lấy đúng số trên bảng (rvRows: chân chưa đủ tin cậy thì không vẽ ô). Không tô màu mức (bác sĩ 15/11/2026).
   const SK = { out: '#0b1a10', L: '#3DA5FF', R: '#FF8A3D', body: '#F4FFF0', box: '#0f3d22', boxLine: '#A9D69B' };
+  // Vẽ khung xương đậm dùng chung (ảnh kết quả, màn đo trực tiếp, video ghi): segs [[A, B, màu]] và joints [[x, y]] đã ở toạ độ canvas,
+  // s = hệ số tỉ lệ (nét 7, viền tối 11, khớp r 8 viền 3 khi s = 1).
+  function skBones(c, segs, joints, s) {
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    for (const pass of [0, 1]) {
+      c.lineWidth = (pass ? 7 : 11) * s;
+      for (const [A, B, col] of segs) { c.strokeStyle = pass ? col : SK.out; c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(B[0], B[1]); c.stroke(); }
+    }
+    c.fillStyle = '#fff'; c.strokeStyle = SK.out; c.lineWidth = 3 * s;
+    for (const A of joints) { c.beginPath(); c.arc(A[0], A[1], 8 * s, 0, 7); c.fill(); c.stroke(); }
+  }
   function drawHero(cv, ph, side, R) {
     const c = cv.getContext('2d'), W = cv.width, H = cv.height, s = W / 600;
     c.fillStyle = '#1B2A34'; c.fillRect(0, 0, W, H);
@@ -96,15 +107,9 @@
     c.lineCap = 'round'; c.lineJoin = 'round';
     // chân xa (lo) vẽ trước để chân gần (lm) đè lên
     for (const [o, Uu, leg] of [[ph.lo, Uo, other], [ph.lm, U, side]]) {
-      const segs = LINKS.map(([a, b]) => [o[a], o[b], a === 'sh' ? SK.body : SK[leg]])
-        .concat([['ear', null], ['elb', null], ['wri', 'elb']].filter(([a, b]) => seen(Uu[a]) && (b ? seen(Uu[b]) : true)).map(([a, b]) => [b ? Uu[b] : o.sh, Uu[a], SK.body]));
-      for (const pass of [0, 1]) {
-        c.lineWidth = (pass ? 7 : 11) * s;
-        for (const [a, b, col] of segs) { const A = P(a), B = P(b); c.strokeStyle = pass ? col : SK.out; c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(B[0], B[1]); c.stroke(); }
-      }
-      const joints = Object.keys(o).map((key) => o[key]).concat(['ear', 'elb', 'wri'].filter((key) => seen(Uu[key])).map((key) => Uu[key]));
-      c.fillStyle = '#fff'; c.strokeStyle = SK.out; c.lineWidth = 3 * s;
-      for (const j of joints) { const A = P(j); c.beginPath(); c.arc(A[0], A[1], 8 * s, 0, 7); c.fill(); c.stroke(); }
+      const segs = LINKS.map(([a, b]) => [P(o[a]), P(o[b]), a === 'sh' ? SK.body : SK[leg]])
+        .concat([['ear', null], ['elb', null], ['wri', 'elb']].filter(([a, b]) => seen(Uu[a]) && (b ? seen(Uu[b]) : true)).map(([a, b]) => [P(b ? Uu[b] : o.sh), P(Uu[a]), SK.body]));
+      skBones(c, segs, Object.keys(o).map((key) => o[key]).concat(['ear', 'elb', 'wri'].filter((key) => seen(Uu[key])).map((key) => Uu[key])).map(P), s);
     }
     const rows = App.rvRows(R), val = (key) => ((rows.find((r) => r.k === key) || { v: {} }).v[side]);
     const fs = Math.round(24 * s), bh2 = Math.round(fs * 1.6), placed = [], d = Math.sign(ph.lm.toe[0] - ph.lm.heel[0]) || 1;
@@ -161,12 +166,12 @@
     if (!on) { box.innerHTML = ''; return; }
     const sc = scores(R), tt = sc.total != null ? tierOf(sc.total) : null, ph = S.photos || {}, sub = R.sub || {};
     const side = rvSide(R, ph), rows = App.rvRows(R), dt = R.when ? new Date(R.when) : new Date();
-    const view = R.back ? 'Ngang + sau' : 'Ngang';
+    const foot = App.rvFoot(R, rows), view = R.back ? 'Ngang + sau' : 'Ngang';
     const dl = [['Mã khách', sub.id], ['Họ tên', sub.name], ['Chiều cao', sub.height ? sub.height + ' cm' : ''], ['Ngày đo', pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear()],
       ['Tốc độ máy', ((R.speed || App.SPEED) * 3.6).toFixed(0) + ' km/h'], ['Góc quay', view]];
     const cell = (x, l) => '<span class="c' + (x.dim ? ' dim' : '') + '" data-l="' + l + '">' + escA(x.t) + '</span>';
     const tr = (r) => '<div class="r"><div class="nm"><b>' + r.nm + '</b><span>' + r.d + '</span></div>' +
-      (r.wide ? '<span class="c wide' + (r.cells[0].dim ? ' dim' : '') + '" data-l="Hai chân">' + escA(r.cells[0].t) + '</span>' : cell(r.cells[0], 'Trái') + cell(r.cells[1], 'Phải')) +
+      (r.wide ? cell(r.cells[0], 'Giá trị') : cell(r.cells[0], 'Trái') + cell(r.cells[1], 'Phải')) +
       '<div class="rf">' + escA(r.rf || '–') + (r.src ? '<em>' + escA(r.src) + '</em>' : '') + '</div></div>';
     // Chỉ số ngoài 5 chỉ số chính chỉ hiện ở chế độ bác sĩ (body.bs, CSS .bsonly)
     const rest = RV_KEYS.filter((k) => !RV_TOP.includes(k)).map((k) => rvCard(R, k)).filter(Boolean);
@@ -175,7 +180,9 @@
       '<span class="cap">' + (side === 'L' ? 'Chân trái' : 'Chân phải') + ' · Chạm đất</span></button></div>' +
       '<div class="right"><div class="score"><div class="lb">Điểm dáng chạy</div><div class="n' + (sc.total != null ? '' : ' na') + '">' + (sc.total != null ? sc.total + '<small>/100</small>' : '–') + '</div>' +
       (tt ? '<span class="badge">' + (App.RV_BADGE[tt.key] || tt.name) + '</span>' : '') + '<p>' + App.rvScoreLine(sc.total) + '</p></div>' +
-      '<div class="tb" role="table"><div class="r hd"><span>Chỉ số</span><span>Trái</span><span>Phải</span><span>Tham chiếu</span></div>' + rows.map(tr).join('') + '</div>' +
+      '<div class="tb" role="table">' + App.rvGroups(rows).map((g) => '<div class="rg ' + (g.key === 'C' ? 'g1' : 'g2') + '"><h3>' + g.title + '</h3><div class="r hd"><span>Chỉ số</span>' +
+        (g.key === 'C' ? '<span>Giá trị</span>' : '<span>Trái</span><span>Phải</span>') + '<span>Tham chiếu</span></div>' + g.rows.map(tr).join('') + '</div>').join('') +
+      (foot ? '<p class="fn">' + escA(foot) + '</p>' : '') + '</div>' +
       '<div class="kl"><h2>Kết luận tổng kết</h2><ul>' + App.rvAdvice(R, rows).map((t) => '<li>' + escA(t) + '</li>').join('') + '</ul></div>' +
       '<div class="doc"><h2>Ghi chú của bác sĩ</h2><p></p><button type="button" class="alt">Viết / sửa ghi chú</button></div></div></div>' +
       (rest.length ? '<div class="bsonly"><h2>Chỉ số khác (bác sĩ)</h2><div class="cards" id="rvrest">' + rest.join('') + '</div></div>' : '') +
@@ -198,5 +205,5 @@
     const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080;
     drawResultCv(R, cv, true); return cv;
   }
-  Object.assign(App, { RV_KEYS, RV_TOP, RV_LV, rvNum, rvOk, rvRange, rvCol, SK });
+  Object.assign(App, { RV_KEYS, RV_TOP, RV_LV, rvNum, rvOk, rvRange, rvCol, SK, skBones });
 })(window.App);

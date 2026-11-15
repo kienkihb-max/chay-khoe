@@ -149,7 +149,7 @@
     for (const d of dots) { const st = statInfo(k, d.v); if (st) h += '<b class="rdot' + (d.leg ? ' ' + d.leg : '') + '" style="left:' + p(d.v) + '%;background:' + st.col + (R && flagged(R, k, d.leg || 'c') ? ';opacity:.45' : '') + '" title="' + (d.leg === 'L' ? 'Trái ' : d.leg === 'R' ? 'Phải ' : '') + f1(d.v) + '"></b>'; }
     return h + '</div>';
   }
-  const f1 = (v) => (v == null || Number.isNaN(v) ? '–' : (Math.round(v * 10) / 10).toFixed(1));
+  const f1 = (v) => (v == null || Number.isNaN(v) ? '–' : (Math.round(v * 10) / 10).toFixed(1).replace('.', ','));
   const f0 = (v) => (v == null || Number.isNaN(v) ? '–' : String(Math.round(v)));
 
   // ---------- Cờ tin cậy: "Dưới ngưỡng tin cậy ±X" và "Nghi bắt sai mốc" (đọc qua Score.flagOf, chịu được trường thiếu) ----------

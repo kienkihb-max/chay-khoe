@@ -137,7 +137,7 @@ window.App = {};
           const blob = new Blob(REC.chunks, { type: REC.ext === 'mp4' ? 'video/mp4' : 'video/webm' });
           const d = new Date(), stamp = d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '_' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
           const nm = (name || 'video').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'video';
-          const a = document.createElement('a'); a.download = nm + '_' + stamp + '.' + REC.ext; a.href = URL.createObjectURL(blob); a.click();
+          const a = document.createElement('a'); a.download = App.fileName({ id: 'video', name, phone: $('phone').value }, REC.ext, nm + '_' + stamp); a.href = URL.createObjectURL(blob); a.click();
           setTimeout(() => URL.revokeObjectURL(a.href), 10000);
           $('recst').textContent = 'Đã lưu video ' + a.download + ' (' + (blob.size / 1048576).toFixed(1) + ' MB) vào thư mục Downloads.';
         } else $('recst').textContent = '';

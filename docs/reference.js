@@ -128,6 +128,6 @@ window.GAIT_REF = {
    * hiện và viết câu gợi ý, KHÔNG dùng chấm điểm (điểm vẫn theo lo/hi/warn). ref_rng = [dưới, trên] nghiên cứu báo cáo, null = chỉ
    * có một mức "~", không so khoảng. Đáp đất không có số đo nên chỉ mô tả. */
   "display": {
-    "strike": {"label": "Đáp đất", "ref_txt": "chỉ mô tả, ≈89% đáp gót", "ref_src": "Larson 2011"}
+    "strike": {"label": "Đáp đất", "ref_txt": "≈89% đáp gót", "ref_src": "Larson 2011"}
   }
 };

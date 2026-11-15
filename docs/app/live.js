@@ -149,7 +149,7 @@
   function lvCards() {
     for (const el of lvBox.querySelectorAll('.lvc')) {
       const k = el.dataset.k, v = LV.st ? LV.st[k] : null, ok = v != null && !Number.isNaN(v);
-      el.querySelector('b').textContent = ok ? (k === 'trunk' || S.take === 'back' ? v.toFixed(1) : String(Math.round(v))) + (el.dataset.u === '°' ? '°' : '') : '–';
+      el.querySelector('b').textContent = ok ? (k === 'trunk' || S.take === 'back' ? v.toFixed(1).replace('.', ',') : String(Math.round(v))) + (el.dataset.u === '°' ? '°' : '') : '–';
       el.dataset.lv = ok ? lvLevel(k, v) : 'none';
       if (k === 'cadence' && ok && S.take !== 'back') {   // dưới CAD_REDO: nghi chân bên xa bị che, không hiện như số bình thường
         const low = v < CAD_REDO;
@@ -289,24 +289,14 @@
     // khung xương màu Savita phát sáng (quầng rộng mờ rồi nét chính; không dùng shadowBlur cho nhẹ); bên xa camera mờ hơn
     // thân trên (tai, khuỷu, cổ tay) chỉ vẽ khi điểm đủ rõ; chân giữ như cũ
     const far = near === 'L' ? 'R' : 'L', seen = (j) => lm[j] && !(lm[j].visibility < LV_VIS_UP);
+    // Khung xương đậm kiểu Ochy dùng chung với ảnh kết quả (App.skBones, rview.js): chân trái xanh dương, chân phải cam, thân/tay trắng ngà
+    const SKC = App.SK, ks = Math.max(0.6, W / 1200);
     for (const side of [far, near]) {
-      const ids = Gait.IDX[side], xi = LV_XI[side], fa = side === near ? 1 : 0.45;
-      const segs = LINKS.map(([a, b]) => [ids[a], ids[b], side === near && a === 'sh' ? lev('trunk') : LEAF])
-        .concat([[ids.sh, xi.ear], [ids.sh, xi.elb], [xi.elb, xi.wri]].filter(([a, b]) => seen(a) && seen(b)).map(([a, b]) => [a, b, LEAF]));
-      for (const pass of [0, 1]) {
-        c.globalAlpha = fa * (pass ? 1 : 0.22); c.lineWidth = pass ? lw : lw * 3.4;
-        for (const [a, b, col] of segs) {
-          const A = p(a), B = p(b); c.strokeStyle = col;
-          c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(B[0], B[1]); c.stroke();
-        }
-      }
-      c.globalAlpha = fa;
-      for (const k of Object.keys(ids)) {
-        const A = p(ids[k]), col = side !== near ? LEAF : k === 'knee' ? lev('knee_ic') : k === 'hip' ? lev('hip_ext') : k === 'sh' ? lev('trunk') : LEAF;
-        c.fillStyle = col; c.beginPath(); c.arc(A[0], A[1], rad, 0, 7); c.fill();
-      }
-      c.fillStyle = LEAF;
-      for (const j of [xi.ear, xi.elb, xi.wri]) if (seen(j)) { const A = p(j); c.beginPath(); c.arc(A[0], A[1], rad * 0.85, 0, 7); c.fill(); }
+      const ids = Gait.IDX[side], xi = LV_XI[side];
+      const segs = LINKS.map(([a, b]) => [p(ids[a]), p(ids[b]), a === 'sh' ? SKC.body : SKC[side]])
+        .concat([[ids.sh, xi.ear], [ids.sh, xi.elb], [xi.elb, xi.wri]].filter(([a, b]) => seen(a) && seen(b)).map(([a, b]) => [p(a), p(b), SKC.body]));
+      c.globalAlpha = side === near ? 1 : 0.8;
+      App.skBones(c, segs, Object.keys(ids).map((k) => p(ids[k])).concat([xi.ear, xi.elb, xi.wri].filter(seen).map(p)), ks);
     }
     c.globalAlpha = 1;
     // Góc khớp tính một lần mỗi khung, trên toạ độ điểm ảnh của video (không méo theo khung hiển thị)
@@ -340,11 +330,11 @@
       for (let t = 0; t < 6 && placed.some((b) => x < b[0] + b[2] + 3 * dpr && b[0] < x + bw + 3 * dpr && y < b[1] + b[3] + 3 * dpr && b[1] < y + bh + 3 * dpr); t++) y += bh + 4 * dpr;
       y = Math.max(2 * dpr, Math.min(H - bh - 2 * dpr, y)); placed.push([x, y, bw, bh]);
       const ex = dir > 0 ? x : x + bw;
-      c.globalAlpha = alpha * 0.8; c.strokeStyle = col; c.lineWidth = Math.max(1, dpr);
+      c.globalAlpha = alpha; c.strokeStyle = SKC.boxLine; c.lineWidth = 2.5 * ks;
       c.beginPath(); c.moveTo(J[0], J[1]); c.lineTo(ex, y + bh / 2); c.stroke();
-      c.globalAlpha = alpha; c.fillStyle = 'rgba(8,19,11,.82)'; rr(c, x, y, bw, bh, 4 * dpr); c.fill();
-      c.strokeStyle = col; c.lineWidth = 1.5 * dpr; c.stroke();
-      c.fillStyle = col; c.fillText(txt, x + bw / 2, y + bh / 2 + dpr * 0.5);
+      c.fillStyle = SKC.box; rr(c, x, y, bw, bh, 8 * ks); c.fill();
+      c.strokeStyle = SKC.boxLine; c.lineWidth = 3 * ks; c.stroke();
+      c.fillStyle = '#fff'; c.fillText(txt, x + bw / 2, y + bh / 2 + dpr * 0.5);
     };
     const away = (j, from, dflt) => Math.sign(p(j)[0] - p(from)[0]) || dflt;
     const Sh = p(I.sh), mid = [(Sh[0] + Hp[0]) / 2, (Sh[1] + Hp[1]) / 2];

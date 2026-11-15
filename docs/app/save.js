@@ -338,7 +338,7 @@
     $('res').toBlob((b) => {
       if (!b) return;
       const a = document.createElement('a'), u = URL.createObjectURL(b);
-      a.href = u; a.download = 'ket-qua-' + R.sub.id + '.png';
+      a.href = u; a.download = App.fileName(R.sub, 'png', 'ket-qua-' + R.sub.id);
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(u), 4000);
     }, 'image/png');

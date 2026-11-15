@@ -11,8 +11,8 @@
       pdf = pdf || (R ? makePdf(R) : null);
       const pngBlob = await new Promise((ok) => $('res').toBlob(ok, 'image/png'));
       const files = [];
-      if (pdf) files.push({ name: row.id + '.pdf', mime: 'application/pdf', blob: pdf });
-      if (pngBlob) files.push({ name: row.id + '.png', mime: 'image/png', blob: pngBlob });
+      if (pdf) files.push({ name: App.fileName(row, 'pdf', row.id), mime: 'application/pdf', blob: pdf });
+      if (pngBlob) files.push({ name: App.fileName(row, 'png', row.id), mime: 'image/png', blob: pngBlob });
       const p = Sync.push(SHEET_COLS.map((c) => c[0]), SHEET_COLS.map((c) => c[1](row) ?? ''), files);
       showSync(); await p;
     } catch (e) { console.warn('Chưa gửi được lên Google Sheet:', e); }
