@@ -96,3 +96,19 @@
   #fpsb{bottom:64px}
   .guidet{display:none}
 }
+
+/* Logo Hanoi Running Lab ở góc phải màn đo (#L2): đồng hồ đứng bên trái logo */
+@media (max-width:1024px){
+  #l2logo{right:20px;padding:6px 14px 6px 10px}
+  #l2logo img{height:36px}
+  #L2 .cd{right:240px}
+}
+@media (max-width:640px){
+  #l2logo{right:12px;top:12px;padding:4px 8px;border-radius:12px}
+  #l2logo img{height:28px}
+  #l2logo b{display:none}
+  #L2 .cd{right:84px}
+}
+@media (max-height:480px) and (orientation:landscape){
+  #l2logo{top:6px}
+}
