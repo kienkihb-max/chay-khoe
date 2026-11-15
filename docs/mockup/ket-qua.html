@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BẢN VẼ MẪU - Màn kết quả</title>
+<link rel="stylesheet" href="../nav.css">
+<style>
+:root{--moss:#1F4D2B;--leaf:#A9D69B;--bg:#F1F7EC;--ink:#17301e;--yel:#FFD23F;--ok:#2E8B4A;--warn:#B8860B;--bad:#C0392B}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.55 system-ui,"Segoe UI",sans-serif}
+.top{background:var(--moss);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 16px}
+.top .lg{flex:none;width:44px;height:44px;border-radius:50%;background:#fff;display:grid;place-items:center;overflow:hidden}
+.top .lg img{width:78%;height:78%;object-fit:contain;display:block}
+.top b{font-family:"Exo 2",system-ui,sans-serif;font-style:italic;font-weight:900;font-size:17px;letter-spacing:.01em;line-height:1.1}
+.top small{margin-left:auto;font-size:14px;opacity:.85;text-align:right}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+.tag{display:inline-block;background:#fff3c4;color:#7a5b00;border-radius:8px;padding:2px 10px;font-size:13px;font-weight:700}
+h1{font-family:"Exo 2",system-ui,sans-serif;font-style:italic;font-weight:900;font-size:30px;line-height:1.15;margin:8px 0 2px}
+.sub{color:#4b6a53;font-size:16px;margin:0 0 14px}
+.hero{display:grid;gap:16px}
+.pic{background:#1c2430;border-radius:18px;overflow:hidden;position:relative}
+.pic svg{display:block;width:100%;height:auto;overflow:visible}.pic{overflow:hidden}
+.pic .cap{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:700}
+.score{background:#fff;border-radius:18px;padding:18px 20px;box-shadow:0 4px 14px rgba(31,77,43,.08)}
+.score .lb{font-weight:800;color:#4b6a53;font-size:15px;letter-spacing:.04em;text-transform:uppercase}
+.score .big{font-family:"Exo 2",system-ui,sans-serif;font-style:italic;font-weight:900;font-size:84px;line-height:1;color:var(--ok)}
+.score .big span{font-size:28px;color:#8aa090}
+.pill{display:inline-block;border-radius:999px;padding:3px 14px;font-weight:800;font-size:16px;color:#fff;background:var(--ok)}
+.pill.w{background:var(--warn)}.pill.b{background:var(--bad)}
+h2{font-family:"Exo 2",system-ui,sans-serif;font-style:italic;font-weight:900;font-size:24px;margin:26px 0 10px}
+.cards{display:grid;gap:12px}
+.cd{background:#fff;border-radius:16px;padding:16px 18px;border-left:6px solid var(--ok);box-shadow:0 4px 14px rgba(31,77,43,.08)}
+.cd.w{border-left-color:var(--warn)}.cd.b{border-left-color:var(--bad)}
+.cd .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cd h3{margin:0;font-size:19px}
+.cd .v{font-family:"Exo 2",system-ui,sans-serif;font-style:italic;font-weight:900;font-size:44px;line-height:1.1}
+.cd .v small{font-size:18px;font-style:normal;font-weight:600;color:#5b7462;margin-left:4px}
+.cd .cmp{font-size:16px;color:#4b6a53;margin:2px 0 6px}
+.cd p{margin:0;font-size:17px}
+.cd .ref{font-size:14px;color:#6c8472;margin-top:6px}
+.acts{display:grid;gap:10px;margin-top:20px}
+.btn{display:block;text-align:center;text-decoration:none;font-weight:800;font-size:19px;border-radius:14px;padding:14px;min-height:52px;border:3px solid var(--moss)}
+.btn.p{background:var(--moss);color:#fff;border-color:var(--leaf)}
+.btn.s{background:#fff;color:var(--moss)}
+.note{background:#fff8dc;border:1px solid #f0dc8a;border-radius:14px;padding:12px 16px;font-size:16px;margin-top:14px}
+.foot{font-size:14px;color:#5b7462;margin:18px 0 30px}
+@media(min-width:820px){
+ .hero{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);align-items:stretch}
+ .cards{grid-template-columns:1fr 1fr}
+ .acts{grid-template-columns:repeat(3,1fr)}
+  .pic svg{height:600px}
+ .minis{max-width:560px}
+ .score{display:flex;flex-direction:column;justify-content:center}
+}
+.minis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}.mini{position:relative;background:#1c2430;border-radius:14px;overflow:hidden;border-top:5px solid var(--c)}.mini svg{display:block;width:100%;height:auto}.mini .cap{position:absolute;left:8px;top:8px;background:var(--c);color:#fff;border-radius:999px;padding:2px 10px;font-size:14px;font-weight:800;z-index:1}
+</style></head><body>
+<div class="top">
+ <span class="lg"><img src="../logo-savita-mark.png" alt="Savita"></span>
+ <span class="lg"><img src="../logo-hrl-mark.png" alt="Hanoi Running Lab"></span>
+ <b>HANOI RUNNING LAB</b><small>Ngày đo<br>08/11/2026</small>
+</div>
+<div class="wrap">
+ <span class="tag">BẢN VẼ MẪU - số liệu giả, chờ bác sĩ duyệt</span>
+ <h1>Người chạy A</h1>
+ <p class="sub">Mã HRL-0123 · Cao 172 cm · 10 km/h · nhìn từ bên phải</p>
+
+ <div class="hero">
+  <div class="pic">
+   <span class="cap">Khoảnh khắc chạm đất</span>
+   <svg viewBox="0 0 400 560" role="img" aria-label="Người chạy minh họa với các khớp và góc">
+    <rect width="400" height="560" fill="#1c2430"/>
+    <rect x="-600" y="478" width="1600" height="300" fill="#2b3544"/>
+    <g stroke="#fff" stroke-opacity=".16" stroke-linecap="round" stroke-linejoin="round" fill="none">
+     <circle cx="236" cy="76" r="30" fill="#fff" fill-opacity=".16" stroke="none"/>
+     <path d="M222 128 L205 268" stroke-width="46"/>
+     <path d="M205 268 L262 352 L282 462" stroke-width="26"/>
+     <path d="M222 140 L252 206 L292 178" stroke-width="16"/>
+    </g>
+    <g stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none">
+     <path d="M236 76 L226 118 L205 268"/><path d="M205 268 L262 352 L282 462 L318 472"/>
+     <path d="M226 118 L252 206 L292 178"/>
+    </g>
+    <path d="M205 268 L205 470" stroke="#fff" stroke-opacity=".4" stroke-dasharray="6 6"/>
+    <path d="M262 352 L240 440" stroke="#fff" stroke-opacity=".5" stroke-dasharray="5 5"/>
+    <path d="M262 352 L252 395 A44 44 0 0 1 244 392 Z" fill="#FFD23F" fill-opacity=".45"/>
+    <g fill="#FFD23F" stroke="#1c2430" stroke-width="2"><circle cx="236" cy="76" r="8"/><circle cx="226" cy="118" r="8"/><circle cx="252" cy="206" r="8"/><circle cx="292" cy="178" r="8"/><circle cx="205" cy="268" r="9"/><circle cx="262" cy="352" r="9"/><circle cx="282" cy="462" r="8"/><circle cx="318" cy="472" r="7"/></g>
+    <g font-family="system-ui,sans-serif" font-weight="800" font-size="19" fill="#1c2430">
+     <g transform="translate(262 60)"><rect width="62" height="28" rx="5" fill="#FFD23F"/><text x="31" y="21" text-anchor="middle">-8°</text></g>
+     <g transform="translate(110 108)"><rect width="62" height="28" rx="5" fill="#FFD23F"/><text x="31" y="21" text-anchor="middle">6°</text></g>
+     <g transform="translate(300 200)"><rect width="62" height="28" rx="5" fill="#FFD23F"/><text x="31" y="21" text-anchor="middle">92°</text></g>
+     <g transform="translate(110 262)"><rect width="62" height="28" rx="5" fill="#FFD23F"/><text x="31" y="21" text-anchor="middle">158°</text></g>
+     <g transform="translate(290 338)"><rect width="62" height="28" rx="5" fill="#FFD23F"/><text x="31" y="21" text-anchor="middle">25°</text></g>
+     <g transform="translate(318 420)"><rect width="62" height="28" rx="5" fill="#FFD23F"/><text x="31" y="21" text-anchor="middle">98°</text></g>
+    </g>
+    <text x="14" y="536" font-family="system-ui,sans-serif" font-size="14" fill="#fff" fill-opacity=".6">Hình minh họa, không phải ảnh người thật</text>
+   </svg>
+  </div>
+  <div class="score">
+   <div class="lb">Điểm dáng chạy</div>
+   <div class="big">84<span>/100</span></div>
+   <div><span class="pill">TỐT</span></div>
+   <p style="margin:12px 0 0">Nhịp chạy và góc gối tốt. Cần chú ý một chỉ số: chân đặt hơi xa trước hông.</p>
+  </div>
+ </div>
+
+ <div class="minis"><div class="mini" style="--c:#4C8DF6"><span class="cap">Đặt chân trái</span>
+ <svg viewBox="150 250 250 260"><rect x="150" y="250" width="250" height="260" fill="#1c2430"/><rect x="150" y="478" width="250" height="32" fill="#2b3544"/>
+ <g ><path d="M205 268 L262 352 L282 462 L318 472" stroke="#4C8DF6" stroke-width="5" stroke-linecap="round" fill="none"/>
+ <path d="M205 268 L205 470" stroke="#fff" stroke-opacity=".4" stroke-dasharray="6 6"/>
+ <g fill="#FFD23F" stroke="#1c2430" stroke-width="2"><circle cx="205" cy="268" r="9"/><circle cx="262" cy="352" r="9"/><circle cx="282" cy="462" r="8"/><circle cx="318" cy="472" r="7"/></g></g>
+ <g font-family="system-ui,sans-serif" font-weight="800" font-size="20" fill="#1c2430"><g transform="translate(290 330)"><rect width="84" height="30" rx="5" fill="#FFD23F"/><text x="42" y="22" text-anchor="middle">Gối 27°</text></g><g transform="translate(165 420)"><rect width="76" height="30" rx="5" fill="#fff"/><text x="38" y="22" text-anchor="middle">22 cm</text></g></g></svg></div><div class="mini" style="--c:#F2A03D"><span class="cap">Đặt chân phải</span>
+ <svg viewBox="150 250 250 260"><rect x="150" y="250" width="250" height="260" fill="#1c2430"/><rect x="150" y="478" width="250" height="32" fill="#2b3544"/>
+ <g transform="translate(550 0) scale(-1 1)"><path d="M205 268 L262 352 L282 462 L318 472" stroke="#F2A03D" stroke-width="5" stroke-linecap="round" fill="none"/>
+ <path d="M205 268 L205 470" stroke="#fff" stroke-opacity=".4" stroke-dasharray="6 6"/>
+ <g fill="#FFD23F" stroke="#1c2430" stroke-width="2"><circle cx="205" cy="268" r="9"/><circle cx="262" cy="352" r="9"/><circle cx="282" cy="462" r="8"/><circle cx="318" cy="472" r="7"/></g></g>
+ <g font-family="system-ui,sans-serif" font-weight="800" font-size="20" fill="#1c2430"><g transform="translate(175 330)"><rect width="84" height="30" rx="5" fill="#FFD23F"/><text x="42" y="22" text-anchor="middle">Gối 25°</text></g><g transform="translate(290 420)"><rect width="76" height="30" rx="5" fill="#fff"/><text x="38" y="22" text-anchor="middle">23 cm</text></g></g></svg></div></div>
+ <h2>Chỉ số chi tiết</h2>
+ <div class="cards">
+  <div class="cd"><div class="row"><h3>Nhịp chạy</h3><span class="pill">Tốt</span></div>
+   <div class="v">176<small>bước/phút</small></div><div class="cmp">Bình thường: 165 – 180</div>
+   <p>Số bước mỗi phút. Nhịp thấp thường đi kèm bước dài, chân đặt xa trước thân.</p><div class="ref">Tham khảo</div></div>
+  <div class="cd w"><div class="row"><h3>Chân đặt trước hông</h3><span class="pill w">Cần chú ý</span></div>
+   <div class="v">22<small>cm</small></div><div class="cmp">Bình thường: -5 – 10</div>
+   <p>Khoảng cách ngang từ bàn chân đến hông lúc chạm đất. Đặt quá xa phía trước tạo lực phanh và tăng tải gối.</p><div class="ref">Tham khảo</div></div>
+  <div class="cd"><div class="row"><h3>Góc gối lúc chạm đất</h3><span class="pill">Tốt</span></div>
+   <div class="v">25<small>°</small></div><div class="cmp">Bình thường: 10 – 25</div>
+   <p>Độ gập của gối khi chân chạm đất. Gối hơi gập giúp hấp thụ lực va chạm.</p><div class="ref">Tham khảo</div></div>
+  <div class="cd b"><div class="row"><h3>Cân bằng trái–phải</h3><span class="pill b">Bất thường</span></div>
+   <div class="v">12<small>% lệch</small></div><div class="cmp">Bình thường: dưới 5</div>
+   <p>Độ lệch nhịp bước và thời gian chạm đất giữa hai chân. Hai chân nên đều nhau.</p><div class="ref">Tham khảo</div></div>
+ </div>
+
+ <div class="note"><b>Nên cải thiện:</b> bước ngắn lại một chút, đặt chân gần dưới hông sẽ nhẹ gối hơn.</div>
+
+ <div class="acts">
+  <a class="btn p" href="#">Tải ảnh kết quả</a>
+  <a class="btn s" href="#">Đặt lịch qua Zalo</a>
+  <a class="btn s" href="#">Nhận kết quả chi tiết</a>
+ </div>
+ <p class="foot">Sàng lọc 2D bằng AI, chỉ mang tính tham khảo, không thay thế khám lâm sàng.</p>
+</div>
+</body></html>

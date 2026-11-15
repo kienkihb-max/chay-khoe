@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BẢN VẼ MẪU v2 - Báo cáo dáng chạy</title>
+<style>
+:root{--moss:#1F4D2B;--leaf:#A9D69B;--bg:#F1F7EC;--ink:#17301e;--mut:#5b6e60;--line:#d9e6d3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.55 system-ui,"Segoe UI",sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px 56px}
+.note{background:#fff7d6;border-bottom:1px solid #e8d37a;padding:6px 12px;font-size:13px;text-align:center}
+.strip{background:var(--moss);color:#fff;border-radius:0 0 14px 14px;display:flex;align-items:center;gap:20px;padding:12px 20px;flex-wrap:wrap}
+.strip img{height:38px;background:#fff;border-radius:8px;padding:2px 6px}
+.strip h1{margin:0;font-size:16px;letter-spacing:.06em;white-space:nowrap}
+.strip dl{margin:0;display:flex;gap:6px 20px;flex-wrap:wrap;flex:1}
+.strip dl div{display:flex;flex-direction:column;line-height:1.2}
+.strip dt{font-size:11px;color:var(--leaf);text-transform:uppercase;letter-spacing:.04em}
+.strip dd{margin:0;font-weight:600;font-size:15px;white-space:nowrap}
+.main{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:48px;margin-top:40px;align-items:start}
+.ph{aspect-ratio:3/4;border-radius:14px;overflow:hidden;cursor:zoom-in;background:#1b2a20;border:0;padding:0;display:block;width:100%}
+.ph svg{width:100%;height:100%;display:block}
+.score{display:flex;align-items:center;gap:28px;padding:22px 28px;background:linear-gradient(135deg,var(--moss),#2f6b3f);color:#fff;border-radius:16px;border:3px solid var(--leaf);margin-bottom:8px;box-shadow:0 6px 18px rgba(31,77,43,.25)}
+.score .n{font-size:132px;font-weight:800;color:#fff;line-height:.9;letter-spacing:-.03em}
+.score .n small{font-size:32px;color:var(--leaf);font-weight:600;letter-spacing:0}
+.badge{display:inline-block;background:var(--leaf);color:var(--moss);font-weight:800;padding:6px 22px;border-radius:999px;font-size:24px;letter-spacing:.08em}
+.score p{margin:12px 0 0;font-size:19px;color:#eaf5e3}
+.m{padding:20px 0;border-bottom:1px solid var(--line)}
+.m:last-child{border:0}
+.m h3{margin:0;font-size:20px}
+.m .vals{display:flex;gap:32px;margin:6px 0 2px;flex-wrap:wrap}
+.m .vals span{font-size:30px;font-weight:700;color:var(--moss)}
+.m .vals small{display:block;font-size:12px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.tb .r{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,1.5fr);gap:4px 14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.tb .r:last-child{border:0}
+.tb .hd{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);padding-top:16px}
+.nm b{display:block;font-size:18px;line-height:1.3}.nm span{font-size:14px;color:var(--mut)}
+.c{font-size:24px;font-weight:700;color:var(--moss);line-height:1.2}.c.wide{grid-column:span 2}
+.c i{display:block;font-style:normal;font-size:11px;font-weight:600;color:var(--mut)}
+.rf{font-size:15px}.rf em{display:block;font-style:normal;font-size:12px;color:var(--mut)}
+.kl{margin-top:20px;padding:18px 20px;background:#fff;border:1px solid var(--line);border-radius:12px}
+.kl h2{margin:0 0 8px;font-size:15px;text-transform:uppercase;letter-spacing:.05em;color:var(--moss)}
+.kl ul{margin:0 0 12px;padding-left:20px}.kl li{margin:4px 0;font-size:17px}
+.kl textarea{width:100%;min-height:64px;border:1px dashed #9db89a;border-radius:10px;padding:10px;font:inherit;font-size:16px;background:#fafdf8}
+.doc{margin-top:48px}
+.doc h2{margin:0 0 10px;font-size:15px;text-transform:uppercase;letter-spacing:.05em;color:var(--moss)}
+.doc textarea{width:100%;min-height:100px;border:1px dashed #9db89a;border-radius:10px;padding:12px;font:inherit;background:#fafdf8}
+.ref{font-size:14px;color:var(--mut);margin:10px 0 0}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:9}
+#lb.on{display:flex}#lb div{height:92vh;max-width:96vw;aspect-ratio:3/4}#lb svg{width:100%;height:100%;border-radius:10px}
+@media(max-width:900px){
+ .wrap{padding:0 14px 40px}.strip dl{gap:6px 14px}
+ .main{grid-template-columns:1fr;gap:28px;margin-top:20px}
+ .score{padding:16px 18px;gap:16px}.score .n{font-size:84px}.score .n small{font-size:22px}.badge{font-size:19px;padding:4px 16px}.score p{font-size:16px}.tb .hd{display:none}.tb .r{grid-template-columns:1fr 1fr}.nm,.rf{grid-column:1/-1}.c.wide{grid-column:1/-1}.c::before{content:attr(data-l);display:block;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase}
+}
+@media(min-width:1700px){body{font-size:21px}.wrap{max-width:1700px}.strip dd{font-size:18px}.c{font-size:30px}.nm b{font-size:21px}.rf{font-size:18px}.kl li{font-size:20px}.score .n{font-size:168px}.badge{font-size:30px}.score p{font-size:23px}}
+</style></head><body>
+<div class="note">BẢN VẼ MẪU v2 để bác sĩ duyệt. Ảnh là hình giữ chỗ (người + khung xương vẽ tay); số liệu lấy từ video bác sĩ 15/11.</div>
+<div class="wrap">
+<header class="strip">
+ <img src="../logo-savita-hrl.png" alt="SAVITA x HANOI RUNNING LAB">
+ <h1>BÁO CÁO DÁNG CHẠY</h1>
+ <dl>
+  <div><dt>Mã khách</dt><dd>A01</dd></div><div><dt>Họ tên</dt><dd>Bs Video Thu</dd></div>
+  <div><dt>Tuổi / Giới</dt><dd>35 / Nam</dd></div><div><dt>Chiều cao</dt><dd>165 cm</dd></div>
+  <div><dt>Ngày đo</dt><dd>15/11/2026</dd></div><div><dt>Tốc độ máy</dt><dd>10 km/h</dd></div>
+  <div><dt>Giày</dt><dd>Giày hằng ngày</dd></div><div><dt>Góc quay</dt><dd>Góc bên</dd></div>
+ </dl>
+</header>
+
+<section class="main">
+ <button class="ph" id="ph" aria-label="Phóng to"></button>
+ <div>
+  <div class="score"><div class="n">84<small>/100</small></div>
+   <div><span class="badge">KHÁ</span><p>Dáng chạy tổng thể ổn; nhịp bước hơi chậm và chân đặt hơi xa trước hông.</p></div></div>
+  <div class="tb"><div class="r hd"><span>Chỉ số</span><span>Trái</span><span>Phải</span><span>Tham chiếu</span></div>
+  <div class="r"><div class="nm"><b>Nhịp bước</b><span>Số bước mỗi phút.</span></div><div class="c wide" data-l="Chung">160 bước/phút</div><div class="rf">164 ± 9 bước/phút (chạy phong trào ~10 km/h)<em>Malisoux 2023</em></div></div>
+  <div class="r"><div class="nm"><b>Đáp đất</b><span>Vùng bàn chân chạm đất trước.</span></div><div class="c" data-l="Trái">Gót</div><div class="c" data-l="Phải">Giữa bàn</div><div class="rf">chỉ mô tả, ≈89% đáp gót<em>Larson 2011</em></div></div>
+  <div class="r"><div class="nm"><b>Góc cẳng chân lúc chạm đất</b><span>Độ nghiêng so với phương thẳng đứng.</span></div><div class="c" data-l="Trái">8°</div><div class="c" data-l="Phải">3°</div><div class="rf">~6,8° (5,5–8,1°)<em>Lieberman 2015</em></div></div>
+  <div class="r"><div class="nm"><b>Nhấp nhô thân</b><span>Mức thân nhấp lên xuống mỗi bước.</span></div><div class="c wide" data-l="Chung">8,5 cm <i>số mẫu</i></div><div class="rf">7,7 ± 1,2 cm<em>Malisoux 2023</em></div></div>
+  <div class="r"><div class="nm"><b>Gập gối giữa pha trụ</b><span>Mức gối gập khi thân đè lên một chân.</span></div><div class="c" data-l="Trái">42° <i>số mẫu</i></div><div class="c" data-l="Phải">44° <i>số mẫu</i></div><div class="rf">~45°<em>Souza 2016</em></div></div>
+  </div>
+  <div class="kl"><h2>Kết luận tổng kết</h2><ul><li>Nhịp 160 bước/phút gần với tham chiếu 164 ± 9; có thể thử tăng nhịp nhẹ nhàng khi tập.</li><li>Góc cẳng chân lúc chạm đất trái 8°, phải 3°; nên chú ý thêm sự khác nhau giữa hai chân khi chạy.</li><li>Chân trái đáp bằng gót, chân phải đáp giữa bàn; có thể quan sát thêm ở các buổi chạy sau.</li><li>Gợi ý nhẹ: có thể thử tập trung vào nhịp bước và cách đặt chân hai bên.</li></ul><textarea placeholder="Bác sĩ bổ sung (để trống)"></textarea></div>
+ </div>
+</section>
+
+<section class="doc"><h2>Ghi chú của bác sĩ</h2><textarea placeholder="(trống)"></textarea>
+ <p class="ref">Kết quả chỉ mang tính tham khảo.</p></section>
+</div>
+<div id="lb"><div></div></div>
+<script>
+// Hình giữ chỗ toàn thân (khung đẹp nhất sẽ thay bằng khung hình thật). Chân phải cam, chân trái xanh dương.
+// Nét: xương 7 (viền tối 11), khớp r=8 viền 3, khung số #0f3d22 viền #A9D69B.
+function fig(id){
+ const O='#0b1a10',W='#F4FFF0',R='#FF8A3D',L='#3DA5FF';
+ const head=[150,62],neck=[148,105],sh=[150,118],el=[200,160],wr=[180,200],hip=[140,215];
+ const rk=[190,265],ra=[225,330],rt=[250,335],lk=[110,285],la=[70,340],lt=[48,330];
+ const ln=(a,b,c)=>{const q='x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke-linecap="round"';return '<line '+q+' stroke="'+O+'" stroke-width="11"/><line '+q+' stroke="'+c+'" stroke-width="7"/>'};
+ const box=(x,y,t)=>'<rect x="'+x+'" y="'+y+'" width="84" height="28" rx="5" fill="#0f3d22" stroke="#A9D69B" stroke-width="1.5"/><text x="'+(x+42)+'" y="'+(y+20)+'" text-anchor="middle" fill="#fff" font-size="16" font-weight="700" font-family="system-ui">'+t+'</text>';
+ return '<svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="'+id+'" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#6d7f72"/><stop offset="1" stop-color="#1b2a20"/></radialGradient></defs>'
+ +'<rect width="300" height="400" fill="#1b2a20"/><ellipse cx="145" cy="215" rx="115" ry="190" fill="url(#'+id+')" opacity=".8"/>'
+ +'<g fill="#9aab9e" opacity=".5"><circle cx="150" cy="62" r="28"/><path d="M120 100h58l12 112h-80z"/></g><g>'
+ +ln(neck,hip,W)+ln(sh,el,W)+ln(el,wr,W)+ln(hip,lk,L)+ln(lk,la,L)+ln(la,lt,L)+ln(hip,rk,R)+ln(rk,ra,R)+ln(ra,rt,R)
+ +[head,neck,el,wr,hip,rk,ra,rt,lk,la,lt].map((j,i)=>'<circle cx="'+j[0]+'" cy="'+j[1]+'" r="'+(i?8:10)+'" fill="#fff" stroke="'+O+'" stroke-width="3"/>').join('')+'</g>'
+ +box(206,262,'3°')+box(14,270,'42°')
+ +'<rect x="8" y="8" width="150" height="26" rx="5" fill="#0f3d22" opacity=".92"/><text x="16" y="26" fill="#fff" font-size="13" font-weight="700" font-family="system-ui">Chân phải · Chạm đất</text></svg>'}
+const ph=document.getElementById('ph');ph.innerHTML=fig('gz');
+const lb=document.getElementById('lb');
+ph.onclick=()=>{lb.firstElementChild.innerHTML=fig('gl');lb.classList.add('on')};
+lb.onclick=()=>lb.classList.remove('on');addEventListener('keydown',e=>{if(e.key==='Escape')lb.classList.remove('on')});
+</script></body></html>

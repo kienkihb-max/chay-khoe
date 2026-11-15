@@ -53,6 +53,12 @@
     const f = ['L', 'R'].map((s) => R.res && R.res[s] && R.res[s].extra).filter((e) => e && Number.isFinite(e.cadFFT) && Number.isFinite(e.cadIC) && Math.abs(e.cadIC - e.cadFFT) <= 0.15 * e.cadFFT).map((e) => e.cadFFT);
     return f.length ? f.reduce((x, y) => x + y, 0) / f.length : cval(R, 'cadence');
   }
+  // Đáp đất (gót / giữa bàn / mũi chân) mỗi chân, nằm chung thẻ Nhịp bước (bác sĩ 15/11/2026). Chân không đủ tin cậy (extra.lowConf) hoặc thiếu: '–'.
+  function rvStrike(R) {
+    const td = (s) => { const e = R.res[s] && R.res[s].extra, ok = e && e.strike && !e.lowConf; return '<td' + (ok ? '' : ' class="dim" title="chưa đủ tin cậy"') + '>' + (ok ? e.strike : '–') + '</td>'; };
+    return '<h3 class="sh">Đáp đất</h3><table class="lr st"><tr><th class="L">Trái</th><th class="R">Phải</th></tr><tr>' + td('L') + td('R') + '</tr></table>' +
+      '<p>Phần bàn chân chạm đất trước: gót, giữa bàn hoặc mũi chân. Chỉ mô tả, không kết luận.</p>';
+  }
   // Một thẻ chỉ số (AC1/AC4/AC5): số đo (Trái | Phải | Lệch, hoặc một số chung) + một câu mô tả trung tính.
   // Không pill mức, không màu đánh giá, không câu khuyên; số mờ = chân chưa đủ tin cậy.
   function rvCard(R, k) {
@@ -71,7 +77,7 @@
         '<td>' + (df ? df.t : '–') + '</td></tr></table>';
     }
     const txt = redo ? 'Nhịp đo được chưa ổn định, cần đo lại.' : rvSentence(k, unit, common ? [] : legs);
-    return '<div class="rc"><h3>' + label + '</h3>' + num + (txt ? '<p>' + txt + '</p>' : '') + '</div>';
+    return '<div class="rc"><h3>' + label + '</h3>' + num + (txt ? '<p>' + txt + '</p>' : '') + (k === 'cadence' ? rvStrike(R) : '') + '</div>';
   }
   // Ảnh lớn toàn thân kiểu Ochy: khung xương phát sáng, cung góc gối, ô số góc. Số gối và thân lấy đúng số trên thẻ (knee_ic chân này, trunk chung);
   // đầu, khuỷu, cổ chân tính từ chính khung ảnh (chỉ số tham khảo, màu lá). Bản ghi cũ không có ph.up thì không vẽ đầu/tay.
@@ -168,7 +174,7 @@
     const side = rvSide(R, ph);
     const dt = R.when ? new Date(R.when) : new Date();
     const both = sc.side && sc.back;
-    // AC2: chỉ số ngoài 5 chỉ số chính ẩn sau nút 'Xem đủ chỉ số' (chỉ đếm thẻ có số)
+    // Chỉ số ngoài 5 chỉ số chính chỉ hiện ở chế độ bác sĩ (body.bs, CSS .bsonly)
     const rest = RV_KEYS.filter((k) => !RV_TOP.includes(k)).map((k) => rvCard(R, k)).filter(Boolean);
     box.innerHTML = '<h1>' + escA(sub.name || '') + '</h1>' +
       '<div class="sub">Cao ' + escA(sub.height || '–') + ' cm · ' + ((R.speed || App.SPEED) * 3.6).toFixed(0) + ' km/h · Ngày đo ' + pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() + '</div>' +
@@ -181,12 +187,11 @@
       '<p>' + con.text + '</p>' +
       '<div class="minis">' + ['L', 'R'].map((s) => '<div class="mini ' + s + '"><canvas id="rvmini' + s + '" width="600" height="560"></canvas><span class="cap">' + (s === 'L' ? 'Đặt chân trái' : 'Đặt chân phải') + '</span></div>').join('') + '</div></div></div>' +
       '<h2>Chỉ số chính</h2><div class="cards">' + RV_TOP.map((k) => rvCard(R, k)).join('') + '</div>' +
-      (rest.length ? '<button type="button" id="rvmore" class="rvmore" aria-expanded="false" aria-controls="rvrest">Xem đủ chỉ số (' + rest.length + ')</button><div class="cards" id="rvrest" hidden>' + rest.join('') + '</div>' : '') +
+      (rest.length ? '<div class="bsonly"><h2>Chỉ số khác (bác sĩ)</h2><div class="cards" id="rvrest">' + rest.join('') + '</div></div>' : '') +
       '<div class="note"><b>Nên cải thiện:</b> ' + improveTip(R) + '</div>' +
       '<div class="foot">Sàng lọc 2D bằng AI, chỉ mang tính tham khảo, không thay thế khám lâm sàng.</div>';
     drawHero($('rvhero'), ph[side], side, R, true);
     for (const s of ['L', 'R']) { const cv = $('rvmini' + s); drawPhoto(cv.getContext('2d'), ph[s], s, 0, 0, cv.width, cv.height, R, false, true, false, true); }
-    const mb = $('rvmore'); if (mb) mb.onclick = () => { const rest = $('rvrest'), open = rest.hidden; rest.hidden = !open; mb.setAttribute('aria-expanded', String(open)); mb.textContent = open ? 'Thu gọn' : 'Xem đủ chỉ số (' + rest.children.length + ')'; };
   }
   function drawResult(R) {
     renderRedo(R);
