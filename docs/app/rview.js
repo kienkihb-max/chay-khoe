@@ -1,26 +1,24 @@
 /* app/rview.js - màn kết quả dạng thẻ (#rview), drawResult. Một phần của app cũ; cách chia sẻ biến xem đầu app/core.js. */
 (function (App) {
   'use strict';
-  const { $, REF, AMBER, TIER_RED, TC, LINKS, S, pad, LEAF, LV_COL, lvLevel, LV_VIS_UP, f1, f0, excluded,
-    cval, cadLow, escA, rr, drawPhoto, scores, tierOf, capWhy, unscored, groupLine, conclusion, improveTip,
-    renderRedo, rvDiff, rvSentence } = App;
+  const { $, REF, AMBER, TIER_RED, TC, LINKS, S, pad, LV_VIS_UP, f1, f0, excluded, cval, cadLow, escA, rr, scores, tierOf,
+    lvLevel, renderRedo, rvSentence } = App;
   // hàm ở file nạp sau: gọi qua App khi chạy
   function drawResultCv(...a) { return App.drawResultCv(...a); }
   // hàm của file này (khai báo function được nâng lên đầu nên đưa ra ngay)
-  Object.assign(App, { rvData, rvCad, drawHero, rvSide, drawResult, pdfPage1 });
+  Object.assign(App, { rvData, rvCad, drawHero, rvSide, drawResult, pdfPage1, renderView });
   // ---------- Màn kết quả dạng thẻ (#rview), theo docs/mockup/ket-qua.html ----------
   // Câu mô tả từng chỉ số: app/rvdesc.js (trung tính, không kết luận; bác sĩ 15/11/2026).
   // Thứ tự thẻ = thứ tự trên ảnh tải về; ảnh chỉ đủ chỗ 16 thẻ nên chỉ số phụ (khuỷu) để cuối.
   // VI thống nhất 'Nhịp bước'; đuôi NBSP để i18n dịch riêng ra 'Cadence' (cặp 'Nhịp bước' trần là 'Step timing' của biểu đồ trực tiếp)
   const CAD_LABEL = 'Nhịp bước ';
   const RV_KEYS = ['cadence', 'contact_ms', 'vert_osc', 'trunk', 'knee_ic', 'shank_ic', 'overstride', 'knee_mid', 'hip_ext', 'knee_swing', 'hip_flex', 'leg_asym', 'step_cv', 'step_asym', 'contact_asym', 'head_fwd', 'elbow'];
-  // 5 chỉ số chính hiện trên màn (AC1, bác sĩ: "chỉ cần 5 chỉ số quan trọng nhất, có tương quan trái phải"): xếp theo WEIGHT
-  // của score.js, ưu tiên chỉ số có hai chân: overstride 13, cadence 11 (giữ vì bác sĩ yêu cầu riêng nhịp bước), shank_ic 10,
-  // hip_ext 8, knee_mid 8. trunk 8 là số chung nên nhường; knee_ic 6. Các chỉ số còn lại vẫn tính điểm, chỉ ẩn sau nút.
-  const RV_TOP = ['overstride', 'cadence', 'shank_ic', 'hip_ext', 'knee_mid'];
+  // 5 chỉ số chính ở bảng (mockup ket-qua-v2, bác sĩ duyệt): nhịp bước, đáp đất, góc cẳng chân lúc chạm, nhấp nhô thân, gập gối giữa
+  // pha trụ. Dòng bảng dựng ở rvdesc.js (rvRows). Các chỉ số còn lại vẫn tính điểm, chỉ hiện ở chế độ bác sĩ.
+  const RV_TOP = ['cadence', 'strike', 'shank_ic', 'vert_osc', 'knee_mid'];
   // Lấy từ R.ex (chỉ số bổ sung); cờ tin cậy đọc qua Score.evalMetric (R.ex.per[s].flags, R.ex.flags), cùng luật với điểm.
   const RV_EX_COMMON = ['step_cv', 'step_asym', 'contact_asym'], RV_EX_PER = ['contact_ms', 'hip_flex', 'elbow', 'head_fwd'];
-  // Mức theo lvLevel (cùng ngưỡng với điểm): Tốt / Cần chú ý / Bất thường. Chỉ dùng cho thẻ vẽ trên ảnh tải về (#res); màn #rview không hiện mức từng chỉ số (bác sĩ 15/11/2026).
+  // Mức theo lvLevel (cùng ngưỡng với điểm). Chỉ còn dùng ở ảnh bố cục cũ (có góc sau); màn #rview và bố cục mới không hiện mức từng chỉ số (bác sĩ 15/11/2026).
   const RV_LV = { ok: { t: 'Tốt', cls: 'ok' }, mid: { t: 'Cần chú ý', cls: 'w' }, bad: { t: 'Bất thường', cls: 'b' }, none: { t: 'Chưa đủ tin cậy', cls: 'n' } };
   const RV_RANK = { none: -1, ok: 0, mid: 1, bad: 2 };
   const rvNum = (v, u) => (u === 'cm' || u === '%' || u === '× ngưỡng' ? f1(v) : f0(v));
@@ -53,14 +51,7 @@
     const f = ['L', 'R'].map((s) => R.res && R.res[s] && R.res[s].extra).filter((e) => e && Number.isFinite(e.cadFFT) && Number.isFinite(e.cadIC) && Math.abs(e.cadIC - e.cadFFT) <= 0.15 * e.cadFFT).map((e) => e.cadFFT);
     return f.length ? f.reduce((x, y) => x + y, 0) / f.length : cval(R, 'cadence');
   }
-  // Đáp đất (gót / giữa bàn / mũi chân) mỗi chân, nằm chung thẻ Nhịp bước (bác sĩ 15/11/2026). Chân không đủ tin cậy (extra.lowConf) hoặc thiếu: '–'.
-  function rvStrike(R) {
-    const td = (s) => { const e = R.res[s] && R.res[s].extra, ok = e && e.strike && !e.lowConf; return '<td' + (ok ? '' : ' class="dim" title="chưa đủ tin cậy"') + '>' + (ok ? e.strike : '–') + '</td>'; };
-    return '<h3 class="sh">Đáp đất</h3><table class="lr st"><tr><th class="L">Trái</th><th class="R">Phải</th></tr><tr>' + td('L') + td('R') + '</tr></table>' +
-      '<p>Phần bàn chân chạm đất trước: gót, giữa bàn hoặc mũi chân. Chỉ mô tả, không kết luận.</p>';
-  }
-  // Một thẻ chỉ số (AC1/AC4/AC5): số đo (Trái | Phải | Lệch, hoặc một số chung) + một câu mô tả trung tính.
-  // Không pill mức, không màu đánh giá, không câu khuyên; số mờ = chân chưa đủ tin cậy.
+  // Thẻ chỉ số phụ (chế độ bác sĩ): số Trái | Phải (hoặc một số chung) + một câu mô tả trung tính. Không cột Lệch, không màu mức.
   function rvCard(R, k) {
     const D = rvData(R, k); if (!D) return '';
     const { label, unit, redo, common } = D;
@@ -71,20 +62,21 @@
     if (common) num = '<div class="v' + (legs[0].dim ? ' dim' : '') + '">' + val(legs[0]) + '</div>';
     else {
       const by = (s) => legs.find((l) => l.s === s) || { v: NaN, dim: true };
-      const L = by('L'), Rr = by('R'), df = !L.dim && !Rr.dim ? rvDiff(unit, L.v, Rr.v) : null;
-      num = '<table class="lr"><tr><th class="L">Trái</th><th class="R">Phải</th><th>Lệch</th></tr><tr>' +
-        [L, Rr].map((l) => '<td' + (l.dim ? ' class="dim" title="chưa đủ tin cậy"' : '') + '>' + val(l) + '</td>').join('') +
-        '<td>' + (df ? df.t : '–') + '</td></tr></table>';
+      num = '<table class="lr"><tr><th>Trái</th><th>Phải</th></tr><tr>' +
+        [by('L'), by('R')].map((l) => '<td' + (l.dim ? ' class="dim" title="chưa đủ tin cậy"' : '') + '>' + val(l) + '</td>').join('') + '</tr></table>';
     }
     const txt = redo ? 'Nhịp đo được chưa ổn định, cần đo lại.' : rvSentence(k, unit, common ? [] : legs);
-    return '<div class="rc"><h3>' + label + '</h3>' + num + (txt ? '<p>' + txt + '</p>' : '') + (k === 'cadence' ? rvStrike(R) : '') + '</div>';
+    return '<div class="rc"><h3>' + label + '</h3>' + num + (txt ? '<p>' + txt + '</p>' : '') + '</div>';
   }
-  // Ảnh lớn toàn thân kiểu Ochy: khung xương phát sáng, cung góc gối, ô số góc. Số gối và thân lấy đúng số trên thẻ (knee_ic chân này, trunk chung);
-  // đầu, khuỷu, cổ chân tính từ chính khung ảnh (chỉ số tham khảo, màu lá). Bản ghi cũ không có ph.up thì không vẽ đầu/tay.
-  function drawHero(cv, ph, side, R, neutral) {
-    const c = cv.getContext('2d'), W = cv.width, H = cv.height;
+  // Ảnh lớn toàn thân, khung xương đậm kiểu Ochy (mockup ket-qua-v2): xương nét 7 trên viền tối 11, đầu tròn; chân trái xanh dương,
+  // chân phải cam, thân/tay/đầu trắng ngà; khớp tròn trắng viền tối; ô số nền rêu đậm viền lá chữ trắng đậm. Mọi kích thước nhân s
+  // theo bề rộng ảnh (s = 1 khi rộng 600). Ô số: góc cẳng chân lúc chạm (shank_ic) ở cổ chân, gập gối giữa pha trụ (knee_mid) ở gối,
+  // lấy đúng số trên bảng (rvRows: chân chưa đủ tin cậy thì không vẽ ô). Không tô màu mức (bác sĩ 15/11/2026).
+  const SK = { out: '#0b1a10', L: '#3DA5FF', R: '#FF8A3D', body: '#F4FFF0', box: '#0f3d22', boxLine: '#A9D69B' };
+  function drawHero(cv, ph, side, R) {
+    const c = cv.getContext('2d'), W = cv.width, H = cv.height, s = W / 600;
     c.fillStyle = '#1B2A34'; c.fillRect(0, 0, W, H);
-    if (!ph) { c.fillStyle = '#8FA3AE'; c.font = '32px ' + Themes.font; c.textAlign = 'center'; c.fillText('Chưa bắt được khung chạm đất', W / 2, H / 2); c.textAlign = 'left'; return; }
+    if (!ph) { c.fillStyle = '#8FA3AE'; c.font = Math.round(26 * s) + 'px ' + Themes.font; c.textAlign = 'center'; c.fillText('Chưa bắt được khung chạm đất', W / 2, H / 2); c.textAlign = 'left'; return; }
     const other = side === 'L' ? 'R' : 'L', up = ph.up || {}, U = up[side] || {}, Uo = up[other] || {};
     const seen = (p) => p && !(p[2] < LV_VIS_UP);
     const pts = []; for (const o of [ph.lm, ph.lo]) for (const k of Object.keys(o)) pts.push(o[k]);
@@ -101,57 +93,35 @@
     const k = W / bw, ix0 = Math.max(sx, 0), iy0 = Math.max(sy, 0), ix1 = Math.min(sx + bw, ph.vw), iy1 = Math.min(sy + bh, ph.vh);
     c.drawImage(ph.bmp, ix0 * ph.sc, iy0 * ph.sc, (ix1 - ix0) * ph.sc, (iy1 - iy0) * ph.sc, (ix0 - sx) * k, (iy0 - sy) * k, (ix1 - ix0) * k, (iy1 - iy0) * k);
     const P = (p) => [(p[0] - sx) * k, (p[1] - sy) * k];
-    const mm = (R.res[side] && R.res[side].metrics) || {}, trunkV = R.comb ? cval(R, 'trunk') : NaN;
-    const lev = (key, v) => (neutral ? LEAF : LV_COL[lvLevel(key, v)]);   // neutral: #rview không tô màu mức (AC5); ảnh tải về #res giữ màu
-    const lw = Math.max(3, W / 170), rad = Math.max(4, W / 120);
     c.lineCap = 'round'; c.lineJoin = 'round';
-    for (const [o, Uu, near] of [[ph.lo, Uo, false], [ph.lm, U, true]]) {
-      const segs = LINKS.map(([a, b]) => [o[a], o[b], near && a === 'sh' ? lev('trunk', trunkV) : LEAF])
-        .concat([['ear', null], ['elb', null], ['wri', 'elb']].filter(([a, b]) => seen(Uu[a]) && (b ? seen(Uu[b]) : true)).map(([a, b]) => [b ? Uu[b] : o.sh, Uu[a], LEAF]));
-      const fa = near ? 1 : 0.45;
+    // chân xa (lo) vẽ trước để chân gần (lm) đè lên
+    for (const [o, Uu, leg] of [[ph.lo, Uo, other], [ph.lm, U, side]]) {
+      const segs = LINKS.map(([a, b]) => [o[a], o[b], a === 'sh' ? SK.body : SK[leg]])
+        .concat([['ear', null], ['elb', null], ['wri', 'elb']].filter(([a, b]) => seen(Uu[a]) && (b ? seen(Uu[b]) : true)).map(([a, b]) => [b ? Uu[b] : o.sh, Uu[a], SK.body]));
       for (const pass of [0, 1]) {
-        c.globalAlpha = fa * (pass ? 1 : 0.22); c.lineWidth = pass ? lw : lw * 3.4;
-        for (const [a, b, col] of segs) { const A = P(a), B = P(b); c.strokeStyle = col; c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(B[0], B[1]); c.stroke(); }
+        c.lineWidth = (pass ? 7 : 11) * s;
+        for (const [a, b, col] of segs) { const A = P(a), B = P(b); c.strokeStyle = pass ? col : SK.out; c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(B[0], B[1]); c.stroke(); }
       }
-      c.globalAlpha = fa;
-      for (const key of Object.keys(o)) {
-        const A = P(o[key]); c.fillStyle = near && key === 'knee' ? lev('knee_ic', mm.knee_ic) : near && key === 'sh' ? lev('trunk', trunkV) : LEAF;
-        c.beginPath(); c.arc(A[0], A[1], rad, 0, 7); c.fill();
-      }
-      c.fillStyle = LEAF; for (const key of ['ear', 'elb', 'wri']) if (seen(Uu[key])) { const A = P(Uu[key]); c.beginPath(); c.arc(A[0], A[1], rad * 0.85, 0, 7); c.fill(); }
+      const joints = Object.keys(o).map((key) => o[key]).concat(['ear', 'elb', 'wri'].filter((key) => seen(Uu[key])).map((key) => Uu[key]));
+      c.fillStyle = '#fff'; c.strokeStyle = SK.out; c.lineWidth = 3 * s;
+      for (const j of joints) { const A = P(j); c.beginPath(); c.arc(A[0], A[1], 8 * s, 0, 7); c.fill(); c.stroke(); }
     }
-    c.globalAlpha = 1;
-    const deg = 180 / Math.PI, lm = ph.lm, d = Math.sign(lm.toe[0] - lm.heel[0]) || 1;
-    const ang3 = (a, b, e) => { const u = [a[0] - b[0], a[1] - b[1]], w = [e[0] - b[0], e[1] - b[1]]; return Math.acos(Math.max(-1, Math.min(1, (u[0] * w[0] + u[1] * w[1]) / (Math.hypot(u[0], u[1]) * Math.hypot(w[0], w[1]) + 1e-9)))) * deg; };
-    const lean = (lo, hi) => Math.atan2((hi[0] - lo[0]) * d, lo[1] - hi[1]) * deg;
-    const Hp = P(lm.hip), K = P(lm.knee), A2 = P(lm.ank), Sh = P(lm.sh);
-    // cung góc gối (đùi kéo dài → cẳng chân) màu theo mức knee_ic
-    const r = Math.max(18, Math.min(70, Math.hypot(K[0] - Hp[0], K[1] - Hp[1]) * 0.32)), a1 = Math.atan2(K[1] - Hp[1], K[0] - Hp[0]);
-    let dd = Math.atan2(A2[1] - K[1], A2[0] - K[0]) - a1; while (dd > Math.PI) dd -= 2 * Math.PI; while (dd < -Math.PI) dd += 2 * Math.PI;
-    const kc = lev('knee_ic', mm.knee_ic);
-    c.fillStyle = kc; c.globalAlpha = 0.22; c.beginPath(); c.moveTo(K[0], K[1]); c.arc(K[0], K[1], r, a1, a1 + dd, dd < 0); c.closePath(); c.fill();
-    c.globalAlpha = 1; c.strokeStyle = kc; c.lineWidth = Math.max(2, lw * 0.7); c.beginPath(); c.arc(K[0], K[1], r, a1, a1 + dd, dd < 0); c.stroke();
-    // đường thẳng đứng nét đứt từ hông để thấy độ nghiêng thân
-    c.setLineDash([8, 8]); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 2; c.beginPath(); c.moveTo(Hp[0], Hp[1]); c.lineTo(Hp[0], Sh[1]); c.stroke(); c.setLineDash([]);
-    const fs = Math.round(W / 28), bh2 = Math.round(fs * 1.45), placed = [];
+    const rows = App.rvRows(R), val = (key) => ((rows.find((r) => r.k === key) || { v: {} }).v[side]);
+    const fs = Math.round(24 * s), bh2 = Math.round(fs * 1.6), placed = [], d = Math.sign(ph.lm.toe[0] - ph.lm.heel[0]) || 1;
     c.font = '700 ' + fs + 'px ' + Themes.font; c.textBaseline = 'middle'; c.textAlign = 'center';
-    const tag = (J, val, col, dir) => {
-      if (!J || !isFinite(val)) return;
-      const txt = Math.round(val) + '°', bw2 = Math.round(c.measureText(txt).width + fs * 0.7);
-      let x = J[0] + dir * (rad * 3.5 + bw2 / 2) - bw2 / 2, y = J[1] - bh2 / 2;
-      x = Math.max(4, Math.min(W - bw2 - 4, x));
-      for (let t = 0; t < 6 && placed.some((b) => x < b[0] + b[2] + 4 && b[0] < x + bw2 + 4 && y < b[1] + b[3] + 4 && b[1] < y + bh2 + 4); t++) y += bh2 + 5;
-      y = Math.max(4, Math.min(H - bh2 - 4, y)); placed.push([x, y, bw2, bh2]);
-      c.globalAlpha = 0.8; c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath(); c.moveTo(J[0], J[1]); c.lineTo(dir > 0 ? x : x + bw2, y + bh2 / 2); c.stroke();
-      c.globalAlpha = 1; c.fillStyle = 'rgba(8,19,11,.82)'; rr(c, x, y, bw2, bh2, 6); c.fill(); c.strokeStyle = col; c.lineWidth = 2; c.stroke();
-      c.fillStyle = col; c.fillText(txt, x + bw2 / 2, y + bh2 / 2 + 1);
+    const tag = (J, txt, dir) => {
+      const bw2 = Math.round(c.measureText(txt).width + fs * 0.9);
+      let x = J[0] + dir * (22 * s + bw2 / 2) - bw2 / 2, y = J[1] - bh2 / 2;
+      x = Math.max(6 * s, Math.min(W - bw2 - 6 * s, x));
+      for (let t = 0; t < 6 && placed.some((b) => x < b[0] + b[2] + 6 && b[0] < x + bw2 + 6 && y < b[1] + b[3] + 6 && b[1] < y + bh2 + 6); t++) y += bh2 + 6 * s;
+      y = Math.max(6 * s, Math.min(H - bh2 - 6 * s, y)); placed.push([x, y, bw2, bh2]);
+      c.strokeStyle = SK.boxLine; c.lineWidth = 2.5 * s; c.beginPath(); c.moveTo(J[0], J[1]); c.lineTo(dir > 0 ? x : x + bw2, y + bh2 / 2); c.stroke();
+      c.fillStyle = SK.box; rr(c, x, y, bw2, bh2, 8 * s); c.fill(); c.strokeStyle = SK.boxLine; c.lineWidth = 3 * s; c.stroke();
+      c.fillStyle = '#fff'; c.fillText(txt, x + bw2 / 2, y + bh2 / 2 + 1);
     };
-    const away = (a, b, dflt) => Math.sign(P(a)[0] - P(b)[0]) || dflt;
-    if (seen(U.ear)) tag(P(U.ear), lean(lm.sh, U.ear), LEAF, -d);
-    tag([(Sh[0] + Hp[0]) / 2, (Sh[1] + Hp[1]) / 2], trunkV, lev('trunk', trunkV), -d);
-    if (seen(U.elb) && seen(U.wri)) tag(P(U.elb), ang3(lm.sh, U.elb, U.wri), LEAF, away(U.elb, lm.sh, -d));
-    tag(K, mm.knee_ic, kc, away(lm.knee, lm.hip, d));
-    tag(A2, ang3(lm.knee, lm.ank, lm.toe), LEAF, away(lm.ank, lm.knee, d));
+    const sh = val('shank_ic'), kn = val('knee_mid');
+    if (sh != null) tag(P(ph.lm.ank), 'Cẳng chân ' + Math.round(sh) + '°', d);
+    if (kn != null) tag(P(ph.lm.knee), 'Gập gối ' + Math.round(kn) + '°', -d);
     c.textAlign = 'left'; c.textBaseline = 'alphabetic';
   }
   // Chân cho ảnh lớn (CQ4): chân rõ hơn (extra.vis cao hơn); chân đó thiếu ảnh thì lấy chân còn lại.
@@ -161,8 +131,27 @@
     const best = legs.slice().sort((a, b) => vis(b) - vis(a))[0];
     return [best].concat(legs).find((s) => ph[s]) || best;
   }
-  // Màu mức trên ảnh nền sáng (#res), khớp màu viền/pill thẻ #rview: --moss2 / --amber / --red / xám.
+  // Màu mức trên ảnh nền sáng, chỉ còn dùng ở bố cục cũ (góc sau).
   const rvCol = (cls) => (cls === 'ok' ? TC.brand2 : cls === 'w' ? AMBER : cls === 'b' ? TIER_RED : '#8A97A1');
+  // Phóng to ảnh lớn (bấm ảnh), Esc hoặc bấm nền để đóng. Một khung dùng chung cho mọi lần vẽ lại.
+  function rvZoom(cv) {
+    let lb = $('rvlb');
+    if (!lb) {
+      lb = document.createElement('div'); lb.id = 'rvlb'; lb.hidden = true; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-label', 'Ảnh phóng to');
+      lb.innerHTML = '<img alt="Ảnh chạm đất phóng to"><button type="button" class="x" aria-label="Đóng">✕</button>';
+      lb.addEventListener('click', () => { lb.hidden = true; });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !lb.hidden) { lb.hidden = true; e.stopPropagation(); } }, true);
+      document.body.appendChild(lb);
+    }
+    lb.querySelector('img').src = cv.toDataURL('image/jpeg', 0.92); lb.hidden = false; lb.querySelector('.x').focus();
+  }
+  // Ô ghi chú bác sĩ: hiện ghi chú ĐÃ LƯU (#note); sửa qua ngăn ghi chú sẵn có (#notebtn) để không có hai chỗ nhập dễ mất chữ.
+  // updateNoteBtn (save.js) đổi chữ #notebtn mỗi lần lưu/nạp, nên theo dõi nút đó để làm mới ô.
+  function rvNote() {
+    const p = document.querySelector('#rview .doc p'); if (!p) return;
+    const t = ($('note').value || '').trim(); p.textContent = t || 'Chưa có ghi chú.'; p.classList.toggle('empty', !t);
+  }
+  let noteObs = null;
   function renderView(R) {
     let box = $('rview');
     if (!box) { box = document.createElement('section'); box.id = 'rview'; const rb = $('resbox'); rb.parentNode.insertBefore(box, rb); }
@@ -170,39 +159,44 @@
     const on = !!(R && R.comb && R.res);
     box.hidden = !on; $('resbox').classList.toggle('rvoff', on && !R.back);
     if (!on) { box.innerHTML = ''; return; }
-    const sc = scores(R), tt = sc.total != null ? tierOf(sc.total) : unscored(sc), con = conclusion(R), ph = S.photos || {}, sub = R.sub || {};
-    const side = rvSide(R, ph);
-    const dt = R.when ? new Date(R.when) : new Date();
-    const both = sc.side && sc.back;
+    const sc = scores(R), tt = sc.total != null ? tierOf(sc.total) : null, ph = S.photos || {}, sub = R.sub || {};
+    const side = rvSide(R, ph), rows = App.rvRows(R), dt = R.when ? new Date(R.when) : new Date();
+    const view = R.back ? 'Ngang + sau' : 'Ngang';
+    const dl = [['Mã khách', sub.id], ['Họ tên', sub.name], ['Chiều cao', sub.height ? sub.height + ' cm' : ''], ['Ngày đo', pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear()],
+      ['Tốc độ máy', ((R.speed || App.SPEED) * 3.6).toFixed(0) + ' km/h'], ['Góc quay', view]];
+    const cell = (x, l) => '<span class="c' + (x.dim ? ' dim' : '') + '" data-l="' + l + '">' + escA(x.t) + '</span>';
+    const tr = (r) => '<div class="r"><div class="nm"><b>' + r.nm + '</b><span>' + r.d + '</span></div>' +
+      (r.wide ? '<span class="c wide' + (r.cells[0].dim ? ' dim' : '') + '" data-l="Hai chân">' + escA(r.cells[0].t) + '</span>' : cell(r.cells[0], 'Trái') + cell(r.cells[1], 'Phải')) +
+      '<div class="rf">' + escA(r.rf || '–') + (r.src ? '<em>' + escA(r.src) + '</em>' : '') + '</div></div>';
     // Chỉ số ngoài 5 chỉ số chính chỉ hiện ở chế độ bác sĩ (body.bs, CSS .bsonly)
     const rest = RV_KEYS.filter((k) => !RV_TOP.includes(k)).map((k) => rvCard(R, k)).filter(Boolean);
-    box.innerHTML = '<h1>' + escA(sub.name || '') + '</h1>' +
-      '<div class="sub">Cao ' + escA(sub.height || '–') + ' cm · ' + ((R.speed || App.SPEED) * 3.6).toFixed(0) + ' km/h · Ngày đo ' + pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() + '</div>' +
-      '<div class="hero"><div class="pic"><canvas id="rvhero" width="800" height="1120"></canvas><span class="cap">Khoảnh khắc chạm đất · ' + (side === 'L' ? 'Chân trái' : 'Chân phải') + '</span></div>' +
-      '<div class="score"><div class="lb">Điểm dáng chạy</div><div class="big" style="color:' + (sc.total != null ? tt.col : '#8A97A1') + '">' + (sc.total != null ? sc.total : '–') + (sc.total != null ? '<span>/100</span>' : '') + '</div>' +
-      '<span class="pl" style="background:' + tt.col + '">' + tt.label + '</span>' +
-      (both ? '<div class="sub">Góc ngang ' + (sc.side.total != null ? sc.side.total : '–') + ' · Góc sau ' + (sc.back.total != null ? sc.back.total : '–') + '</div>' : '') +
-      (sc.total != null && groupLine(sc.side) ? '<div class="sub grp">' + groupLine(sc.side) + '</div>' : '') +
-      (sc.side && capWhy(sc.side.agg) ? '<div class="sub capwhy">' + capWhy(sc.side.agg) + '</div>' : '') +
-      '<p>' + con.text + '</p>' +
-      '<div class="minis">' + ['L', 'R'].map((s) => '<div class="mini ' + s + '"><canvas id="rvmini' + s + '" width="600" height="560"></canvas><span class="cap">' + (s === 'L' ? 'Đặt chân trái' : 'Đặt chân phải') + '</span></div>').join('') + '</div></div></div>' +
-      '<h2>Chỉ số chính</h2><div class="cards">' + RV_TOP.map((k) => rvCard(R, k)).join('') + '</div>' +
+    box.innerHTML = '<header class="strip"><h1>Báo cáo dáng chạy</h1><dl>' + dl.map(([a, b]) => '<div><dt>' + a + '</dt><dd>' + escA(b || '–') + '</dd></div>').join('') + '</dl></header>' +
+      '<div class="main"><div class="left"><button type="button" class="ph" aria-label="Phóng to ảnh"><canvas id="rvhero" width="900" height="1200"></canvas>' +
+      '<span class="cap">' + (side === 'L' ? 'Chân trái' : 'Chân phải') + ' · Chạm đất</span></button></div>' +
+      '<div class="right"><div class="score"><div class="lb">Điểm dáng chạy</div><div class="n' + (sc.total != null ? '' : ' na') + '">' + (sc.total != null ? sc.total + '<small>/100</small>' : '–') + '</div>' +
+      (tt ? '<span class="badge">' + (App.RV_BADGE[tt.key] || tt.name) + '</span>' : '') + '<p>' + App.rvScoreLine(sc.total) + '</p></div>' +
+      '<div class="tb" role="table"><div class="r hd"><span>Chỉ số</span><span>Trái</span><span>Phải</span><span>Tham chiếu</span></div>' + rows.map(tr).join('') + '</div>' +
+      '<div class="kl"><h2>Kết luận tổng kết</h2><ul>' + App.rvAdvice(R, rows).map((t) => '<li>' + escA(t) + '</li>').join('') + '</ul></div>' +
+      '<div class="doc"><h2>Ghi chú của bác sĩ</h2><p></p><button type="button" class="alt">Viết / sửa ghi chú</button></div></div></div>' +
       (rest.length ? '<div class="bsonly"><h2>Chỉ số khác (bác sĩ)</h2><div class="cards" id="rvrest">' + rest.join('') + '</div></div>' : '') +
-      '<div class="note"><b>Nên cải thiện:</b> ' + improveTip(R) + '</div>' +
-      '<div class="foot">Sàng lọc 2D bằng AI, chỉ mang tính tham khảo, không thay thế khám lâm sàng.</div>';
-    drawHero($('rvhero'), ph[side], side, R, true);
-    for (const s of ['L', 'R']) { const cv = $('rvmini' + s); drawPhoto(cv.getContext('2d'), ph[s], s, 0, 0, cv.width, cv.height, R, false, true, false, true); }
+      '<div class="foot">Kết quả chỉ mang tính tham khảo.</div>';
+    const cv = $('rvhero'); drawHero(cv, ph[side], side, R);
+    box.querySelector('.ph').onclick = () => rvZoom(cv);
+    box.querySelector('.doc button').onclick = () => $('notebtn').click();
+    rvNote();
+    if (!noteObs) { noteObs = new MutationObserver(rvNote); noteObs.observe($('notebtn'), { childList: true, characterData: true, subtree: true }); }
   }
   function drawResult(R) {
     renderRedo(R);
     renderView(R);
     drawResultCv(R, $('res'), true);
   }
-  // Trang 1 của PDF giữ bố cục cũ: vẽ riêng ra canvas tạm (ảnh tải về #res chỉ góc ngang đã đổi sang bố cục thẻ).
+  // Trang 1 của PDF: chỉ góc ngang thì dùng đúng bố cục mới (ảnh xương đậm + điểm + bảng 5 chỉ số có tham chiếu + kết luận),
+  // vẽ ra canvas tạm để có cả ghi chú bác sĩ mới nhất; có góc sau thì giữ ảnh #res như cũ.
   function pdfPage1(R) {
     if (!R.comb || R.back) return $('res');
     const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080;
-    drawResultCv(R, cv, false); return cv;
+    drawResultCv(R, cv, true); return cv;
   }
-  Object.assign(App, { RV_KEYS, RV_TOP, RV_LV, rvNum, rvOk, rvRange, rvCol });
+  Object.assign(App, { RV_KEYS, RV_TOP, RV_LV, rvNum, rvOk, rvRange, rvCol, SK });
 })(window.App);

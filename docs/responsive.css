@@ -57,11 +57,9 @@
   #l3cta{padding:14px}
   /* màn kết quả dạng thẻ: chữ thân giữ ≥16px, số chính nhỏ lại vừa khổ */
   #rview h1{font-size:26px}
-  #rview .score .big{font-size:68px}
   #rview .rc{padding:14px 14px}
   #rview .rc .v{font-size:38px}
   #rview .lr td{font-size:28px}
-  #rview .minis{gap:8px}
   #rview .cap{font-size:13px;left:8px;top:8px}
   #regf{grid-template-columns:1fr}
   #l3cta .ctab,#l3cta .ctab>*{width:100%}

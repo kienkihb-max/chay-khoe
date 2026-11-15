@@ -1,16 +1,17 @@
 /* app/result.js - ảnh kết quả #res (drawResultCv), bảng chi tiết bác sĩ. Một phần của app cũ; cách chia sẻ biến xem đầu app/core.js. */
 (function (App) {
   'use strict';
-  const { $, LOGO, REF, BACK_DETAIL, BLUE, ORANGE, GREEN, AMBER, TC, S, pad, lvLevel, LV_CARDS_BACK,
+  const { $, LOGO, REF, BACK_DETAIL, BLUE, ORANGE, GREEN, AMBER, TC, S, pad, LV_CARDS_BACK,
     LV_PERLEG_BACK, rating, BAR_IN, BAR_OUT, barScale, statInfo, barHTML, f1, f0, SPREAD_TIP, flagList, cval,
     cadLow, framePoor, flagged, flagItems, flagHTML, rr, drawPhoto, scores, tierOf, scoreCol, unscored, mainVal, backVal,
-    improveTip, RV_KEYS, RV_LV, rvNum, rvOk, rvRange, rvData, drawHero, rvSide, rvCol } = App;
+    improveTip } = App;
   // hàm ở file nạp sau: gọi qua App khi chạy
   function drawBackPhoto(...a) { return App.drawBackPhoto(...a); }
   function wrap(...a) { return App.wrap(...a); }
+  function drawSheet(...a) { return App.drawSheet(...a); }
   // hàm của file này (khai báo function được nâng lên đầu nên đưa ra ngay)
   Object.assign(App, { drawResultCv, extraRows, poorFrameWarn, detailHTML, setDetail, resetDetail });
-  // newLay: chỉ quay góc ngang thì vẽ bố cục mới (ảnh lớn + 2 ảnh đặt chân + điểm + thẻ số), giống màn #rview.
+  // newLay: chỉ quay góc ngang thì vẽ bố cục mới (drawSheet: ảnh xương đậm + điểm + bảng 5 chỉ số + kết luận), giống màn #rview.
   function drawResultCv(R, cv, newLay) {
     const c = cv.getContext('2d'), INK = TC.ink, MUT = TC.mut;
     const font = (w, s) => { c.font = w + ' ' + s + 'px ' + Themes.font; };
@@ -31,64 +32,8 @@
     // Góc đã quay: chỉ ngang (R.comb), chỉ sau (R.back), hoặc cả hai. Chỉ vẽ khối của góc đã quay.
     const sc = scores(R), sub = R.sub, hasSide = !!R.comb, hasBack = !!R.back, both = hasSide && hasBack;
     const ph = S.photos || {};
-    if (newLay && hasSide && !hasBack) {
-      // ---- trái: ảnh lớn toàn thân (đủ marker, cùng chân với #rview) + việc nên cải thiện ----
-      const side = rvSide(R, ph), HX = 48, HY = 124, HW = 520, HH = 728;
-      const hc = document.createElement('canvas'); hc.width = 800; hc.height = 1120; drawHero(hc, ph[side], side, R);
-      card(HX, HY, HW, HH); c.save(); rr(c, HX, HY, HW, HH, 22); c.clip(); c.drawImage(hc, HX, HY, HW, HH); c.restore();
-      const cap = (txt, x, y) => { font('700', 22); const w = c.measureText(txt).width + 28; c.fillStyle = 'rgba(8,19,11,.72)'; rr(c, x, y, w, 40, 20); c.fill(); c.fillStyle = '#fff'; c.fillText(txt, x + 14, y + 28); };
-      cap('Khoảnh khắc chạm đất · ' + (side === 'L' ? 'Chân trái' : 'Chân phải'), HX + 16, HY + 16);
-      card(HX, 876, HW, 148); c.fillStyle = TC.brand; rr(c, HX, 876, 12, 148, 6); c.fill();
-      font('700', 22); c.fillText('NÊN CẢI THIỆN', HX + 32, 914);
-      c.fillStyle = INK; font('600', 24); wrap(c, improveTip(R), HX + 32, 948, HW - 60, 30);
-      // ---- giữa trên: tên, điểm, hạng ----
-      card(592, 124, 560, 350);
-      c.fillStyle = INK; fit(sub.name, '700', 48, 30, 496); c.fillText(sub.name, 624, 184, 496);
-      c.fillStyle = MUT; font('400', 24); c.fillText('Cao ' + sub.height + ' cm  ·  ' + ((R.speed || App.SPEED) * 3.6).toFixed(0) + ' km/h', 624, 222);
-      font('700', 24); c.fillText('ĐIỂM DÁNG CHẠY', 624, 268);
-      const tt = sc.total != null ? tierOf(sc.total) : unscored(sc), st = sc.total != null ? String(sc.total) : '–';
-      c.fillStyle = sc.total != null ? tt.col : '#8A97A1'; font('700', 130); c.fillText(st, 616, 392); const nw = c.measureText(st).width;
-      if (sc.total != null) { c.fillStyle = '#7A8791'; font('700', 40); c.fillText('/100', 628 + nw, 392); }
-      pill(tt.label, 624, 408, 50, tt.col, '#fff', 28);
-      // ---- phải trên: hai ảnh đặt chân trái / phải ----
-      ['L', 'R'].forEach((s, i) => {
-        const x = 1176 + i * 356; card(x, 124, 340, 350);
-        drawPhoto(c, ph[s], s, x, 124, 340, 350, R, false, true, true);
-        cap(s === 'L' ? 'Đặt chân trái' : 'Đặt chân phải', x + 14, 138);
-      });
-      // ---- dưới: thẻ số (cùng dữ liệu, cùng mức với thẻ #rview) ----
-      const Ds = RV_KEYS.map((k) => [k, rvData(R, k)]).filter(([, D]) => D), CW = 308, CH = 124;
-      Ds.slice(0, 16).forEach(([k, D], i) => {
-        const x = 592 + (i % 4) * (CW + 16), y = 498 + Math.floor(i / 4) * (CH + 10), col = rvCol(D.L.cls), u = D.unit;
-        card(x, y, CW, CH); c.fillStyle = col; rr(c, x, y, 8, CH, 4); c.fill();
-        font('700', 18); const pw = c.measureText(D.L.t).width + 26;
-        c.fillStyle = col; rr(c, x + CW - 14 - pw, y + 12, pw, 30, 15); c.fill(); c.fillStyle = '#fff'; c.fillText(D.L.t, x + CW - 14 - pw + 13, y + 33);
-        // tên chỉ số: tối đa 2 dòng cạnh pill (dịch trước rồi mới ngắt dòng, như wrap())
-        const lw = CW - 50 - pw, words = (window.I18N ? I18N.t(D.label) : D.label).split(' ');
-        let fs = 20, lines;
-        for (; fs >= 15; fs--) {
-          font('700', fs); lines = [''];
-          for (const w of words) { const t = lines[lines.length - 1] ? lines[lines.length - 1] + ' ' + w : w; if (c.measureText(t).width > lw && lines[lines.length - 1]) lines.push(w); else lines[lines.length - 1] = t; }
-          if (lines.length <= 2) break;
-        }
-        c.fillStyle = INK; lines.slice(0, 2).forEach((t, j) => c.fillText(t, x + 24, y + 32 + j * 23, lw));
-        const ry = y + 32 + Math.min(lines.length, 2) * 23 + 4;
-        c.fillStyle = MUT; font('400', 17); c.fillText('Bình thường: ' + rvRange(D.ref) + (u === '°' ? '°' : ' ' + u) + (D.ref.tam ? ' (tạm)' : ''), x + 24, ry, CW - 40);
-        let px = x + 24;
-        const num = (v, dot) => {
-          const ok = !D.redo && rvOk(v), lc = ok ? rvCol(RV_LV[lvLevel(k, v)].cls) : '#8A97A1';
-          if (dot) { c.fillStyle = dot; c.beginPath(); c.arc(px + 7, y + CH - 24, 7, 0, 7); c.fill(); px += 20; }
-          const t = ok ? rvNum(v, u) + (u === '°' ? '°' : '') : '–'; c.fillStyle = lc; font('800', dot ? 32 : 36); c.fillText(t, px, y + CH - 12); px += c.measureText(t).width + 4;
-          if (ok && u !== '°') { c.fillStyle = MUT; font('600', 17); c.fillText(u, px, y + CH - 12); px += c.measureText(u).width; }
-          px += 22;
-        };
-        for (const l of D.legs) { c.globalAlpha = l.dim ? 0.4 : 1; num(l.v, D.common ? null : l.s === 'L' ? BLUE : ORANGE); }
-        c.globalAlpha = 1;
-      });
-      c.fillStyle = MUT; font('400', 20);
-      c.fillText('Sàng lọc 2D bằng AI, chỉ mang tính tham khảo, không thay thế khám lâm sàng. Ngưỡng là tham khảo. Số mờ: chân chưa đủ tin cậy. Chấm xanh = chân trái, cam = chân phải.', 48, 1056, 1824);
-      return;
-    }
+    // Chỉ góc ngang: bố cục mới giống màn #rview (app/rvsheet.js), dùng chung cho ảnh tải về và trang 1 PDF.
+    if (newLay && hasSide && !hasBack) return drawSheet(R, c);
 
     // ---- tầng 1: tên, điểm tổng, hạng (đo cả hai góc: tổng = trung bình 50/50, ghi thêm điểm từng góc) ----
     card(48, 124, 600, 592);

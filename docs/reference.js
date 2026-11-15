@@ -13,6 +13,7 @@ window.GAIT_REF = {
       "hi": 180,
       "side": "low",
       "warn": [155, null],
+      "ref_txt": "164 ± 9 bước/phút (chạy phong trào ~10 km/h)", "ref_src": "Malisoux 2023", "ref_rng": [155, 173],
       "src": "Heiderscheit 2011, Med Sci Sports Exerc, doi:10.1249/MSS.0b013e3181ebedf4",
       "low": "Cadence thấp: bước dài, thường kèm tiếp đất xa trước thân. Tăng 5-10% có thể giảm tải khớp gối/hông.",
       "high": "Cadence cao hơn khoảng thông thường: thường không đáng lo, xem cùng độ dài bước."
@@ -24,6 +25,7 @@ window.GAIT_REF = {
       "hi": 10.0,
       "side": "high",
       "warn": [null, 12],
+      "ref_txt": "7,7 ± 1,2 cm", "ref_src": "Malisoux 2023", "ref_rng": [6.5, 8.9],
       "src": "Folland 2017, Med Sci Sports Exerc 49(7):1412-1423",
       "low": "Nhấp nhô thấp: dáng chạy 'phẳng', thường tốt.",
       "high": "Nhấp nhô cao: tốn năng lượng nâng cơ thể, tăng lực va chạm mỗi bước."
@@ -54,6 +56,7 @@ window.GAIT_REF = {
       "lo": -5,
       "hi": 10,
       "warn": [-10, 15],
+      "ref_txt": "~6,8° (5,5–8,1°)", "ref_src": "Frontiers Sports Act Living 2023", "ref_rng": [5.5, 8.1],
       "src": "Moore 2016; Lieberman 2010",
       "low": "Cẳng chân ngả ra sau nhiều lúc chạm đất: ít gặp, có thể do bắt sai mốc chạm đất; nên xem lại video.",
       "high": "Cẳng chân đưa mạnh ra trước: dấu hiệu overstride, tăng lực phanh."
@@ -75,6 +78,7 @@ window.GAIT_REF = {
       "lo": 30,
       "hi": 50,
       "warn": [25, 55],
+      "ref_txt": "~45°", "ref_src": "Souza 2016", "ref_rng": null,
       "src": "Novacheck 1998",
       "low": "Gối ít gập khi chịu tải: giảm hấp thụ lực.",
       "high": "Gối gập sâu khi chịu tải: cần nhiều sức mạnh cơ đùi."
@@ -119,5 +123,11 @@ window.GAIT_REF = {
     "foot_mid": {"label": "Bàn chân so với đường giữa", "unit": "cm", "lo": 0, "hi": 10, "tam": true, "src": "TẠM, chờ bác sĩ duyệt", "low": "Bàn chân đặt chéo qua đường giữa (chạy như trên dây): tăng tải dải chậu chày, mặt trong cẳng chân.", "high": "Bàn chân đặt xa đường giữa: bước dạng rộng."},
     "step_width": {"label": "Độ rộng bước", "unit": "cm", "lo": 0, "hi": 15, "tam": true, "src": "TẠM, chờ bác sĩ duyệt", "low": "Hai bàn chân đặt chéo nhau.", "high": "Bước dạng rộng: thân dễ lắc ngang."},
     "lat_trunk": {"label": "Thân lắc ngang", "unit": "°", "lo": 0, "hi": 10, "tam": true, "src": "TẠM, chờ bác sĩ duyệt", "high": "Thân lắc sang hai bên nhiều: có thể bù cho hông yếu, tốn năng lượng."}
+  },
+  /* Khoảng tham chiếu HIỂN THỊ trên màn kết quả (bác sĩ 15/11/2026: chỉ đưa số có nghiên cứu uy tín). ref_txt/ref_src/ref_rng chỉ để
+   * hiện và viết câu gợi ý, KHÔNG dùng chấm điểm (điểm vẫn theo lo/hi/warn). ref_rng = [dưới, trên] nghiên cứu báo cáo, null = chỉ
+   * có một mức "~", không so khoảng. Đáp đất không có số đo nên chỉ mô tả. */
+  "display": {
+    "strike": {"label": "Đáp đất", "ref_txt": "chỉ mô tả, ≈89% đáp gót", "ref_src": "Larson 2011"}
   }
 };

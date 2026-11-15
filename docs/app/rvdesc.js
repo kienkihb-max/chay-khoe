@@ -50,5 +50,93 @@
     }
     return out.join(' ');
   }
-  Object.assign(App, { RV_TXT, rvDiff, rvSentence });
+  // ---------- 5 dòng bảng chính + kết luận tổng kết (mockup docs/mockup/ket-qua-v2.html) ----------
+  // Nhãn, câu mô tả theo mockup; tham chiếu đọc từ reference.js (ref_txt/ref_src, display.strike), không đổi lo/hi/điểm.
+  const RV_ROWS = [
+    { k: 'cadence', nm: 'Nhịp bước', d: 'Số bước mỗi phút.' },
+    { k: 'strike', nm: 'Đáp đất', d: 'Vùng bàn chân chạm đất trước.' },
+    { k: 'shank_ic', nm: 'Góc cẳng chân lúc chạm đất', d: 'Độ nghiêng so với phương thẳng đứng.' },
+    { k: 'vert_osc', nm: 'Nhấp nhô thân', d: 'Mức thân nhấp lên xuống mỗi bước.' },
+    { k: 'knee_mid', nm: 'Gập gối giữa pha trụ', d: 'Mức gối gập khi thân đè lên một chân.' },
+  ];
+  const DASH = { t: '–', dim: true };
+  const GREF = () => window.GAIT_REF || {};
+  // Số liệu 5 dòng, dùng chung cho màn #rview và ảnh tải về/PDF (rvsheet.js). cells: [Trái, Phải] hoặc [chung] (wide).
+  // v: số đã lọc tin cậy để so tham chiếu (L/R hoặc C); chân chưa đủ tin cậy hoặc nhịp cần đo lại thì null và ô hiện '–'.
+  function rvRows(R) {
+    const M = GREF().metrics || {}, DS = (GREF().display || {}).strike || {};
+    return RV_ROWS.map((row) => {
+      const ref = row.k === 'strike' ? DS : M[row.k] || {};
+      const out = { k: row.k, nm: row.nm, d: row.d, wide: row.k === 'cadence' || row.k === 'vert_osc', cells: [DASH, DASH], rf: ref.ref_txt || '', src: ref.ref_src || '', v: {} };
+      if (out.wide) out.cells = [DASH];
+      if (row.k === 'strike') {
+        out.cells = ['L', 'R'].map((s) => {
+          const e = R.res[s] && R.res[s].extra, ok = e && e.strike && !e.lowConf;
+          out.v[s] = ok ? String(e.strike).toLowerCase() : null; return ok ? { t: e.strike, dim: false } : DASH;
+        });
+        return out;
+      }
+      const D = App.rvData(R, row.k); if (!D) return out;
+      out.redo = D.redo;
+      const u = D.unit === '°' ? '°' : ' ' + D.unit;
+      const cell = (v, dim) => (D.redo || dim || !Number.isFinite(v) ? DASH : { t: App.rvNum(v, D.unit) + u, dim: false });
+      if (D.common) {
+        const v = row.k === 'cadence' ? App.rvCad(R) : D.legs[0].v, dim = D.legs[0].dim;
+        out.cells = [cell(v, dim)]; out.v.C = D.redo || dim || !Number.isFinite(v) ? null : v;
+      } else {
+        out.cells = ['L', 'R'].map((s) => {
+          const l = D.legs.find((x) => x.s === s);
+          out.v[s] = l && !l.dim && Number.isFinite(l.v) ? l.v : null; return l ? cell(l.v, l.dim) : DASH;
+        });
+      }
+      return out;
+    });
+  }
+  // Nhãn hạng và câu dưới điểm: nhẹ nhàng; hạng thấp nhất của score.js tên 'Nguy cơ' nên màn này hiện 'Nên chú ý thêm'.
+  const RV_BADGE = { good: 'Tốt', fair: 'Khá', improve: 'Cần cải thiện', risk: 'Nên chú ý thêm' };
+  function rvScoreLine(total) {
+    if (total == null) return 'Chưa đủ dữ liệu để tính điểm; xem các chỉ số bên dưới.';
+    if (total >= 85) return 'Dáng chạy khá cân đối; có thể giữ thói quen tập hiện tại.';
+    if (total >= 70) return 'Dáng chạy ổn; vài điểm có thể thử điều chỉnh nhẹ, xem kết luận bên dưới.';
+    return 'Có vài điểm nên chú ý thêm khi tập, xem kết luận bên dưới.';
+  }
+  // Kết luận tổng kết (3–4 ý): so số đo với ref_rng trong reference.js. Lời khuyên nhẹ ('Có thể thử…', 'Nên chú ý thêm…'),
+  // không chẩn đoán. Ý lệch tham chiếu xếp trước, tối đa 3 ý + 1 dòng gợi ý chung. BÁC SĨ CẦN RÀ câu chữ.
+  function rvAdvice(R, rows) {
+    rows = rows || rvRows(R);
+    const M = GREF().metrics || {}, by = (k) => rows.find((r) => r.k === k) || { v: {} };
+    const rng = (k) => (M[k] || {}).ref_rng, rf = (k) => ((M[k] || {}).ref_txt || '').split(' (')[0].replace(' bước/phút', '');
+    const out = [], focus = [];   // out: [1 = khác tham chiếu (xếp trước) | 0, câu]
+    const cad = by('cadence'), cr = rng('cadence');
+    if (cad.redo) out.push([1, 'Nhịp đo được chưa ổn định; nên đo lại để có số chính xác hơn.']);
+    else if (cad.v.C != null && cr) {
+      const v = Math.round(cad.v.C), t = 'Nhịp ' + v + ' bước/phút';
+      if (v < cr[0]) { out.push([1, t + ' thấp hơn tham chiếu ' + rf('cadence') + '; có thể thử tăng nhịp nhẹ nhàng khi tập.']); focus.push('nhịp bước'); }
+      else if (v > cr[1]) out.push([1, t + ' cao hơn tham chiếu ' + rf('cadence') + '; có thể giữ nhịp thoải mái, không cần tăng thêm.']);
+      else out.push([0, t + ' gần với tham chiếu ' + rf('cadence') + '; có thể giữ nhịp này khi tập.']);
+    }
+    const sh = by('shank_ic'), sr = rng('shank_ic'), L = sh.v.L, Rv = sh.v.R;
+    if ((L != null || Rv != null) && sr) {
+      const parts = [], vals = [];
+      if (L != null) { parts.push('trái ' + Math.round(L) + '°'); vals.push(L); }
+      if (Rv != null) { parts.push('phải ' + Math.round(Rv) + '°'); vals.push(Rv); }
+      const t = 'Góc cẳng chân lúc chạm đất ' + parts.join(', ');
+      if (vals.some((v) => v > sr[1])) { out.push([1, t + ', lớn hơn tham chiếu ' + rf('shank_ic') + '; có thể thử đặt chân gần dưới thân hơn.']); focus.push('cách đặt chân'); }
+      else if (L != null && Rv != null && Math.abs(L - Rv) >= 4) { out.push([1, t + '; nên chú ý thêm sự khác nhau giữa hai chân khi chạy.']); focus.push('cách đặt chân hai bên'); }
+      else out.push([0, t + ', gần với tham chiếu ' + rf('shank_ic') + '.']);
+    }
+    const a = by('strike').v.L, b = by('strike').v.R;
+    if (a && b && a !== b) out.push([1, 'Chân trái đáp bằng ' + a + ', chân phải đáp bằng ' + b + '; có thể quan sát thêm ở các buổi chạy sau.']);
+    else if (a || b) out.push([0, (a && b ? 'Cả hai chân' : a ? 'Chân trái' : 'Chân phải') + ' đáp bằng ' + (a || b) + (/gót/.test(a || b) ? '; phần lớn người chạy phong trào cũng đáp gót.' : '; có thể quan sát thêm ở các buổi chạy sau.')]);
+    const vo = by('vert_osc').v.C, vr = rng('vert_osc');
+    if (vo != null && vr) {
+      const t = 'Thân nhấp nhô ' + App.rvNum(vo, 'cm') + ' cm';
+      if (vo > vr[1]) { out.push([1, t + ', nhiều hơn tham chiếu ' + rf('vert_osc') + '; có thể thử bước nhẹ và ngắn hơn một chút.']); focus.push('độ nhấp nhô'); }
+      else out.push([0, t + (vo < vr[0] ? ', ít hơn' : ', gần với') + ' tham chiếu ' + rf('vert_osc') + '.']);
+    }
+    const list = out.map((x, i) => [x[0], i, x[1]]).sort((x, y) => y[0] - x[0] || x[1] - y[1]).slice(0, 3).sort((x, y) => x[1] - y[1]).map((x) => x[2]);
+    list.push(focus.length ? 'Gợi ý nhẹ: có thể thử tập trung vào ' + focus.slice(0, 2).join(' và ') + ' khi tập.' : 'Gợi ý nhẹ: có thể giữ thói quen chạy hiện tại và đo lại sau vài tuần để so sánh.');
+    return list;
+  }
+  Object.assign(App, { RV_TXT, rvDiff, rvSentence, RV_ROWS, rvRows, RV_BADGE, rvScoreLine, rvAdvice });
 })(window.App);
