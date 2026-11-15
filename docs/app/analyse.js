@@ -105,9 +105,16 @@
       for (const k of Object.keys(Gait.IDX[s])) { const j = Gait.IDX[s][k]; lm[k] = [R.P.x[j][i], R.P.y[j][i]]; }
       const other = s === 'L' ? 'R' : 'L', lo = {};
       for (const k of Object.keys(Gait.IDX[other])) { const j = Gait.IDX[other][k]; lo[k] = [R.P.x[j][i], R.P.y[j][i]]; }
-      // tai, khuỷu, cổ tay hai bên (kèm độ rõ) cho ảnh lớn toàn thân ở màn kết quả (drawHero)
-      const up = {};
-      for (const sd of ['L', 'R']) { up[sd] = {}; for (const k of Object.keys(LV_XI[sd])) { const j = LV_XI[sd][k]; if (R.P.x[j]) up[sd][k] = [R.P.x[j][i], R.P.y[j][i], R.P.v && R.P.v[j] ? R.P.v[j][i] : 1]; } }
+      // vai, tai, khuỷu, cổ tay hai bên (kèm độ rõ) cho ảnh lớn ở màn kết quả (drawHero): lấy landmark GỐC của chính khung có ảnh (best.lm),
+      // không lấy R.P đã lấy mẫu lại (đo camera trực tiếp thì R.P nội suy giữa 2 khung, tay vung nhanh bị lệch khỏi hình). Chân vẫn dùng R.P đã gỡ tráo nhãn.
+      const up = {}, raw = best.lm;
+      for (const sd of ['L', 'R']) {
+        up[sd] = {};
+        for (const [k, j] of Object.entries(Object.assign({ sh: Gait.IDX[sd].sh }, LV_XI[sd]))) {
+          if (raw && raw[j]) up[sd][k] = [raw[j].x, raw[j].y, raw[j].v];
+          else if (R.P.x[j]) up[sd][k] = [R.P.x[j][i], R.P.y[j][i], R.P.v && R.P.v[j] ? R.P.v[j][i] : 1];
+        }
+      }
       S.photos[s] = { bmp, blob: best.blob, sc: best.sc, lm, lo, up, vw: best.vw, vh: best.vh };
     }
   }

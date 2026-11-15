@@ -187,7 +187,7 @@ body:not(.bs) #rview .bsonly{display:none}
 @media (min-width:1700px){#rview{max-width:1640px;font-size:19px}#rview .score .n{font-size:156px}#rview .tb .c{font-size:28px}#rview .tb .nm b{font-size:20px}#rview .tb .rf{font-size:18px}}
 /* điện thoại (<768px): không dùng app đo, chỉ hiện khung mời liên hệ bác sĩ (bác sĩ 15/11/2026: "bỏ hẳn giao diện điện thoại phần screening", kể cả chế độ bác sĩ) */
 #phonegate{display:none}
-@media (max-width:767.98px){
+@media (max-width:767.98px),(pointer:coarse) and (max-height:500px){
   body>*:not(#phonegate){display:none!important}
   #phonegate{display:flex;min-height:100%;align-items:center;justify-content:center;padding:24px 18px}
   #phonegate .box{max-width:420px;background:var(--white);border-radius:20px;box-shadow:0 6px 22px var(--shadow);padding:28px 22px;text-align:center}

@@ -83,6 +83,8 @@
   }
   for (const id of ['v1', 'v2']) for (const ev of ['loadedmetadata', 'resize', 'emptied']) $(id).addEventListener(ev, () => fitVid($(id)));
   async function startCamera(deviceId) {
+    // điện thoại: Screening đã tắt (khung #phonegate), không xin quyền camera
+    if (matchMedia('(max-width:767.98px),(pointer:coarse) and (max-height:500px)').matches) return;
     try {
       if (S.stream) S.stream.getTracks().forEach((t) => t.stop());
       // Tự nhận hướng: xin hình dọc khi màn hình đang dọc, hình ngang khi màn hình đang ngang (không cần chọn tay)

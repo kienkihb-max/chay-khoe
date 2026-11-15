@@ -1,4 +1,4 @@
-/* app/capture.js - (1) đặt tên file tải về: tên khách + SĐT + ngày; (2) quay lại màn đo (camera + khung xương + số + khung viền + logo) để khách tải video.
+/* app/capture.js - (1) đặt tên file tải về: tên khách + SĐT + ngày; (2) quay lại màn đo (dải thông tin khách + logo, video + khung xương, cột thẻ số + đồ thị, viền xanh) để khách tải video.
    Video chỉ giữ trong bộ nhớ trang này (không lưu IndexedDB, không gửi Sheet/Drive). Một phần của app cũ; cách chia sẻ biến xem đầu app/core.js. */
 (function (App) {
   'use strict';
@@ -29,30 +29,115 @@
     return '';
   }
   function cs(el) { let c = css.get(el); if (!c) { c = getComputedStyle(el); css.set(el, c); } return c; }
+  // Khung video tải về (giống màn đo L2 + dải thông tin như báo cáo): viền xanh thương hiệu bao ngoài; hàng trên là dải thông tin khách
+  // (nền xanh đậm, nhãn xanh lá, logo đủ chữ góc phải); dưới là video + khung xương cạnh cột thẻ số, đồ thị và bảng Trái/Phải.
+  // Chỉ lấy đúng phần hình video (#v2 hiện kiểu contain) nên không còn dải đen hai bên; cỡ canvas tính theo nội dung.
+  const txt = (el) => (el ? el.textContent.trim() : '');
+  const shown = (el) => !!el && !el.hidden && el.getClientRects().length > 0;
+  function strip(c, x, y, w, u, dry) {
+    const sub = S.sub || {}, d = new Date(), F = Themes.font, padX = 24 * u, lgD = 60 * u;
+    const info = [['Mã khách', sub.id], ['Họ tên', sub.name], ['Chiều cao', sub.height ? sub.height + ' cm' : ''],
+      ['Ngày đo', App.pad(d.getDate()) + '/' + App.pad(d.getMonth() + 1) + '/' + d.getFullYear()],
+      ['Tốc độ máy', (App.SPEED * 3.6).toFixed(0) + ' km/h'], ['Góc quay', S.take === 'back' ? 'Sau' : S.take ? 'Ngang' : '–']];
+    // xếp các mục từ trái sang, hết chỗ (chừa logo) thì xuống hàng
+    const maxX = x + w - padX - lgD - 20 * u, RH = 50 * u, pos = [];
+    let cx = x + padX, row = 0;
+    for (const [k, v] of info) {
+      const t = String(v || '–');
+      c.font = '700 ' + 20 * u + 'px ' + F; let tw = Math.min(c.measureText(t).width, 300 * u);
+      c.font = '700 ' + 13 * u + 'px ' + F; tw = Math.max(tw, c.measureText(k.toUpperCase()).width);
+      if (cx > x + padX && cx + tw > maxX) { cx = x + padX; row++; }
+      pos.push([k, t, cx, row]); cx += tw + 32 * u;
+    }
+    const h = Math.max(lgD + 20 * u, (row + 1) * RH + 22 * u);
+    if (dry) return h;
+    c.fillStyle = TC.brand; c.beginPath(); c.roundRect(x, y, w, h, 14 * u); c.fill();
+    const y0 = y + (h - (row + 1) * RH) / 2;
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+    for (const [k, t, px, rw] of pos) {
+      const py = y0 + rw * RH;
+      c.font = '700 ' + 13 * u + 'px ' + F; c.fillStyle = TC.accent; c.fillText(k.toUpperCase(), px, py + 16 * u);
+      c.font = '700 ' + 20 * u + 'px ' + F; c.fillStyle = '#fff'; c.fillText(t, px, py + 42 * u, 300 * u);
+    }
+    const L = App.LOGO, lx = x + w - padX - lgD, ly = y + (h - lgD) / 2;
+    if (L && L.complete && L.naturalWidth) { c.save(); c.fillStyle = '#fff'; c.beginPath(); c.arc(lx + lgD / 2, ly + lgD / 2, lgD / 2, 0, Math.PI * 2); c.fill(); c.clip(); c.drawImage(L, lx, ly, lgD, lgD); c.restore(); }
+    return h;
+  }
+  // cột phải: thẻ số (#lvcards), đồ thị (#lvw: sóng góc gối + #lvtrend), bảng Trái/Phải (#lvtbl); chữ/màu lấy từ màn đo
+  function column(c, x, y, w, u, dry) {
+    const F = Themes.font, G = 10 * u; let yy = y;
+    const panel = (h) => { c.fillStyle = 'rgba(255,255,255,.06)'; c.strokeStyle = 'rgba(255,255,255,.16)'; c.lineWidth = Math.max(1, u); c.beginPath(); c.roundRect(x, yy, w, h, 14 * u); c.fill(); c.stroke(); };
+    for (const el of document.querySelectorAll('#lvcards .lvc')) {
+      const H = 64 * u;
+      if (!dry) {
+        panel(H); const st = cs(el); c.fillStyle = st.borderLeftColor; c.fillRect(x, yy + 8 * u, 5 * u, H - 16 * u);
+        const em = el.querySelector('em'), b = el.querySelector('b'), sm = el.querySelector('small');
+        c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+        c.font = '600 ' + 14 * u + 'px ' + F; c.fillStyle = cs(em).color; c.fillText(txt(em), x + 18 * u, yy + 22 * u, w - 30 * u);
+        c.font = '700 ' + 28 * u + 'px ' + F; c.fillStyle = cs(b).color; c.fillText(txt(b), x + 18 * u, yy + 54 * u);
+        const bw = c.measureText(txt(b)).width;
+        if (sm) { c.font = '400 ' + 13 * u + 'px ' + F; c.fillStyle = cs(sm).color; c.fillText(txt(sm), x + 26 * u + bw, yy + 54 * u, w - 44 * u - bw); }
+      }
+      yy += H + G;
+    }
+    const lw = $('lvw');
+    if (shown(lw)) {
+      const ip = 14 * u, iw = w - 2 * ip, items = [];
+      const walk = (el) => {
+        for (const ch of el.children) {
+          if (!shown(ch)) continue;
+          if (ch.id === 'lvtrend') walk(ch);
+          else if (ch.tagName === 'CANVAS') items.push([ch, iw * ch.clientHeight / (ch.clientWidth || 1)]);
+          else items.push([ch, 22 * u]);
+        }
+      };
+      walk(lw);
+      const H = ip * 2 + items.reduce((a, it) => a + it[1] + 4 * u, 0);
+      if (!dry) {
+        panel(H); let iy = yy + ip;
+        for (const [el, h] of items) {
+          if (el.tagName === 'CANVAS') { if (el.width) c.drawImage(el, x + ip, iy, iw, h); }
+          else {
+            const a = el.firstElementChild || el, z = el.lastElementChild || el;
+            c.textBaseline = 'alphabetic'; c.textAlign = 'left'; c.font = '600 ' + 14 * u + 'px ' + F; c.fillStyle = cs(a).color; c.fillText(txt(a), x + ip, iy + 16 * u, iw * 0.6);
+            if (z !== a) { c.textAlign = 'right'; c.font = (z.tagName === 'B' ? '700 ' + 18 : '400 ' + 12) * u + 'px ' + F; c.fillStyle = cs(z).color; c.fillText(txt(z), x + w - ip, iy + 16 * u, iw * 0.45); }
+          }
+          iy += h + 4 * u;
+        }
+      }
+      yy += H + G;
+    }
+    const tb = $('lvtbl');
+    if (shown(tb)) {
+      const rows = [...tb.rows], ip = 14 * u, RH = 26 * u, H = ip * 2 + rows.length * RH, c1 = w * 0.62;
+      if (!dry) {
+        panel(H);
+        rows.forEach((tr, i) => [...tr.cells].forEach((td, j) => {
+          const ry = yy + ip + i * RH + 18 * u;
+          c.textBaseline = 'alphabetic'; c.font = (i ? '500 ' + 15 : '700 ' + 13) * u + 'px ' + F; c.fillStyle = cs(td).color;
+          if (!j) { c.textAlign = 'left'; c.fillText(txt(td), x + ip, ry, c1 - ip); } else { c.textAlign = 'center'; c.fillText(txt(td), x + c1 + (j - 0.5) * (w - c1 - ip) / 2, ry); }
+        }));
+      }
+      yy += H + G;
+    }
+    return Math.max(0, yy - G - y);
+  }
   function draw(r) {
     const L2 = $('L2'), box = L2.getBoundingClientRect(); if (!box.width) return;
-    const W = r.w, s = W / box.width, H = Math.round(box.height * s), c = r.ctx;
+    const v = App.v2, ov = App.ov || $('ov'), vw = v.videoWidth || box.width, vh = v.videoHeight || box.height;
+    const k0 = Math.min(box.width / vw, box.height / vh), cw = vw * k0, ch = vh * k0, cx = (box.width - cw) / 2, cy = (box.height - ch) / 2;   // phần hình video trên màn đo
+    const u = r.w / 1280, B = Math.round(8 * u), P = Math.round(16 * u), CW = Math.round(340 * u), c = r.ctx;
+    const VW = Math.round(Math.min(r.w - 2 * B - 3 * P - CW, 600 * u * cw / ch)), VH = Math.round(VW * ch / cw);
+    const W = 2 * B + 3 * P + VW + CW, SH = Math.round(strip(c, 0, 0, W - 2 * B - 2 * P, u, true)), BH = Math.max(VH, Math.round(column(c, 0, 0, CW, u, true)));
+    const H = 2 * B + 3 * P + SH + BH;
     if (r.cv.width !== W || r.cv.height !== H) { r.cv.width = W; r.cv.height = H; }
-    c.fillStyle = cs(L2).backgroundColor || '#0E2433'; c.fillRect(0, 0, W, H);
-    const v = App.v2, vw = v.videoWidth, vh = v.videoHeight;
-    if (vw && vh) { const k = Math.min(W / vw, H / vh); c.drawImage(v, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k); }
-    c.drawImage(App.ov || $('ov'), 0, 0, W, H);
-    // thẻ số: vẽ lại đúng vị trí/chữ của các thẻ trên màn đo
-    for (const el of document.querySelectorAll('#lvcards .lvc')) {
-      const b = el.getBoundingClientRect(); if (!b.width) continue;
-      const x = (b.left - box.left) * s, y = (b.top - box.top) * s;
-      c.fillStyle = 'rgba(14,36,51,.78)'; c.beginPath(); c.roundRect(x, y, b.width * s, b.height * s, 14 * s); c.fill();
-      c.fillStyle = TC.accent || '#A9D69B'; c.fillRect(x, y + 6 * s, 4 * s, b.height * s - 12 * s);
-      for (const t of el.children) {
-        const q = t.getBoundingClientRect(), st = cs(t); if (!q.width || !t.textContent) continue;
-        c.font = st.fontWeight + ' ' + parseFloat(st.fontSize) * s + 'px ' + st.fontFamily; c.fillStyle = st.color; c.textBaseline = 'alphabetic';
-        c.fillText(t.textContent, (q.left - box.left) * s, (q.bottom - box.top) * s - q.height * s * 0.22);
-      }
-    }
-    // khung viền + logo
-    const bw = 6 * s; c.strokeStyle = getComputedStyle(L2).getPropertyValue('--leaf').trim() || TC.accent || '#A9D69B';
-    c.lineWidth = bw; c.strokeRect(bw / 2, bw / 2, W - bw, H - bw);
-    const lg = $('l2logo'); if (lg && lg.complete && lg.naturalWidth) { const q = lg.getBoundingClientRect(); c.drawImage(lg, (q.left - box.left) * s, (q.top - box.top) * s, q.width * s, q.height * s); }
+    c.fillStyle = cs(L2).backgroundColor || '#08130B'; c.fillRect(0, 0, W, H);
+    strip(c, B + P, B + P, W - 2 * B - 2 * P, u, false);
+    const VX = B + P, VY = B + 2 * P + SH + Math.round((BH - VH) / 2);
+    if (v.videoWidth) c.drawImage(v, VX, VY, VW, VH);
+    const s = ov.width / box.width; if (ov.width) c.drawImage(ov, cx * s, cy * s, cw * s, ch * s, VX, VY, VW, VH);
+    column(c, VX + VW + P, B + 2 * P + SH, CW, u, false);
+    c.strokeStyle = cs(L2).getPropertyValue('--leaf').trim() || TC.accent || '#A9D69B'; c.lineWidth = B; c.strokeRect(B / 2, B / 2, W - B, H - B);
   }
   function begin() {
     if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) return;

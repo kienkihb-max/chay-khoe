@@ -106,7 +106,7 @@
     if (Score.band(k)) return 'none';
     const s = mScore(k, v); return s == null ? 'none' : s === 100 ? 'ok' : s > 0 ? 'mid' : 'bad';
   }
-  const LV_CARDS = [['cadence', 'Cadence', 'bước/phút'], ['knee_ic', 'Gập gối lúc chạm', '°'], ['trunk', 'Nghiêng thân', '°']];   // nhãn giống thẻ số ở màn kết quả
+  const LV_CARDS = [['cadence', 'Nhịp bước\u00a0', 'bước/phút'], ['knee_ic', 'Gập gối lúc chạm', '°'], ['trunk', 'Nghiêng thân', '°']];   // nhãn giống thẻ số ở màn kết quả; 'Nhịp bước' + NBSP như CAD_LABEL (rview.js) để i18n dịch ra 'Cadence'
   // Quay sau lưng: không có góc gối nhìn ngang, chỉ hiện các chỉ số nhìn từ sau (gait.js computeBack); chỉ số từng chân hiện chân lệch nhiều hơn
   const LV_CARDS_BACK = [['pelvic_drop', 'Sụt hông', '°'], ['knee_valgus', 'Gối đổ vào', '°'], ['lat_trunk', 'Thân lắc', '°']];
   const LV_PERLEG_BACK = ['pelvic_drop', 'knee_valgus'];
@@ -116,7 +116,7 @@
     '<div id="lvcards">' + lvCardsHTML(LV_CARDS) + '</div>' +
     '<div id="lvw"><div><em>Góc gối <span id="lvwside"></span></em><b id="lvwv"></b></div><canvas id="lvwave"></canvas>' +
     // Bảng theo dõi mở rộng (quay ngang, màn hình rộng): cadence và nghiêng thân từ đầu buổi, vạch chạm đất 6 giây gần nhất
-    '<div id="lvtrend"><div><em>Cadence</em><span id="lvcadr"></span></div><canvas id="lvcad"></canvas><div><em>Nghiêng thân</em><span id="lvtrr"></span></div><canvas id="lvtr"></canvas><div><em>Nhịp bước</em><span>6 giây gần nhất</span></div><canvas id="lvst"></canvas></div></div>' +
+    '<div id="lvtrend"><div><em>Nhịp bước\u00a0</em><span id="lvcadr"></span></div><canvas id="lvcad"></canvas><div><em>Nghiêng thân</em><span id="lvtrr"></span></div><canvas id="lvtr"></canvas><div><em>Chạm đất</em><span>6 giây gần nhất</span></div><canvas id="lvst"></canvas></div></div>' +
     '<table id="lvtbl"><thead><tr><th></th><th style="color:' + LV_LEG.L + '">Trái</th><th style="color:' + LV_LEG.R + '">Phải</th></tr></thead><tbody>' +
     [['knee', 'Gập gối lúc chạm'], ['ov', 'Đặt chân trước hông']]   /* bác sĩ Kiên 11/11: chỉ hiện số đo và đồ thị, không hiện thông số video hay tỷ lệ khung hình lỗi */.map(([k, t]) => '<tr><td>' + t + '</td><td data-c="' + k + 'L">–</td><td data-c="' + k + 'R">–</td></tr>').join('') + '</tbody></table>';
   $('L2').insertBefore(lvBox, $('chip'));

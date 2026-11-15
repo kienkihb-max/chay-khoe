@@ -66,8 +66,8 @@
         c.fillStyle = INK; font('700', 24); c.fillText(r.nm, cols[0] + 24, y + 28, CW[0] - 40);
         c.fillStyle = MUT; font('400', 18); c.fillText(r.d, cols[0] + 24, y + 52, CW[0] - 40);
         font('700', 30); c.textAlign = 'center';
-        if (one) { c.fillStyle = r.cells[0].dim ? '#9AA59D' : TC.brand; c.fillText(r.cells[0].t, mid, y + 42, CW[1] + CW[2] - 20); }
-        else r.cells.forEach((cl, j) => { c.fillStyle = cl.dim ? '#9AA59D' : TC.brand; c.fillText(cl.t, cols[1 + j] + CW[1 + j] / 2, y + 42, CW[1 + j] - 20); });
+        if (one) { c.fillStyle = App.rvMuted(r.cells[0]) ? '#9AA59D' : TC.brand; c.fillText(r.cells[0].t, mid, y + 42, CW[1] + CW[2] - 20); }
+        else r.cells.forEach((cl, j) => { c.fillStyle = App.rvMuted(cl) ? '#9AA59D' : TC.brand; c.fillText(cl.t, cols[1 + j] + CW[1 + j] / 2, y + 42, CW[1 + j] - 20); });
         c.textAlign = 'left'; c.fillStyle = INK; font('600', 22); c.fillText(r.rf || '–', cols[3] + 24, y + 30, CW[3] - 40);
         if (r.src) { c.fillStyle = MUT; font('italic 400', 17); c.fillText(r.src, cols[3] + 24, y + 54, CW[3] - 40); }
       });
