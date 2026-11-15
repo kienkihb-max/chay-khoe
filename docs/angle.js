@@ -1,6 +1,9 @@
 // Tự nhận góc quay từ khung xương MediaPipe: 'side' (ngang hông) hoặc 'back' (sau lưng); không chắc thì trả null.
 // Dùng được trong trình duyệt (window.Angle) và trong node (module.exports).
 (function (root) {
+  // CỜ GÓC SAU LƯNG (bác sĩ 15/11/2026: "trước mắt chỉ tính điểm góc side view ... góc back view để ẩn").
+  // false = không tự nhận 'back'; app.js đọc Angle.BACK_ENABLED để ẩn nút chọn góc sau và chỉ chấm góc ngang. Bật lại: đổi thành true (một chỗ duy nhất).
+  const BACK_ENABLED = false;
   // Ngưỡng (xem E:/claude-agents/reports/20261108-fe-tu-nhan-goc.md): đo trên video thật, giữ khoảng trống ở giữa để không đoán bừa.
   const T = {
     MIN_N: 45,          // cần ít nhất 45 khung đủ vai + hông (~1,5–3 giây)
@@ -33,10 +36,13 @@
     const out = { angle: null, why: '', n, w, a, f };
     if (n < T.MIN_N) { out.why = 'chưa đủ khung thấy rõ vai và hông'; return out; }
     if (w < T.SIDE_W && a > T.SIDE_A) { out.angle = 'side'; return out; }
-    if (w > T.BACK_W && a < T.BACK_A && f < T.FACE) { out.angle = 'back'; return out; }
+    if (w > T.BACK_W && a < T.BACK_A && f < T.FACE) {
+      if (BACK_ENABLED) { out.angle = 'back'; return out; }
+      out.why = 'có vẻ quay sau lưng; hiện chỉ đo góc ngang hông'; return out;
+    }
     out.why = !Number.isFinite(a) ? 'không thấy rõ hai cổ chân' : w < T.SIDE_W ? 'hai chân chưa sải bước rõ' : w > T.BACK_W && f >= T.FACE ? 'có vẻ quay trước mặt' : 'góc quay chéo, không rõ ngang hông hay sau lưng';
     return out;
   }
-  const api = { T, feat, decide };
+  const api = { T, feat, decide, BACK_ENABLED };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Angle = api;
 })(typeof window !== 'undefined' ? window : this);

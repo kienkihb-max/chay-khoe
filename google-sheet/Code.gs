@@ -8,6 +8,7 @@
 var SHEET_ID = '1HbknKhSQ1VpO6J11HzoLZMF1TYDDXtCsnUzV2dYw-0U';
 var FOLDER_NAME = 'Chạy khỏe – Kết quả';
 var LINK_COLS = ['PDF', 'Ảnh kết quả'];
+var PDF_AFTER = 'SĐT/Zalo';
 
 function folder_() {
   var it = DriveApp.getFoldersByName(FOLDER_NAME);
@@ -23,8 +24,23 @@ function header_(sh, want) {
     sh.getRange(1, have.length + 1, 1, add.length).setValues([add]).setFontWeight('bold');
     have = have.concat(add);
   }
+  // Cột PDF đứng ngay sau thông tin khách (sau SĐT/Zalo) để bấm mở luôn; sheet cũ có PDF ở cuối thì dời lên.
+  var after = have.indexOf(PDF_AFTER), at = have.indexOf('PDF');
+  if (after >= 0 && at >= 0 && at !== after + 1) {
+    sh.moveColumns(sh.getRange(1, at + 1), after + 2);
+    have.splice(at, 1);
+    have.splice(after + (at > after ? 1 : 0), 0, 'PDF');
+    sh.setColumnWidth(have.indexOf('PDF') + 1, 130);
+  }
   if (sh.getFrozenRows() === 0) sh.setFrozenRows(1);
   return have;
+}
+
+// Ô PDF: chữ "Mở PDF" to, đậm, bấm là mở file (link gắn vào chữ, không dùng công thức để khỏi lệ thuộc dấu phân cách theo vùng).
+function pdfCell_(cell, url) {
+  if (!url) return;
+  cell.setRichTextValue(SpreadsheetApp.newRichTextValue().setText('📄 Mở PDF').setLinkUrl(url).build())
+    .setFontSize(13).setFontWeight('bold');
 }
 
 function findRow_(sh, id) {
@@ -54,10 +70,17 @@ function doPost(e) {
       });
       var at = findRow_(sh, r[0]);
       var vals = at ? sh.getRange(at, 1, 1, head.length).getValues()[0] : head.map(function () { return ''; });
+      var pc = head.indexOf('PDF'), pdfUrl = links['PDF'];
+      // dòng cũ: giữ link PDF cũ (ô chữ "Mở PDF" gắn link, hoặc link trần của bản cũ)
+      if (at && !pdfUrl && pc >= 0) {
+        var rt = sh.getRange(at, pc + 1).getRichTextValue();
+        pdfUrl = (rt && rt.getLinkUrl()) || (/^https?:/.test(String(vals[pc])) ? String(vals[pc]) : '');
+      }
       (d.headers || []).forEach(function (h, k) { vals[head.indexOf(h)] = r[k] == null ? '' : r[k]; });
       LINK_COLS.forEach(function (h) { if (links[h]) vals[head.indexOf(h)] = links[h]; });
-      if (at) sh.getRange(at, 1, 1, vals.length).setValues([vals]);
-      else sh.appendRow(vals);
+      if (!at) at = sh.getLastRow() + 1;
+      sh.getRange(at, 1, 1, vals.length).setValues([vals]);
+      if (pc >= 0) pdfCell_(sh.getRange(at, pc + 1), pdfUrl);
     });
     return ContentService.createTextOutput('ok');
   } finally {

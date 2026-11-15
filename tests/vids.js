@@ -8,7 +8,7 @@ const {chromium}=require('playwright');
  await p.waitForFunction(()=>!document.getElementById('go').textContent.includes('chuẩn bị'),null,{timeout:15000});
  await p.click('#mFile'); await p.fill('#name','Tran Thi B');await p.fill('#height','158');
  await p.setInputFiles('#vfile','/tmp/gt/long.mp4'); await p.waitForTimeout(800);
- await p.fill('#vstart','0');
+ await p.locator('#vstart').evaluate(e=>{e.value='0';e.dispatchEvent(new Event('change',{bubbles:true}))}); // vstart là input ẩn sau chip (chips.js)
  await p.screenshot({path:'/tmp/gt/v1.png'});
  await p.click('#go'); await p.waitForTimeout(6000); await p.screenshot({path:'/tmp/gt/v2.png'});
  await p.waitForSelector('#L3.show',{timeout:150000});

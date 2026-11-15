@@ -49,6 +49,41 @@
 #L2 #fpsb{display:none}   /* không hiện tốc độ nhận diện (thông số video) trên màn đo */
 @media (max-height:660px){#lvw>#lvtrend,#lvtbl{display:none}}
 @media (max-width:1100px){#lvw>#lvtrend,#lvtbl{display:none}}
+/* TV / màn ngang lớn (quay màn hình cho khách xem, đứng cách 2–3 m): phóng chữ thẻ số, bảng trái/phải và đồ thị; vẫn bám hai mép,
+   giữa màn để trống cho người chạy. Mốc 720p (1280×720) và 1080p (1920×1080); mọi khối nằm trên thanh nút dưới, không cuộn. */
+@media (min-width:1200px) and (min-height:700px){
+  #lvcards{width:214px;gap:10px}
+  .lvc em{font-size:14px}
+  .lvc b{font-size:34px}
+  .lvc small{font-size:13px}
+  #lvtbl{top:470px;width:300px;font-size:16px}
+  #lvtbl th{font-size:14px}
+  #lvw{width:min(420px,33vw)}
+  #lvw em{font-size:14px}
+  #lvwv{font-size:22px}
+  #lvwave{height:72px}
+  #lvtrend span{font-size:13px}
+}
+@media (min-width:1700px) and (min-height:950px){
+  #lvrec{left:40px;top:104px;width:108px;height:108px}
+  #lvrec span{bottom:22px;font-size:13px}
+  #lvrec span i{width:9px;height:9px}
+  #lvsec{font-size:34px;margin-top:-10px}
+  #lvcards{right:40px;top:200px;width:290px;gap:14px}
+  .lvc{padding:10px 18px 12px;border-left-width:6px;border-radius:16px}
+  .lvc em{font-size:18px}
+  .lvc b{font-size:46px}
+  .lvc small{font-size:16px}
+  #lvtbl{right:40px;top:560px;width:390px;font-size:20px;padding:8px 16px 10px;border-radius:16px}
+  #lvtbl th{font-size:17px;padding:4px 0 4px 14px}
+  #lvtbl td{padding:4px 0 4px 14px}
+  #lvw{left:40px;width:min(600px,32vw);padding:8px 16px 10px;border-radius:16px}
+  #lvw em{font-size:18px}
+  #lvwv{font-size:30px}
+  #lvwave{height:100px}
+  #lvtrend span{font-size:16px}
+  #lvcad{height:78px}#lvtr{height:54px}#lvst{height:28px}
+}
 
 /* Điện thoại dọc: thẻ số thành một hàng dưới tên/đồng hồ, vòng đếm + sóng góc gối ở hàng thứ hai; để trống nửa dưới (chân, lúc chạm đất) */
 @media (max-width:640px){
@@ -115,3 +150,24 @@
 #detail .tflag .chip{margin:0;background:var(--leaf-pale);color:var(--amber);border:1px dashed var(--amber);cursor:help}
 #detail .tflag .why{color:var(--mut)}
 #detail .chip.lowc{opacity:.5}
+
+/* khối 'Đề nghị đo lại' trên màn kết quả khi nhịp bước < 130 */
+.redo{margin:0 0 12px;padding:14px 16px;border-left:5px solid var(--amber);border-radius:10px;background:var(--leaf-pale)}
+.redo[hidden]{display:none}
+.redo h3{margin:0 0 6px;font-size:18px;color:var(--amber)}
+.redo p{margin:0 0 10px;font-size:14px;line-height:1.5}
+.redogs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 16px;margin-bottom:12px}
+.redog h4{margin:0 0 4px;font-size:14px}
+.redog ul{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
+.redo-btn{min-height:44px;padding:0 22px;border:0;border-radius:12px;background:var(--amber);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+/* ===== Chip chọn nhanh (cài đặt đo, chọn file) — chips.js ===== */
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{min-height:44px;min-width:44px;padding:0 14px;border:1.5px solid var(--fline);border-radius:12px;background:#fff;color:var(--ink);font:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.chip:hover{border-color:var(--moss2);background:var(--leaf-pale)}
+.chip:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(var(--moss2-rgb),.25)}
+.chip.on{background:var(--moss);border-color:var(--moss);color:#fff;box-shadow:0 2px 8px rgba(var(--moss-rgb),.25)}
+.chip-other{display:inline-flex;align-items:center;gap:6px;flex:1 1 140px;max-width:200px;font-size:14px;color:var(--mut)}
+.chip-other[hidden]{display:none}
+.chip-other input{height:44px;font-size:16px;min-width:0}
+#adv .fld.full{grid-column:1/-1}
+.vset{display:grid;gap:14px}

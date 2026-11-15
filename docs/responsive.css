@@ -37,7 +37,13 @@
   body.onL3 #topnav{padding:6px}
   body.onL3.hasnav .layer{top:96px}
   body.onL3 #l3acts{gap:4px}
-  body.onL3 #l3acts .grp{flex-wrap:wrap;padding-left:4px}
+  /* màn Kết quả trên điện thoại: thanh trên đúng 2 hàng (≤96px, khớp .layer top) để không che ảnh kết quả.
+     Hàng 1: logo, Trang chủ, Screening, VI/EN; hàng 2: nút của màn Kết quả. Kiến thức/Thư viện ảnh/Liên hệ ẩn ở đây (vẫn vào từ Trang chủ). */
+  body.onL3 #topnav>button[onclick*="blog/"],body.onL3 #topnav>button[onclick*="thu-vien-anh/"],body.onL3 #topnav>button[onclick*="lien-he"]{display:none}
+  body.onL3 #langsw{order:1;margin-left:auto}
+  body.onL3 #l3acts{order:2}
+  body.onL3 #l3acts .grp{flex-wrap:nowrap;padding-left:4px}
+  body.onL3 #l3acts button{padding:0 10px}
   #notedrawer{width:100vw}
   .side{padding:20px 16px;gap:14px}
   .side h1{font-size:28px}
@@ -49,6 +55,14 @@
   .card1 h2{font-size:22px}
   .two{grid-template-columns:1fr}
   #l3cta{padding:14px}
+  /* màn kết quả dạng thẻ: chữ thân giữ ≥16px, số chính nhỏ lại vừa khổ */
+  #rview h1{font-size:26px}
+  #rview .score .big{font-size:68px}
+  #rview .rc{padding:14px 14px}
+  #rview .rc .v{font-size:38px}
+  #rview .lr td{font-size:28px}
+  #rview .minis{gap:8px}
+  #rview .cap{font-size:13px;left:8px;top:8px}
   #regf{grid-template-columns:1fr}
   #l3cta .ctab,#l3cta .ctab>*{width:100%}
   #adv>div{grid-template-columns:1fr!important}

@@ -117,6 +117,46 @@ input:focus{outline:none;border-color:var(--moss2);box-shadow:0 0 0 4px rgba(var
 #L3{background:var(--bg);flex-direction:column;padding:12px 20px 14px;gap:10px;overflow:auto;align-items:center}
 #resbox{width:100%;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
 #res{max-width:100%;max-height:100%;width:auto;height:auto;aspect-ratio:16/9;border-radius:14px;background:#fff;box-shadow:0 8px 30px var(--shadow)}
+/* màn kết quả dạng thẻ (app/rview.js renderView), theo docs/mockup/ket-qua.html. #res vẫn vẽ để tải ảnh/PDF, ẩn trên màn khi có góc ngang */
+#resbox.rvoff{display:none!important}
+#rview{width:100%;max-width:1100px;flex:none;color:var(--ink);font-size:17px;line-height:1.55}
+#rview[hidden]{display:none}
+#rview h1{font-size:30px;line-height:1.25;margin:4px 0 2px;color:var(--moss)}
+#rview .sub{font-size:16px;color:var(--mut)}
+#rview .hero{display:grid;gap:14px;margin-top:14px}
+#rview canvas{display:block;width:100%;height:auto}
+#rview .pic canvas{max-height:640px;object-fit:contain}
+#rview .pic,#rview .mini{position:relative;background:#1c2430;border-radius:18px;overflow:hidden}
+#rview .cap{position:absolute;left:12px;top:12px;font-size:14px;font-weight:700;color:#fff;background:rgba(0,0,0,.5);padding:3px 10px;border-radius:999px}
+#rview .score{background:var(--white);border-radius:18px;padding:18px 20px;box-shadow:0 4px 18px var(--shadow)}
+#rview .score .lb{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+#rview .score .big{font-size:84px;font-weight:800;line-height:1}
+#rview .score .big span{font-size:28px;color:var(--mut);font-weight:700}
+#rview .score p{margin:12px 0 0}
+#rview .pl{display:inline-block;font-size:16px;font-weight:700;color:#fff;padding:3px 14px;border-radius:999px;margin-top:8px;background:var(--moss2)}
+#rview .pl.w{background:var(--amber)}#rview .pl.b{background:var(--red)}#rview .pl.n{background:var(--mut)}
+#rview .minis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+#rview .mini{border-top:5px solid #2F6FEB}#rview .mini.R{border-top-color:#E8890C}
+#rview h2{font-size:24px;margin:26px 0 10px;color:var(--moss)}
+#rview .cards{display:grid;gap:12px}
+/* thẻ chỉ số: chỉ số đo + câu mô tả, không màu mức (bác sĩ 15/11/2026: không kết luận từng chỉ số) */
+#rview .rc{background:var(--white);border-radius:16px;padding:16px 18px;border-left:6px solid var(--line);box-shadow:0 2px 10px var(--shadow)}
+#rview .rc h3{font-size:19px;margin:0;line-height:1.3}
+#rview .rc .v{font-size:44px;font-weight:800;line-height:1.1;margin-top:6px}
+#rview .rc .v small,#rview .lr small{font-size:18px;font-weight:700;color:var(--mut);margin-left:4px}
+#rview .lr{width:100%;border-collapse:collapse;margin-top:8px;table-layout:fixed}
+#rview .lr th{font-size:15px;font-weight:700;color:var(--mut);text-align:left;padding:0 6px 2px 0}
+#rview .lr th.L{color:#2F6FEB}#rview .lr th.R{color:#E8890C}
+#rview .lr td{font-size:34px;font-weight:800;line-height:1.15;padding:0 6px 0 0;white-space:nowrap}
+#rview .lr td:last-child{color:var(--mut)}
+#rview .rc .dim{opacity:.45}
+#rview .rc p{font-size:17px;margin:8px 0 0}
+#rview .rvmore{display:block;margin:14px 0 0;min-height:44px;padding:0 20px;font-size:16px;background:var(--white);color:var(--moss);border:1.5px solid var(--line);border-radius:999px}
+#rview .rvmore:hover{border-color:var(--moss2)}
+#rview #rvrest{margin-top:12px}
+#rview .note{background:#fff8dc;border:1px solid #f0dc8a;border-radius:14px;padding:14px 16px;margin-top:16px;font-size:16px}
+#rview .foot{font-size:14px;color:var(--mut);margin:14px 0 6px}
+@media (min-width:820px){#rview .hero{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);align-items:start}#rview .cards{grid-template-columns:1fr 1fr}}
 /* hàng nút màn Kết quả nằm trên thanh điều hướng (bên phải), chỉ hiện khi đang ở L3 */
 #l3acts{display:none;margin-left:auto;gap:6px;align-items:center;flex-wrap:nowrap}
 body.onL3 #l3acts{display:flex}
@@ -240,11 +280,11 @@ body:not(.bs) #l3acts .grp{display:none}
         <div class="fld"><label for="name">HỌ VÀ TÊN</label><input id="name" type="text" autocomplete="off" placeholder="Nguyễn Văn A"></div>
         <div class="fld"><label for="height">CHIỀU CAO (CM, TÙY CHỌN)</label><input id="height" type="number" min="100" max="230" placeholder="165 nếu bỏ trống"><div class="hint">Giúp kết quả chính xác hơn. Mặc định 165 cm.</div></div>
       </div>
-      <!-- Màn đầu chỉ hỏi tên + chiều cao. SĐT/Zalo hỏi ở màn Kết quả (form #regf). Hai ô ẩn dưới đây giữ lại để app.js không phải đổi. -->
+      <!-- Màn đầu chỉ hỏi tên + chiều cao. SĐT/Zalo hỏi ở màn Kết quả (form #regf). Hai ô ẩn dưới đây giữ lại để app/*.js không phải đổi. -->
       <input id="phone" type="hidden"><input id="pain" type="hidden">
       <div id="filebox">
         <div class="fld"><label for="vfile" id="vflab">FILE VIDEO (quay ngang hông hoặc sau lưng, thấy cả hai chân)</label><input id="vfile" type="file" accept="video/*"><div class="hint" id="vinfo">Chưa chọn video</div></div>
-        <div class="two">
+        <div class="vset">
           <div class="fld"><label for="vstart">BẮT ĐẦU TỪ GIÂY</label><input id="vstart" type="number" min="0" value="0"><div class="hint">Nên chọn đoạn đã chạy ổn định</div></div>
           <div class="fld"><label for="vspeed">TỐC ĐỘ MÁY (KM/H)</label><input id="vspeed" type="number" min="4" max="25" step="0.5" value="10"></div>
         </div>
@@ -255,12 +295,12 @@ body:not(.bs) #l3acts .grp{display:none}
       <details id="adv" style="margin:6px 0 14px;font-size:14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--leaf-pale)"><summary style="cursor:pointer;font-weight:700;color:var(--title,var(--moss))">⚙ Cài đặt đo (mặc định)</summary>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">
     <div class="fld" style="grid-column:1/-1"><label for="s_mode">KIỂU CHẠY</label><select id="s_mode"><option value="std">Chuẩn: chạy 2 phút, phân tích 15 giây</option><option value="fast">Nhanh: chạy 1 phút, phân tích 15 giây</option><option value="long">Kỹ: chạy 2,5 phút, phân tích 30 giây</option><option value="full">Đầy đủ: chạy 3 phút, phân tích 60 giây</option><option value="custom">Tùy chỉnh (chọn bên dưới)</option></select></div>
-    <div class="fld"><label for="s_speed">TỐC ĐỘ MÁY CHẠY (KM/H)</label><input id="s_speed" type="number" step="0.5" min="4" max="25" value="10"></div>
+    <div class="fld full"><label for="s_speed">TỐC ĐỘ MÁY CHẠY (KM/H)</label><input id="s_speed" type="number" step="0.5" min="4" max="25" value="10"></div>
     <div class="fld"><label for="s_fps">FPS CAMERA / PHÂN TÍCH</label><select id="s_fps"><option value="30">30</option><option value="60">60 (cần máy khỏe)</option></select></div>
     <div class="fld"><label for="s_res">ĐỘ PHÂN GIẢI CAMERA</label><select id="s_res"><option value="720">HD 720p</option><option value="1080">Full HD 1080p</option></select></div>
     <div class="fld"><label for="s_clip">ĐOẠN PHÂN TÍCH (GIÂY)</label><select id="s_clip"><option>15</option><option>20</option><option>30</option><option>45</option><option>60</option></select></div>
-    <div class="fld"><label for="s_rec">BẮT ĐẦU THU Ở GIÂY</label><input id="s_rec" type="number" min="5" max="600" value="50"></div>
-    <div class="fld"><label for="s_total">TỔNG THỜI GIAN CHẠY (GIÂY)</label><input id="s_total" type="number" min="30" max="900" value="120"></div>
+    <div class="fld full"><label for="s_rec">BẮT ĐẦU THU Ở GIÂY</label><input id="s_rec" type="number" min="5" max="600" value="50"></div>
+    <div class="fld full"><label for="s_total">TỔNG THỜI GIAN CHẠY</label><input id="s_total" type="number" min="30" max="900" value="120"></div>
   </div>
   <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:600"><input type="checkbox" id="s_auto" checked>Tự nhận biết nhịp chạy ổn định rồi mới bắt đầu thu (nếu chưa ổn định thì thu muộn nhất vào cuối thời gian cho phép)</label>
   <div class="hint" id="s_note" style="margin-top:6px"></div>
@@ -323,6 +363,21 @@ body:not(.bs) #l3acts .grp{display:none}
 <script src="angle.js"></script>
 <script src="score.js"></script>
 <script src="sync.js"></script>
-<script src="app.js"></script>
+<script src="chips.js"></script>
+<!-- app.js cũ đã tách thành docs/app/*.js; phải nạp đúng thứ tự này (xem đầu app/core.js) -->
+<script src="app/core.js"></script>
+<script src="app/form.js"></script>
+<script src="app/live.js"></script>
+<script src="app/run.js"></script>
+<script src="app/video.js"></script>
+<script src="app/analyse.js"></script>
+<script src="app/report.js"></script>
+<script src="app/rvdesc.js"></script>
+<script src="app/rview.js"></script>
+<script src="app/result.js"></script>
+<script src="app/save.js"></script>
+<script src="app/pdf.js"></script>
+<script src="app/sheet.js"></script>
+<script src="app/list.js"></script>
 </body>
 </html>
