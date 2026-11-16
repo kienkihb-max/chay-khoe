@@ -19,6 +19,12 @@
     "alt": "Khách đang chạy trước phông xanh, màn hình app ở góc dưới",
     "w": 720,
     "h": 480
+   },
+   {
+    "file": "screening-laptop-camera",
+    "alt": "Laptop hiển thị app đang đo dáng chạy, camera đặt trên bàn",
+    "w": 720,
+    "h": 480
    }
   ]
  }
