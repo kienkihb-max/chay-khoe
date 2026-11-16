@@ -19,11 +19,13 @@
 <link rel="stylesheet" href="../nav.css">
 <link rel="stylesheet" href="../speedrun.css">
 <style>
-.ggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0 0;padding:0;list-style:none}
+.ggrid{position:relative;left:50%;width:calc(100vw - 24px);max-width:none;transform:translateX(-50%);display:flex;flex-direction:column;gap:12px;margin:24px 0 0;padding:0;list-style:none}
+html,body{overflow-x:hidden}
+.ggrid .grow{display:flex;gap:12px}
 .ggrid li{margin:0}
 .gempty{margin:32px 0;color:var(--mut,#667);font-size:17px}
-.ggrid button{display:block;padding:0;border:0;background:var(--line);cursor:zoom-in;width:100%;border-radius:8px;overflow:hidden}
-.ggrid img{width:100%;aspect-ratio:3/2;height:auto;display:block;transition:transform .2s}
+.ggrid button{display:block;padding:0;border:0;background:var(--line);cursor:zoom-in;min-width:0;border-radius:8px;overflow:hidden}
+.ggrid img{width:100%;height:auto;display:block;transition:transform .2s}
 .ggrid button:hover img{transform:scale(1.03)}
 .gcredit{margin-top:24px;color:var(--mut);font-size:13px}
 #lb{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100;display:none;align-items:center;justify-content:center;touch-action:pan-y}
@@ -32,8 +34,7 @@
 #lb button{position:absolute;background:rgba(255,255,255,.15);color:#fff;border:0;font-size:26px;width:48px;height:48px;border-radius:50%;cursor:pointer}
 #lb button:hover{background:rgba(255,255,255,.3)}
 #lb .x{top:14px;right:14px}#lb .pv{left:14px;top:50%}#lb .nx{right:14px;top:50%}
-@media (max-width:1023px){.ggrid{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:599px){.ggrid{grid-template-columns:1fr;gap:8px}#lb .pv,#lb .nx{top:auto;bottom:14px}}
+@media (max-width:599px){.ggrid,.ggrid .grow{gap:8px}#lb .pv,#lb .nx{top:auto;bottom:14px}}
 </style>
 <script src="../themes.js"></script>
 </head>
@@ -49,11 +50,18 @@ var grid=document.getElementById('grid'),lb=document.getElementById('lb'),lbi=lb
 var pics=[],idx=0,lastBtn=null;
 function render(){
   if(!pics.length){var e=document.createElement("p");e.className="gempty";e.textContent="Ảnh đang được cập nhật.";grid.replaceWith(e);return}
+  layout();window.addEventListener('resize',layout);
+}
+// Mỗi hàng kín bề ngang màn hình, ảnh giữ nguyên tỉ lệ (không cắt): máy tính 4 ảnh/hàng, máy tính bảng 2, điện thoại 1
+var perRow=0;
+function layout(){
+  var n=innerWidth>=1024?4:innerWidth>=600?2:1;if(n===perRow)return;perRow=n;grid.textContent='';var row=null;
   pics.forEach(function(p,i){
-    var li=document.createElement('li'),b=document.createElement('button'),im=document.createElement('img');
-    b.type='button';b.setAttribute('aria-label','Xem ảnh lớn: '+p.alt);
-    im.src='img/'+p.file+'-sm.jpg';im.alt=p.alt;im.loading='lazy';im.width=p.w;im.height=p.h;
-    b.appendChild(im);b.addEventListener('click',function(){open(i,b)});li.appendChild(b);grid.appendChild(li);
+    if(i%n===0){row=document.createElement('li');row.className='grow';grid.appendChild(row)}
+    var b=document.createElement('button'),im=document.createElement('img');
+    b.type='button';b.setAttribute('aria-label','Xem ảnh lớn: '+p.alt);b.style.flex=(100*p.w/p.h)+' 1 0';
+    im.src='img/'+p.file+'.jpg';im.alt=p.alt;im.width=p.w;im.height=p.h;
+    b.appendChild(im);b.addEventListener('click',function(){open(i,b)});row.appendChild(b);
   });
 }
 function show(){var p=pics[idx];lbi.src='img/'+p.file+'.jpg';lbi.alt=p.alt}
