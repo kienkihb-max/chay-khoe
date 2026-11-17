@@ -1,4 +1,6 @@
-/* app/capture.js - (1) đặt tên file tải về: tên khách + SĐT + ngày; (2) quay lại màn đo (dải thông tin khách + logo, video + khung xương, cột thẻ số + đồ thị, viền xanh) để khách tải video.
+/* app/capture.js - (1) đặt tên file tải về: tên khách + SĐT + ngày; (2) quay lại màn đo (dải thông tin khách + logo, video + khung xương, cột thẻ số + đồ thị, viền xanh) để khách tải video;
+   (3) cắt từ video đó đúng đoạn ổn định nhất mà máy đã chọn để phân tích (S.win, stable.js) thành file riêng, chạy nền trong lúc màn hình đã hiện kết quả.
+   Chỉ quay trong lúc ĐANG QUAY (S.recLive), không quay lúc màn đo còn ở trạng thái chờ.
    Video chỉ giữ trong bộ nhớ trang này (không lưu IndexedDB, không gửi Sheet/Drive). Một phần của app cũ; cách chia sẻ biến xem đầu app/core.js. */
 (function (App) {
   'use strict';
@@ -18,7 +20,7 @@
   }
 
   // ---------- Quay màn đo ----------
-  const blobs = {};   // 'mã|góc' -> { blob, ext }
+  const blobs = {};   // 'mã|góc' -> { blob, ext, t0 (giây, lúc bắt đầu ghi), win, cut: { blob, ext } | null, cutPct }
   let rec = null;
   const css = new WeakMap();
   const parts = () => { const R = S.result, id = R && R.sub && R.sub.id; return id ? Object.keys(blobs).filter((k) => k.split('|')[0] === id).map((k) => ({ side: k.split('|')[1], ...blobs[k] })) : []; };
@@ -147,7 +149,8 @@
     try { r.mr = new MediaRecorder(cv.captureStream(30), mime ? { mimeType: mime, videoBitsPerSecond: 5000000 } : { videoBitsPerSecond: 5000000 }); } catch (e) { return; }
     r.ext = /mp4/.test(r.mr.mimeType || mime) ? 'mp4' : 'webm';
     r.mr.ondataavailable = (e) => { if (e.data && e.data.size) r.chunks.push(e.data); };
-    r.mr.start(1000); rec = r;
+    r.mr.start(1000); rec = r; r.t0 = performance.now() / 1000; r.id = S.sub && S.sub.id;
+    for (const k of Object.keys(blobs)) if (k.split('|')[0] !== r.id) delete blobs[k];   // video của người đo trước: bỏ, trả bộ nhớ
     const tick = (t) => {
       if (r.stop) return;
       if (t - r.last >= 33) { r.last = t; try { draw(r); } catch (e) { /* bỏ qua khung lỗi */ } }
@@ -159,19 +162,80 @@
   }
   function end(keep) {
     const r = rec; if (!r) return; rec = null; r.stop = true;
-    const R = S.result, id = R && R.sub && R.sub.id, side = R && R.angle === 'back' ? 'back' : 'side';
-    r.mr.onstop = () => { if (keep && id && r.chunks.length) blobs[id + '|' + side] = { blob: new Blob(r.chunks, { type: r.ext === 'mp4' ? 'video/mp4' : 'video/webm' }), ext: r.ext }; };
+    const id = r.id, side = S.take === 'back' ? 'back' : 'side';
+    r.mr.onstop = () => { if (keep && id && r.chunks.length) blobs[id + '|' + side] = { blob: new Blob(r.chunks, { type: r.ext === 'mp4' ? 'video/mp4' : 'video/webm' }), ext: r.ext, t0: r.t0, win: null, cut: null, cutPct: -1 }; };
     try { r.mr.stop(); } catch (e) { /* đã dừng */ }
   }
+
+  // ---------- Cắt đoạn ổn định nhất ----------
+  // Trình duyệt không cắt thẳng file video được, nên phát lại video màn đo từ giây bắt đầu của đoạn đã chọn, vẽ lên canvas và ghi lại đúng độ dài đoạn.
+  // Mất đúng bằng độ dài đoạn (30 giây), chạy nền; nút "Tải video 30 giây" báo phần trăm rồi mới bấm được.
+  let cutting = false;
+  async function cut(b, from, dur) {
+    cutting = true; b.cutPct = 0;
+    const v = document.createElement('video'), url = URL.createObjectURL(b.blob);
+    v.muted = true; v.playsInline = true; v.preload = 'auto'; v.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0;pointer-events:none';
+    document.body.appendChild(v);
+    const done = () => { cutting = false; try { v.pause(); } catch (e) { /* bỏ qua */ } v.removeAttribute('src'); v.remove(); URL.revokeObjectURL(url); };
+    try {
+      v.src = url;
+      await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej(new Error('không mở lại được video')); setTimeout(() => rej(new Error('quá giờ mở video')), 15000); });
+      await App.fixDur(v);
+      const tEnd = Math.min(from + dur, isFinite(v.duration) ? v.duration : from + dur);
+      await new Promise((res) => { let ok = false; const fin = () => { if (!ok) { ok = true; res(); } }; v.onseeked = fin; setTimeout(fin, 5000); v.currentTime = Math.max(0, from); });
+      const cv = document.createElement('canvas'); cv.width = v.videoWidth; cv.height = v.videoHeight; const c = cv.getContext('2d'); c.drawImage(v, 0, 0);
+      const mime = pickMime(), mr = new MediaRecorder(cv.captureStream(30), mime ? { mimeType: mime, videoBitsPerSecond: 5000000 } : { videoBitsPerSecond: 5000000 });
+      const ext = /mp4/.test(mr.mimeType || mime) ? 'mp4' : 'webm', chunks = [];
+      mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      await v.play(); mr.start(1000);
+      const tWall = performance.now();
+      await new Promise((res) => {
+        const tick = () => {
+          try { if (v.videoWidth) c.drawImage(v, 0, 0, cv.width, cv.height); } catch (e) { /* bỏ qua khung lỗi */ }
+          b.cutPct = Math.max(0, Math.min(99, Math.round((v.currentTime - from) / Math.max(1, tEnd - from) * 100)));
+          if (v.currentTime >= tEnd - 0.02 || v.ended || performance.now() - tWall > (dur + 20) * 1000) return res();
+          setTimeout(tick, 16);   // setTimeout (không phải rAF) để vẫn chạy khi tab bị che
+        };
+        tick();
+      });
+      await new Promise((res) => { mr.onstop = res; try { mr.stop(); } catch (e) { res(); } });
+      if (chunks.length) b.cut = { blob: new Blob(chunks, { type: ext === 'mp4' ? 'video/mp4' : 'video/webm' }), ext };
+      b.cutPct = b.cut ? 100 : -2;
+    } catch (e) { b.cutPct = -2; b.cutErr = String(e && e.message || e); }   // -2 = cắt lỗi: ẩn nút 30 giây, vẫn còn video cả lần quay
+    done();
+  }
+  const winTxt = (w) => 'giây ' + Math.round(w.from) + '–' + Math.round(w.to);
   setInterval(() => {
-    const on = S.running && $('L2').classList.contains('show');
+    const on = S.running && S.recLive && $('L2').classList.contains('show');
     if (on && !rec) begin();
-    else if (!on && rec) end(!!S.result && !S.abort && !S.error);
+    else if (!on && rec) end(!S.abort);
+    // có kết quả + có đoạn ổn định máy đã chọn: cắt video đoạn đó (một lần)
+    const R = S.result, w = S.win;
+    if (R && R.sub && w && w.cut && !cutting && !S.running) {
+      const b = blobs[R.sub.id + '|' + (R.angle === 'back' ? 'back' : 'side')];
+      if (b && !b.win) { b.win = { from: w.from, to: w.to, total: w.total }; cut(b, Math.max(0, w.t0 - b.t0), w.t1 - w.t0); }
+    }
     // nút Tải video ở màn kết quả
-    const p = parts(), b = $('dlvid'), n = $('dlvidnote'); if (!b) return;
-    b.hidden = !p.length; n.hidden = !p.length;
-    if (p.length) n.textContent = p.some((x) => x.ext === 'webm') ? 'Trình duyệt này không ghi được .mp4 nên video là .webm (mở bằng Chrome, Edge hoặc VLC).' : '';
+    const p = parts(), bt = $('dlvid'), bc = $('dlcut'), n = $('dlvidnote'); if (!bt) return;
+    bt.hidden = !p.length; n.hidden = !p.length;
+    const pc = p.filter((x) => x.win && x.cutPct !== -2);
+    bc.hidden = !pc.length;
+    if (pc.length) {
+      const ready = pc.every((x) => x.cut), sec = Math.round(pc[0].win.to - pc[0].win.from);
+      bc.disabled = !ready;
+      bc.textContent = ready ? 'Tải video ' + sec + ' giây ổn định nhất' : 'Đang chuẩn bị video ' + sec + ' giây… ' + Math.max(0, Math.min(...pc.map((x) => x.cutPct))) + '%';
+    }
+    if (p.length) {
+      const pre = pc.length ? 'Máy đã chọn ' + winTxt(pc[0].win) + ' của lần quay là đoạn chạy ổn định nhất; kết quả tính trên đoạn này. ' : '';
+      n.textContent = pre + (p.some((x) => x.ext === 'webm') ? 'Trình duyệt này không ghi được .mp4 nên video là .webm (mở bằng Chrome, Edge hoặc VLC).' : '');
+    }
   }, 250);
+  const save = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 10000); };
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest || !e.target.closest('#dlcut')) return;
+    const p = parts().filter((x) => x.cut), R = S.result; if (!R) return;
+    p.forEach((x, i) => setTimeout(() => save(x.cut.blob, fileName(R.sub, x.cut.ext, 'video-' + R.sub.id, '_' + Math.round(x.win.to - x.win.from) + 's' + (p.length > 1 ? (x.side === 'back' ? '_sau' : '_ngang') : ''))), i * 400));
+  });
   document.addEventListener('click', (e) => {
     if (!e.target.closest || !e.target.closest('#dlvid')) return;
     const p = parts(), R = S.result; if (!R) return;

@@ -18,9 +18,9 @@ window.App = {};
   const $ = (id) => document.getElementById(id);
   const Q = new URLSearchParams(location.search);
   const CFG = {
-    total: +(Q.get('total') || 120),   // tổng thời gian chạy (giây)
-    rec: +(Q.get('rec') || 50),        // thời điểm bắt đầu thu
-    clip: Math.max(+(Q.get('clip') || 15), 6), // độ dài đoạn thu
+    total: +(Q.get('total') || 60),    // thời gian QUAY của một lần đo trực tiếp (giây), tính từ lúc kỹ thuật viên bấm Quay
+    clip: Math.max(+(Q.get('clip') || 30), 6),  // đo trực tiếp: độ dài đoạn ổn định nhất được chọn để phân tích và xuất video (stable.js)
+    vclip: Math.max(+(Q.get('clip') || 15), 6), // video tải lên: độ dài đoạn phân tích tính từ giây bắt đầu
     pace: +(Q.get('pace') || 6),       // phút/km
     cx: +(Q.get('cx') || 1),           // ?cx= ép mô hình: 0 lite, 1 full, 2 heavy (không có ?cx: video Heavy, trực tiếp Full)
     fps: 30,
@@ -66,7 +66,7 @@ window.App = {};
     if ($('vflab')) $('vflab').textContent = 'FILE VIDEO (quay ngang hông, thấy cả hai chân)';
   }
   // Không nhận ra góc: không đoán, dừng và không tính chỉ số
-  const ANG_WAIT = 15;   // giây chờ tối đa khi đo trực tiếp (trước lúc thu hình)
+  const ANG_WAIT = 15;   // (cũ) giây chờ nhận góc; luồng mới không tự dừng ở màn chờ, giữ hằng cho file khác
   const angMsg = (why) => 'Chưa nhận ra góc quay' + (why ? ' (' + why + ')' : '') + '. Hãy đặt camera ngang hông (thấy cả hai chân)' + (BACK_ON ? ' hoặc ngay sau lưng người chạy' : '') + ' rồi đo lại.';
   // Gom đặc trưng góc từ khung xương thô (90 khung gần nhất); đủ khung và rõ ràng thì chốt góc cho lần quay này
   function angFeed(lm, vw, vh) {

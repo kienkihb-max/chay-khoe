@@ -58,7 +58,7 @@ async function installSpies(page) {
   });
 }
 
-// Mở app ở chế độ giả: camera giả + pose giả + sheet giả. Đo ngắn: thu từ giây 4, phân tích 8 giây.
+// Mở app ở chế độ giả: camera giả + pose giả + sheet giả. Đo ngắn: quay 20 giây, máy chọn 8 giây ổn định nhất (rec=4 là tham số cũ, không còn dùng).
 async function openApp(page, hash = '#/') {
   await page.goto('/screening.html?mock=1&total=20&rec=4&clip=8' + hash);
   await page.waitForFunction(() => !document.getElementById('go').textContent.includes('chuẩn bị'), null, { timeout: 30000 });
@@ -74,6 +74,10 @@ async function measureOne(page, p = {}) {
   if (p.height !== '') await page.fill('#height', String(p.height || 172));
   if (p.pain) await page.evaluate((v) => { document.getElementById('pain').value = v; }, p.pain);   // ô #pain đã ẩn khỏi màn đầu
   await page.click('#go');
+  // luồng 17/11/2026: "Sang màn đo" chỉ vào trạng thái chờ; kỹ thuật viên bấm Quay (#recgo) mới bắt đầu quay
+  await page.locator('#recgo').waitFor({ state: 'visible', timeout: 30000 });
+  await page.waitForTimeout(p.wait == null ? 1500 : p.wait);
+  await page.click('#recgo');
   await page.locator('#rvok').waitFor({ state: 'visible', timeout: 120000 });
   await page.click('#rvok');
   await page.waitForFunction(() => !document.getElementById('done').disabled, null, { timeout: 30000 });

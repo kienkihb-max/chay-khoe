@@ -1,5 +1,5 @@
 /* Chip chọn nhanh thay cho ô số (cài đặt đo, chọn file video).
- * Input số gốc vẫn là nguồn giá trị (app.js, localStorage, ?total= ?rec= ?clip=, preset s_mode đọc/ghi nó):
+ * Input số gốc vẫn là nguồn giá trị (app.js, localStorage, ?total= ?clip= đọc/ghi nó):
  *   - bấm chip: ghi value + phát 'change' (bubbles) như người dùng gõ;
  *   - ô gốc chỉ hiện khi bấm "Khác" (hoặc giá trị không trùng chip nào), đóng vai ô nhập số tay;
  *   - app.js ghi .value không có sự kiện thì gọi Chips.sync() để chip cập nhật trạng thái chọn.
@@ -7,13 +7,10 @@
 (function () {
   'use strict';
   var sec = function (v) { return 'giây thứ ' + v; };
-  var min = function (v) { return (v / 60) + ' phút'; };
   var kmh = function (v) { return String(v); };
   var SPEEDS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 16];
   var GROUPS = [
     { id: 's_speed', opts: SPEEDS, fmt: kmh, unit: 'km/h' },
-    { id: 's_total', opts: [60, 120, 180, 300], fmt: min, unit: ' giây' },
-    { id: 's_rec', opts: [10, 30, 50, 90], fmt: sec, unit: ' giây' },
     { id: 'vspeed', opts: SPEEDS, fmt: kmh, unit: 'km/h' },
     { id: 'vstart', opts: [0, 10, 30, 50], fmt: sec, unit: ' giây' }
   ];

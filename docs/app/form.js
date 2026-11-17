@@ -6,7 +6,7 @@
   function initPose(...a) { return App.initPose(...a); }
   function fixDur(...a) { return App.fixDur(...a); }
   // hàm của file này (khai báo function được nâng lên đầu nên đưa ra ngay)
-  Object.assign(App, { refreshL1, applySettings, startCamera });
+  Object.assign(App, { refreshL1, applySettings, startCamera, durTxt: (x) => durTxt(x) });
   // ---------- Lớp 1: form + camera ----------
   function refreshL1() {
     const hv = +$('height').value, miss = [];
@@ -14,42 +14,43 @@
     const ok = miss.length === 0;
     const ready = S.poseReady && (S.mode === 'live' ? S.camReady : !!S.file);
     $('go').disabled = !(ok && ready);
-    $('go').textContent = !ok ? 'Còn thiếu: ' + miss.join(', ') : !ready ? (S.poseReady ? 'Hãy chọn file video' : 'Đang chuẩn bị...') : S.mode === 'file' ? 'Phân tích video' : 'Bắt đầu đo · ' + Math.round(CFG.total / 60 * 10) / 10 + ' phút';
-    if (S.mode === 'live' && CFG.total < 100) $('go').textContent = 'Bắt đầu (thử ' + CFG.total + ' giây)';
+    $('go').textContent = !ok ? 'Còn thiếu: ' + miss.join(', ') : !ready ? (S.poseReady ? 'Hãy chọn file video' : 'Đang chuẩn bị...') : S.mode === 'file' ? 'Phân tích video' : 'Sang màn đo';
+    $('gohint').style.display = S.mode === 'file' ? 'none' : '';
     // Góc quay tự nhận; "Quay xong" chỉ bấm được khi đã chốt ít nhất 1 góc
     const ss = S.sess || {}, got = ['side', 'back'].filter((a) => ss[a]);
     $('angst').textContent = got.length ? 'Đã chốt góc ' + got.map((a) => ANG_NAME[a]).join(' và ') + (ss.sub ? ' cho ' + ss.sub.name : '') + '. Quay lại một góc đã chốt sẽ thay lần quay cũ.' : '';
     $('done').disabled = !got.length || S.running;
   }
   // ---------- Cài đặt đo ----------
-  const SETK = { s_mode: 'std', s_speed: 10, s_fps: 30, s_res: 720, s_clip: 15, s_rec: 50, s_total: 120 };
+  // Chỉ còn: tốc độ máy, FPS, độ phân giải, thời gian quay. Đã bỏ các kiểu chạy đặt sẵn (Chuẩn/Nhanh/Kỹ/Đầy đủ), giây bắt đầu thu và tự chờ ổn định:
+  // kỹ thuật viên tự bấm Quay ở màn đo; máy chọn CFG.clip giây ổn định nhất trong lần quay (stable.js).
+  const SETK = { s_speed: 10, s_fps: 30, s_res: 720, s_total: 60 };
+  const durTxt = (sec) => (sec % 60 === 0 ? sec / 60 + ' phút' : sec === 90 ? '1,5 phút' : sec + ' giây');
   (function () {
-    try { const o = JSON.parse(localStorage.getItem('gait_set') || '{}'); for (const k in SETK) if (o[k] != null) $(k).value = o[k]; } catch (e) { /* bỏ qua */ }
-    if (Q.get('clip')) $('s_clip').value = CFG.clip; if (Q.get('total')) $('s_total').value = CFG.total; if (Q.get('rec')) $('s_rec').value = CFG.rec;
-    const clipSel = $('s_clip'); if (![...clipSel.options].some((o) => o.value === String(clipSel.value))) clipSel.add(new Option(clipSel.value, clipSel.value, true, true));
+    try {
+      let o = JSON.parse(localStorage.getItem('gait_set2') || 'null');
+      if (!o) { o = JSON.parse(localStorage.getItem('gait_set') || '{}'); delete o.s_total; }   // lần đầu sau khi đổi luồng: giữ tốc độ/FPS/độ phân giải cũ, thời gian quay về mặc định 1 phút
+      for (const k in SETK) if (o[k] != null) $(k).value = o[k];
+      localStorage.removeItem('gait_set'); localStorage.removeItem('gait_auto');
+    } catch (e) { /* bỏ qua */ }
+    const tot = $('s_total'); if (Q.get('total')) { if (![...tot.options].some((o) => o.value === String(CFG.total))) tot.add(new Option(durTxt(CFG.total), CFG.total)); tot.value = CFG.total; }
+    if (!tot.value) tot.value = 60;
   })();
-  try { $('s_auto').checked = localStorage.getItem('gait_auto') !== '0'; } catch (e) { /* bỏ qua */ }
-  $('s_auto').addEventListener('change', () => { try { localStorage.setItem('gait_auto', $('s_auto').checked ? '1' : '0'); } catch (e) { /* bỏ qua */ } });
-  const PRE = { std: [120, 50, 15], fast: [60, 20, 15], long: [150, 60, 30], full: [180, 70, 60] };   // tổng, bắt đầu thu, độ dài
   let lastCam = '';
   function applySettings(fromUser, src) {
-    if (src === 's_mode' && PRE[$('s_mode').value]) { const p = PRE[$('s_mode').value]; $('s_total').value = p[0]; $('s_rec').value = p[1]; $('s_clip').value = p[2]; }
-    else if (src && ['s_total', 's_rec', 's_clip'].includes(src)) $('s_mode').value = 'custom';
     const o = {}; for (const k in SETK) o[k] = $(k).value;
-    try { localStorage.setItem('gait_set', JSON.stringify(o)); } catch (e) { /* bỏ qua */ }
+    try { localStorage.setItem('gait_set2', JSON.stringify(o)); } catch (e) { /* bỏ qua */ }
     App.SPEED0 = (+$('s_speed').value || 10) / 3.6;
-    CFG.fps = +$('s_fps').value; CFG.clip = Math.max(+$('s_clip').value || 15, 6); CFG.rec = Math.max(+$('s_rec').value || 50, 3);
-    CFG.total = Math.max(+$('s_total').value || 120, 20); CFG.res = +$('s_res').value;
-    const need = CFG.rec + CFG.clip + 6; let note = '';
-    if (CFG.total < need) { CFG.total = need; note = 'Tổng thời gian được nâng lên ' + need + ' giây để đủ chỗ cho đoạn phân tích. '; }
-    $('s_note').textContent = note + 'Máy chạy ' + (+$('s_speed').value || 10) + ' km/h. Đoạn phân tích ' + CFG.clip + ' giây bắt đầu ở giây ' + CFG.rec + '. FPS thực tế phụ thuộc tốc độ máy tính (xem dòng "Nhận diện … khung/giây" khi đang đo).';
+    CFG.fps = +$('s_fps').value; CFG.total = Math.max(+$('s_total').value || 60, 10); CFG.res = +$('s_res').value;
+    $('s_note').textContent = 'Máy chạy ' + (+$('s_speed').value || 10) + ' km/h. Quay ' + durTxt(CFG.total) + ', máy chọn ' + Math.min(CFG.clip, CFG.total) + ' giây ổn định nhất để phân tích. FPS thực tế phụ thuộc tốc độ máy tính.';
+    $('recgo').textContent = '● Quay ' + durTxt(CFG.total);
     const key = CFG.res + '/' + CFG.fps;
     if (fromUser && key !== lastCam && typeof startCamera === 'function') startCamera($('camsel').value || undefined);
     lastCam = key;
     if (window.Chips) Chips.sync();   // preset/localStorage ghi .value không phát sự kiện: cập nhật chip
     if (typeof refreshL1 === 'function') refreshL1();
   }
-  ['s_mode', 's_speed', 's_fps', 's_res', 's_clip', 's_rec', 's_total'].forEach((i) => $(i).addEventListener('change', () => applySettings(true, i)));
+  ['s_speed', 's_fps', 's_res', 's_total'].forEach((i) => $(i).addEventListener('change', () => applySettings(true, i)));
   ['name', 'phone', 'height', 'pain'].forEach((i) => $(i).addEventListener('input', refreshL1));
 
   // Camera giả (mock): vẽ người que đang chạy lên canvas rồi lấy stream; dùng khi máy không có camera hoặc thêm ?mock=1
@@ -129,7 +130,7 @@
     const v = $('v1');
     if (m === 'file') { v.srcObject = null; if (S.fileUrl) { v.src = S.fileUrl; v.controls = true; v.muted = true; } }
     else { v.removeAttribute('src'); v.controls = false; if (S.stream) { v.srcObject = S.stream; v.play().catch(() => {}); } }
-    $('subt').textContent = m === 'file' ? 'Phân tích video quay sẵn: chọn file, chọn đoạn chạy ổn định rồi bấm phân tích.' : 'Phân tích chuyển động bằng AI, đánh giá cân bằng hai chân. Có kết quả sau ' + Math.round(CFG.total / 60 * 10) / 10 + ' phút chạy.';
+    $('subt').textContent = m === 'file' ? 'Phân tích video quay sẵn: chọn file, chọn đoạn chạy ổn định rồi bấm phân tích.' : 'Phân tích chuyển động bằng AI, đánh giá cân bằng hai chân. Quay ' + durTxt(CFG.total) + ', máy chọn ' + Math.min(CFG.clip, CFG.total) + ' giây ổn định nhất để phân tích.';
     mockWarn(m === 'file' && Q.get('mock') === '1');
     refreshL1();
     initPose();   // video tải lên dùng Heavy, quay trực tiếp dùng Full

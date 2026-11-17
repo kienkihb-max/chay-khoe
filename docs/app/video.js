@@ -18,7 +18,7 @@
     const km = +$('vspeed').value || 10; App.SPEED = km / 3.6;
     S.sub = takeSub();
     S.lastLm = null; S.frames = []; S.late = []; S.result = null; S.error = null; S.computing = false; S.abort = false; S.running = true; S.photosReady = false;
-    show('L2'); layout(); lvReset(); $('early').style.display = 'none'; $('nowbtn').style.display = 'none';
+    show('L2'); layout(); lvReset(); $('early').style.display = 'none'; $('recgo').style.display = 'none'; $('donebn').hidden = true;
     $('who').textContent = S.sub.name; angShow(true);
     document.querySelector('.cd em').textContent = 'TIẾN ĐỘ'; $('count').textContent = '0%'; $('progf').style.width = '0%'; $('fpsb').textContent = '';
     setPhase('Đang mở video...', 'wn');
@@ -49,7 +49,7 @@
         k = guessSlow(ys, 20);
       }
       S.slow = k;
-      const needVid = CFG.clip * k, avail = dur - start;
+      const needVid = CFG.vclip * k, avail = dur - start;
       const vclip = Math.min(needVid, avail);
       if (vclip / k < 6) throw new Error('Video quá ngắn: cần ít nhất ' + Math.ceil(6 * k) + ' giây video (= 6 giây thực tế) sau điểm bắt đầu' + (k > 1 ? ' vì video quay chậm gấp ' + k : '') + '.');
       const n = Math.floor(vclip / k * CFG.fps);
@@ -83,8 +83,8 @@
     }
   }
   $('early').addEventListener('click', () => { S.endNow = true; });
-  $('nowbtn').addEventListener('click', () => { S.recAt = performance.now() / 1000 - S.t0; S.recWhy = 'đo ngay'; });
-  $('cancel').addEventListener('click', () => { if (!confirm('Dừng đo và không lưu kết quả của lần này?')) return; if (REC.mr) recStop(false); S.abort = true; S.running = false; clearInterval(S.timer); show('L1'); refreshL1(); });
+  $('recgo').addEventListener('click', () => { if (S.running && S.recAt == null) App.recGo(); });
+  $('cancel').addEventListener('click', () => { if (!confirm('Dừng đo và không lưu kết quả của lần này?')) return; if (REC.mr) recStop(false); S.abort = true; S.running = false; S.recLive = false; clearInterval(S.timer); show('L1'); refreshL1(); });
   // Chọn tay góc quay (đổi giữa lần đo, hoặc khi app không nhận được góc thì đo lại với góc đã chọn)
   $('angchg').addEventListener('click', () => { if (BACK_ON && S.running && S.take && !S.computing && !S.result) setTake(S.take === 'back' ? 'side' : 'back', true); });
   $('angpick').addEventListener('click', (e) => { const b = e.target.closest('button[data-a]'); if (!b || $('go').disabled) return; S.angMan = b.dataset.a; $('go').click(); });
