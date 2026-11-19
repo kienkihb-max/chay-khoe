@@ -74,6 +74,9 @@
     c.textAlign = 'right'; c.fillStyle = TC.brand; c.font = '700 20px ' + FF; c.fillText('Liên hệ: ' + CONTACT, 1872, 1068); c.textAlign = 'left';
     return cv;
   }
+  // Khoảng bình thường ghi theo đúng phía app đánh giá (Gait.rateValue): side 'high' chỉ xét phía cao -> "≤ hi", side 'low' -> "≥ lo".
+  const refTxt = (c) => (!c || c.lo == null ? '' : c.side === 'high' ? '≤ ' + c.hi : c.side === 'low' ? '≥ ' + c.lo : c.lo + '–' + c.hi);
+  App.refTxt = refTxt;
   function drawPage3(R) {
     const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080;
     const c = cv.getContext('2d'), FF = Themes.font;
@@ -89,42 +92,70 @@
       const cf = REF[k], common = Gait.COMMON.includes(k);
       const L = R.res.L ? R.res.L.metrics[k] : NaN, Rr = R.res.R ? R.res.R.metrics[k] : NaN, v = common ? cval(R, k) : null;
       const st = common ? rating(k, v) : null, sl = R.res.L ? rating(k, L) : { ok: true, txt: '–' }, sr = R.res.R ? rating(k, Rr) : { ok: true, txt: '–' };
-      if (k === 'cadence' && cadLow(R)) { rows.push({ label: cf.label, unit: cf.unit, a: '–', b: '', ref: cf.lo + '–' + cf.hi, st: 'Cần đo lại', ok: false, common }); continue; }
-      rows.push({ label: cf.label, unit: cf.unit, a: common ? f1(v) : f1(L), b: common ? '' : f1(Rr), ref: cf.lo + '–' + cf.hi, st: common ? st.txt : sl.txt + ' / ' + sr.txt, ok: common ? st.ok : sl.ok && sr.ok, common });
+      if (k === 'cadence' && cadLow(R)) { rows.push({ label: cf.label, unit: cf.unit, a: '–', b: '', ref: refTxt(cf), st: 'Cần đo lại', ok: false, common }); continue; }
+      rows.push({ label: cf.label, unit: cf.unit, a: common ? f1(v) : f1(L), b: common ? '' : f1(Rr), ref: refTxt(cf), st: common ? st.txt : sl.txt + ' / ' + sr.txt, ok: common ? st.ok : sl.ok && sr.ok, common });
     }
     rows.push({ label: 'Kiểu tiếp đất', unit: '', a: R.res.L ? R.res.L.extra.strike : '–', b: R.res.R ? R.res.R.extra.strike : '–', ref: '', st: '', ok: true });
     extraRows(R).forEach((x) => rows.push(x));
-    // Chữ to cho khách đọc (bác sĩ Kiên 19/11/2026): tách 2 trang. Trang 1 = chỉ số chính (đến Kiểu tiếp đất), trang 2 = chỉ số bổ sung.
-    const nMain = keys.length + 1;
-    return [sheet3(R, rows.slice(0, nMain), 'Bảng số đo chi tiết', false), sheet3(R, rows.slice(nMain), 'Bảng số đo chi tiết · chỉ số bổ sung', true)];
+    // Chữ to, dễ thấy chỉ số bất thường (bác sĩ Kiên 19/11/2026): xếp các chỉ số NGOÀI khoảng lên trước (nền cam, nhãn ▼ Thấp / ▲ Cao),
+    // rồi tới chỉ số trong khoảng và chỉ số chỉ để theo dõi. Mỗi trang tối đa PER dòng.
+    const legSt = (t) => { t = String(t || '').trim(); return /thấp/.test(t) ? 'lo' : /cao|thay đổi nhiều/.test(t) ? 'hi' : /trong khoảng|ổn định/.test(t) ? 'ok' : /đo lại/i.test(t) ? 're' : ''; };
+    rows.forEach((r) => {
+      const p = String(r.st || '').split(' / ');
+      r.sa = legSt(p[0]); r.sb = p.length > 1 ? legSt(p[1]) : r.common ? '' : r.sa;
+      const all = [r.sa, r.sb].filter(Boolean);
+      r.kind = all.some((x) => x === 'lo' || x === 'hi' || x === 're') ? 'att' : all.includes('ok') ? 'ok' : 'track';
+    });
+    const att = rows.filter((r) => r.kind === 'att'), ok = rows.filter((r) => r.kind === 'ok'), track = rows.filter((r) => r.kind === 'track');
+    const PER = 8, pages = [];
+    const chunk = (arr, title) => { for (let k = 0; k < arr.length; k += PER) pages.push({ rows: arr.slice(k, k + PER), title: title + (arr.length > PER ? ' (' + (k / PER + 1) + '/' + Math.ceil(arr.length / PER) + ')' : '') }); };
+    chunk(att, 'Chỉ số cần chú ý');
+    chunk(ok.concat(track), 'Chỉ số bình thường và để theo dõi');
+    if (!pages.length) pages.push({ rows: [], title: 'Bảng số đo chi tiết' });
+    pages[pages.length - 1].notes = true;
+    return pages.map((pg) => sheet3(R, pg.rows, pg.title, pg.notes, att.length));
   }
-  function sheet3(R, rows, title, notes) {
+  function sheet3(R, rows, title, notes, nAtt) {
     const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080;
     const c = cv.getContext('2d'), FF = Themes.font;
+    const OKC = '#2E7D32', OKB = '#E4F5E7', WC = '#B8650A', WB = '#FFF1DC', WBAR = '#F0A020', GRY = '#5B6B77';
     c.fillStyle = '#fff'; c.fillRect(0, 0, 1920, 1080);
     const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
     c.fillStyle = g; c.fillRect(0, 0, 1920, 110);
-    c.fillStyle = '#fff'; c.font = '700 42px ' + FF; c.fillText(title, 48, 68);
+    c.fillStyle = '#fff'; c.font = '700 46px ' + FF; c.fillText(title, 48, 72);
     c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Hanoi Running Lab', 1872, 52);
     c.fillStyle = TC.soft; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
-    // trạng thái hai chân giống nhau thì chỉ ghi một lần
-    const stTxt = (t) => { const p = String(t || '').split(' / '); return p.length === 2 && p[0] === p[1] ? p[0] : t; };
-    const top = 176, bottom = notes ? 980 : 1036, n = Math.max(rows.length, 1), rh = Math.min(84, Math.floor((bottom - top) / n));
-    const X = [48, 770, 1000, 1230, 1470], FS = Math.max(24, Math.min(32, rh - 30));
-    c.fillStyle = '#14202B'; c.font = '700 26px ' + FF;
-    ['Chỉ số', 'Chân trái', 'Chân phải', 'Bình thường', 'Đánh giá'].forEach((t, i) => c.fillText(t, X[i] + 14, top - 18));
+    const pill = (x, y, txt, fg, bg, fs) => { c.font = '800 ' + fs + 'px ' + FF; const w = c.measureText(txt).width + fs * 1.3, h = fs * 1.75; c.fillStyle = bg; rr(c, x, y - h / 2, w, h, h / 2); c.fill(); c.fillStyle = fg; c.fillText(txt, x + fs * 0.65, y + fs * 0.36); return w; };
+    const legTxt = { lo: '▼ Thấp', hi: '▲ Cao', ok: 'Bình thường', re: 'Cần đo lại' };
+    if (!rows.length) { c.fillStyle = GRY; c.font = '36px ' + FF; c.fillText('Không có chỉ số.', 48, 260); return cv; }
+    const top = 196, bottom = notes ? 984 : 1050, rh = Math.min(110, Math.floor((bottom - top) / Math.max(rows.length, 5)));
+    const X = [48, 760, 990, 1220, 1480], FS = 36, VS = 46;
+    c.fillStyle = GRY; c.font = '700 26px ' + FF;
+    ['Chỉ số', 'Chân trái', 'Chân phải', 'Bình thường', 'Đánh giá'].forEach((t, i) => c.fillText(t, X[i] + 24, top - 22));
     rows.forEach((r, i) => {
-      const y = top + i * rh, by = y + rh * 0.64;
-      c.fillStyle = i % 2 ? '#fff' : TC.pale; c.fillRect(48, y, 1824, rh - 3);
-      c.font = '500 ' + FS + 'px ' + FF; c.fillStyle = '#14202B'; c.fillText(r.label + (r.unit ? ' (' + r.unit + ')' : ''), X[0] + 14, by, X[1] - X[0] - 28);
-      c.font = '800 ' + (FS + 4) + 'px ' + FF;
-      if (r.common) c.fillText(r.a, X[1] + 14, by, X[3] - X[1] - 28); else { c.fillText(r.a, X[1] + 14, by, X[2] - X[1] - 24); c.fillText(r.b, X[2] + 14, by, X[3] - X[2] - 24); }
-      c.font = FS + 'px ' + FF; c.fillStyle = '#5B6B77'; c.fillText(r.ref, X[3] + 14, by, X[4] - X[3] - 24);
-      c.fillStyle = r.ok ? GREEN : AMBER; c.font = '700 ' + FS + 'px ' + FF; c.fillText(stTxt(r.st), X[4] + 14, by, 1872 - X[4] - 24);
+      const y = top + i * rh, cy = y + (rh - 8) / 2, att = r.kind === 'att';
+      c.fillStyle = att ? WB : i % 2 ? '#fff' : TC.pale; rr(c, 48, y, 1824, rh - 8, 14); c.fill();
+      c.fillStyle = att ? WBAR : r.kind === 'ok' ? '#7CC48A' : '#C9D3CC'; rr(c, 48, y, 12, rh - 8, 6); c.fill();
+      const by = cy + FS * 0.36;
+      c.fillStyle = '#14202B'; c.font = (att ? '700 ' : '500 ') + FS + 'px ' + FF;
+      c.fillText(r.label, X[0] + 24, r.unit ? by - 10 : by, X[1] - X[0] - 40);
+      if (r.unit) { c.fillStyle = GRY; c.font = '24px ' + FF; c.fillText('đơn vị: ' + r.unit, X[0] + 24, by + 24, X[1] - X[0] - 40); }
+      const vcol = (st) => (st === 'lo' || st === 'hi' || st === 're' ? WC : '#14202B');
+      const vy = cy + VS * 0.36;
+      c.font = '800 ' + VS + 'px ' + FF;
+      if (r.common) { c.fillStyle = vcol(r.sa); c.fillText(r.a, X[1] + 24, vy, X[3] - X[1] - 40); }
+      else { c.fillStyle = vcol(r.sa); c.fillText(r.a, X[1] + 24, vy, X[2] - X[1] - 30); c.fillStyle = vcol(r.sb); c.fillText(r.b, X[2] + 24, vy, X[3] - X[2] - 30); }
+      c.fillStyle = GRY; c.font = '32px ' + FF; c.fillText(r.ref || '–', X[3] + 24, by, X[4] - X[3] - 30);
+      // đánh giá: một nhãn nếu hai chân giống nhau, hai nhãn T/P nếu khác
+      const px = X[4] + 24, A = r.sa, B = r.common ? '' : r.sb;
+      const col = (st) => (st === 'ok' ? [OKC, OKB] : [WC, '#FFE2B8']);   // [chữ, nền nhãn]
+      if (!A && !B) { c.fillStyle = GRY; c.font = 'italic 28px ' + FF; c.fillText('Để theo dõi', px, by); }
+      else if (!B || A === B) { const st = A || B, cc = col(st); pill(px, cy, legTxt[st] || st, cc[0], cc[1], 30); }
+      else { let x2 = px; [['T', A], ['P', B]].forEach(([lb, st]) => { if (!st) return; const cc = col(st); x2 += pill(x2, cy, lb + ' ' + (legTxt[st] || st), cc[0], cc[1], 24) + 10; }); }
     });
     if (notes) {
-      c.fillStyle = '#5B6B77'; c.font = '20px ' + FF;
-      wrap(c, 'Mốc thời gian chạm đất/bay ước lượng từ video 30 khung/giây (sai số khoảng ±33 ms). Các chỉ số không có khoảng bình thường chỉ để theo dõi. Chân xa camera kém tin cậy hơn. Không đo được từ camera ngang: gối vào trong, hông tụt, bàn chân xoay trong/ngoài, bước chéo, bề rộng bước (cần thêm camera sau). Chỉ mang tính tham khảo, không thay thế bác sĩ.', 48, 1012, 1824, 28);
+      c.fillStyle = GRY; c.font = '20px ' + FF;
+      wrap(c, (nAtt ? 'Nền cam: chỉ số nằm ngoài khoảng bình thường (▼ thấp hơn, ▲ cao hơn). ' : '') + 'Mốc thời gian chạm đất/bay ước lượng từ video 30 khung/giây (sai số khoảng ±33 ms). Chỉ số "Để theo dõi" chưa có khoảng bình thường. Chân xa camera kém tin cậy hơn. Không đo được từ camera ngang: gối vào trong, hông tụt, bàn chân xoay, bước chéo, bề rộng bước. Chỉ mang tính tham khảo, không thay thế bác sĩ.', 48, 1012, 1824, 28);
     }
     return cv;
   }
