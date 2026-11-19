@@ -6,7 +6,7 @@
   // hàm ở file nạp sau: gọi qua App khi chạy
   function drawResultCv(...a) { return App.drawResultCv(...a); }
   // hàm của file này (khai báo function được nâng lên đầu nên đưa ra ngay)
-  Object.assign(App, { rvData, rvCad, drawHero, rvSide, drawResult, pdfPage1, renderView, rvFact });
+  Object.assign(App, { rvData, rvCad, drawHero, rvSide, drawResult, pdfPage1, renderView, rvFact, rvTiles });
   // ---------- Màn kết quả dạng thẻ (#rview), theo docs/mockup/ket-qua.html ----------
   // Câu mô tả từng chỉ số: app/rvdesc.js (trung tính, không kết luận; bác sĩ 15/11/2026).
   // Thứ tự thẻ = thứ tự trên ảnh tải về; ảnh chỉ đủ chỗ 16 thẻ nên chỉ số phụ (khuỷu) để cuối.
@@ -183,23 +183,30 @@
     const foot = App.rvFoot(R, rows), view = R.back ? 'Ngang + sau' : 'Ngang', fact = rvFact(R);
     const dl = [['Mã khách', sub.id], ['Họ tên', sub.name], ['Chiều cao', sub.height ? sub.height + ' cm' : ''], ['Ngày đo', pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear()],
       ['Tốc độ máy', ((R.speed || App.SPEED) * 3.6).toFixed(0) + ' km/h'], ['Góc quay', view]];
-    const cell = (x, l) => '<span class="c' + (rvMuted(x) ? ' dim' : '') + '" data-l="' + l + '">' + escA(x.t) + '</span>';
-    const tr = (r) => '<div class="r"><div class="nm"><b>' + r.nm + '</b><span>' + r.d + '</span></div>' +
-      (r.wide ? cell(r.cells[0], 'Giá trị') : cell(r.cells[0], 'Trái') + cell(r.cells[1], 'Phải')) +
-      '<div class="rf">' + escA(r.rf || '–') + (r.src ? '<em>' + escA(r.src) + '</em>' : '') + '</div></div>';
     // Chỉ số ngoài 5 chỉ số chính chỉ hiện ở chế độ bác sĩ (body.bs, CSS .bsonly)
     const rest = RV_KEYS.filter((k) => !RV_TOP.includes(k)).map((k) => rvCard(R, k)).filter(Boolean);
+    const tiles = rvTiles(R), pct = (v, a) => Math.max(0, Math.min(100, (v - a[0]) / (a[1] - a[0]) * 100));
+    const big = (x, cls) => '<b class="' + cls + (rvMuted(x) ? ' dim' : '') + '">' + escA(x.t) + '</b>';
+    const gauge = (t) => {
+      if (!t.sc) return '';
+      const b0 = pct(t.band[0], t.sc), b1 = pct(t.band[1], t.sc);
+      const mk = (x, cls) => (x && x.n != null ? '<i class="m ' + cls + '" style="left:' + pct(x.n, t.sc) + '%"></i>' : '');
+      return '<div class="g"><span class="band" style="left:' + b0 + '%;width:' + (b1 - b0) + '%"></span>' + (t.kind === 'one' ? mk(t.one, '') : mk(t.L, 'L') + mk(t.R, 'R')) + '</div>';
+    };
+    const tile = (t) => '<section class="tl st-' + t.st + (t.sev === 'bad' ? ' bad' : '') + '"><h3>' + escA(t.h) + '</h3><p class="d">' + escA(t.d) + '</p>' +
+      (t.kind === 'one' ? '<div class="v1">' + big(t.one, 'n') + '<i>' + escA(t.unit) + '</i></div>'
+        : '<div class="v2' + (t.kind === 'word' ? ' w' : '') + '"><div class="L"><span>Trái</span>' + big(t.L, 'n') + '</div><div class="R"><span>Phải</span>' + big(t.R, 'n') + '</div></div>') +
+      gauge(t) + '<p class="rf">Tham chiếu: <b>' + escA(t.ref) + '</b>' + (t.src ? ' <em>· ' + escA(t.src) + '</em>' : '') + '</p><span class="stc">' + RV_ST[t.st] + '</span></section>';
     box.innerHTML = '<header class="strip"><h1>Báo cáo dáng chạy</h1><dl>' + dl.map(([a, b]) => '<div><dt>' + a + '</dt><dd>' + escA(b || '–') + '</dd></div>').join('') + '</dl></header>' +
-      '<div class="main"><div class="left"><button type="button" class="ph" aria-label="Phóng to ảnh"><canvas id="rvhero" width="900" height="1200"></canvas>' +
+      '<div class="main"><div class="left"><div class="score"><div class="lb">Điểm dáng chạy</div><div class="n' + (sc.total != null ? '' : ' na') + '">' + (sc.total != null ? sc.total + '<small>/100</small>' : '–') + '</div>' +
+      (tt ? '<span class="badge">' + (App.RV_BADGE[tt.key] || tt.name) + '</span>' : '') + '<p>' + App.rvScoreLine(sc.total) + '</p></div>' +
+      '<button type="button" class="ph" aria-label="Phóng to ảnh"><canvas id="rvhero" width="900" height="1200"></canvas>' +
       '<span class="cap">' + (side === 'L' ? 'Chân trái' : 'Chân phải') + ' · Chạm đất</span></button></div>' +
-      '<div class="right"><div class="score"><div class="lb">Điểm dáng chạy</div><div class="n' + (sc.total != null ? '' : ' na') + '">' + (sc.total != null ? sc.total + '<small>/100</small>' : '–') + '</div>' +
-      (tt ? '<span class="badge">' + (App.RV_BADGE[tt.key] || tt.name) + '</span>' : '') + '<p>' + App.rvScoreLine(sc.total) + '</p>' +
-      (fact ? '<aside class="fact"><b>Bạn có biết?</b><p>' + escA(fact.t) + ' <cite>(' + escA(fact.src) + ')</cite></p></aside>' : '') + '</div>' +
-      '<div class="tb" role="table">' + App.rvGroups(rows).map((g) => '<div class="rg ' + (g.key === 'C' ? 'g1' : 'g2') + '"><h3>' + g.title + '</h3><div class="r hd"><span>Chỉ số</span>' +
-        (g.key === 'C' ? '<span>Giá trị</span>' : '<span>Trái</span><span>Phải</span>') + '<span>Tham chiếu</span></div>' + g.rows.map(tr).join('') + '</div>').join('') +
-      (foot ? '<p class="fn">' + escA(foot) + '</p>' : '') + '</div>' +
-      '<div class="kl"><h2>Kết luận tổng kết</h2><ul>' + App.rvAdvice(R, rows).map((t) => '<li>' + escA(t) + '</li>').join('') + '</ul></div>' +
-      '<div class="doc"><h2>Ghi chú của bác sĩ</h2><p></p><button type="button" class="alt">Viết / sửa ghi chú</button></div></div></div>' +
+      '<div class="tiles">' + tiles.map(tile).join('') +
+      (fact ? '<section class="tl tfact"><h3>Bạn có biết?</h3><p>' + escA(fact.t) + '</p><cite>' + escA(fact.src) + '</cite></section>' : '') + '</div></div>' +
+      (foot ? '<p class="fn">' + escA(foot) + '</p>' : '') +
+      '<div class="more"><div class="kl"><h2>Kết luận tổng kết</h2><ul>' + App.rvAdvice(R, rows).map((t) => '<li>' + escA(t) + '</li>').join('') + '</ul></div>' +
+      '<div class="doc"><h2>Ghi chú của bác sĩ</h2><p></p><button type="button" class="alt">Viết / sửa ghi chú</button></div></div>' +
       (rest.length ? '<div class="bsonly"><h2>Chỉ số khác (bác sĩ)</h2><div class="cards" id="rvrest">' + rest.join('') + '</div></div>' : '') +
       '<div class="foot">Kết quả chỉ mang tính tham khảo.</div>';
     const cv = $('rvhero'); drawHero(cv, ph[side], side, R);
@@ -207,6 +214,41 @@
     box.querySelector('.doc button').onclick = () => $('notebtn').click();
     rvNote();
     if (!noteObs) { noteObs = new MutationObserver(rvNote); noteObs.observe($('notebtn'), { childList: true, characterData: true, subtree: true }); }
+  }
+  // ---------- Thẻ số to (bác sĩ Kiên 19/11/2026): mỗi chỉ số chính một thẻ, số rất to + thanh so sánh với khoảng tham chiếu ----------
+  // Dùng chung cho màn #rview và ảnh tải về (rvsheet.js). Khoảng xanh trên thanh = khoảng "Tốt" khi chấm điểm (Score.band), nên trạng thái,
+  // thanh và điểm số luôn khớp nhau; chữ "Tham chiếu" bên dưới vẫn là số liệu nghiên cứu (REF.ref_txt).
+  const RV_SHORT = { shank_ic: ['Góc cẳng chân', 'Độ nghiêng lúc chạm đất'] };
+  const RV_ST = { ok: 'Trong khoảng tham chiếu', lo: 'Thấp hơn khoảng tham chiếu', hi: 'Cao hơn khoảng tham chiếu', nb: 'Để tham khảo' };
+  // Thứ tự thẻ (lưới 3 cột, bác sĩ Kiên 19/11/2026): hàng trên = Nhịp bước, Nhấp nhô (chỉ số chung) + Đáp đất ở cột ngoài;
+  // hàng dưới = hai chỉ số Trái | Phải (Góc cẳng chân, Gập gối) + "Bạn có biết?" ở cột ngoài.
+  const RV_TILE_ORDER = ['cadence', 'vert_osc', 'strike', 'shank_ic', 'knee_mid'];
+  function rvTiles(R) {
+    const ord = (k) => { const i = RV_TILE_ORDER.indexOf(k); return i < 0 ? 99 : i; };
+    const rows = App.rvRows(R).slice().sort((a, b) => ord(a.k) - ord(b.k));
+    return rows.map((r) => {
+      const b = Score.band(r.k), c = REF[r.k] || {}, nm = RV_SHORT[r.k] || [r.nm, String(r.d || '').replace(/\.$/, '')];
+      const t = { k: r.k, h: nm[0], d: nm[1], ref: r.rf || '–', src: r.src || '', kind: r.wide ? 'one' : r.k === 'strike' ? 'word' : 'lr' };
+      const cellOf = (x, v) => ({ t: x ? x.t : '–', dim: !!(x && x.dim), n: typeof v === 'number' && isFinite(v) ? v : null });
+      if (t.kind === 'one') {
+        const x = r.cells[0], m = /^(\S+)\s+(.+)$/.exec(x.t || '');
+        t.one = cellOf(x, r.v.C); t.one.t = m ? m[1] : x.t; t.unit = m ? m[2] : '';
+        if (/\*$/.test(t.unit)) { t.unit = t.unit.slice(0, -1); t.one.t += '*'; }   // dấu * (số chưa đủ tin cậy) đi theo con số, không theo đơn vị
+      } else { t.L = cellOf(r.cells[0], r.v.L); t.R = cellOf(r.cells[1], r.v.R); }
+      if (t.kind === 'word' || !b) { t.st = 'nb'; return t; }
+      const vals = (t.kind === 'one' ? [t.one] : [t.L, t.R]).filter((x) => x.n != null).map((x) => x.n);
+      let st = 'ok', sev = null;
+      for (const v of vals) {
+        const lv = Score.level(r.k, v); if (!lv || lv === 'ok') continue;
+        const dir = b.good[0] != null && v < b.good[0] ? 'lo' : 'hi';
+        if (!sev || (lv === 'bad' && sev !== 'bad')) { sev = lv; st = dir; }
+      }
+      t.st = vals.length ? st : 'nb'; t.sev = sev;
+      const lo = c.lo, hi = c.hi, padv = (hi - lo) * 0.35;
+      t.sc = [Math.min(lo, ...vals) - padv, Math.max(hi, ...vals) + padv];
+      t.band = [b.good[0] != null ? b.good[0] : t.sc[0], b.good[1] != null ? b.good[1] : t.sc[1]];
+      return t;
+    });
   }
   // "Bạn có biết?": một fact có nghiên cứu gắn với chỉ số lệch nhất (docs/facts.js). Dùng chung màn #rview và ảnh tải về (rvsheet.js).
   function rvFact(R) {
