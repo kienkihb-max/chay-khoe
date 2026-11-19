@@ -1,7 +1,7 @@
 /* app/run.js - chạy một lần đo trực tiếp: màn chờ, bấm Quay, đếm giờ, chọn đoạn ổn định, báo đo xong. Một phần của app cũ; cách chia sẻ biến xem đầu app/core.js. */
 (function (App) {
   'use strict';
-  const { $, CFG, S, BACK_ON, angFeed, angShow, fixLR, show, pad, idStr, REC, recStart,
+  const { $, Q, CFG, S, BACK_ON, angFeed, angShow, fixLR, show, pad, idStr, REC, recStart,
     recStop, detect, v2, grab, gctx, layout, lvReset, lvRec, lvFeed, drawLive } = App;
   // hàm ở file nạp sau: gọi qua App khi chạy
   function titleCase(...a) { return App.titleCase(...a); }
@@ -54,23 +54,31 @@
       });
     } catch (e) { /* không có tiếng thì thôi, vẫn có bảng chữ */ }
   }
-  function sayDone() {
-    beep([880, 880, 1320], 0.28, 0.12);
-    try {
-      const en = document.documentElement.lang === 'en', want = en ? 'en' : 'vi';
-      const v = (window.speechSynthesis ? speechSynthesis.getVoices() : []).find((x) => (x.lang || '').toLowerCase().startsWith(want));
-      if (!v) return;   // máy không có giọng đọc đúng ngôn ngữ: chỉ bíp
-      const u = new SpeechSynthesisUtterance(en ? 'Measurement complete. You can slow down and stop.' : 'Đã đo xong. Bạn có thể giảm tốc và dừng lại.');
-      u.voice = v; u.lang = v.lang; setTimeout(() => { try { speechSynthesis.speak(u); } catch (e) { /* bỏ qua */ } }, 900);
-    } catch (e) { /* bỏ qua */ }
+  // ---------- Giọng thông báo cho khách (giọng Tuấn Anh, ElevenLabs v4, bác sĩ Kiên 19/11/2026): docs/audio/vi/*.mp3 ----------
+  // Phát qua thẻ <audio>; lần phát đầu luôn nằm trong cú bấm của KTV ("Sang màn đo") nên trình duyệt cho phép.
+  // Không phát được file (mất mạng, chặn tiếng) thì dùng tiếng bíp thay thế. Muốn tắt giọng: ?voice=0.
+  const VOICE_ON = Q.get('voice') !== '0';
+  const VOICE = { chuanbi: 'chuan-bi', batdau: 'bat-dau', con30: 'con-30', con10: 'con-10', xong: 'xong' };
+  const vEl = {};
+  function vLoad() {
+    if (!VOICE_ON) return;
+    for (const k in VOICE) if (!vEl[k]) { const a = new Audio('audio/vi/' + VOICE[k] + '.mp3'); a.preload = 'auto'; vEl[k] = a; }
   }
+  function say(k, fb) {
+    if (!VOICE_ON || document.documentElement.lang === 'en') { if (fb) fb(); return; }   // chưa có giọng tiếng Anh: dùng bíp
+    vLoad();
+    for (const x in vEl) if (x !== k && !vEl[x].paused) { try { vEl[x].pause(); vEl[x].currentTime = 0; } catch (e) { /* bỏ qua */ } }
+    const a = vEl[k]; try { a.currentTime = 0; } catch (e) { /* bỏ qua */ }
+    const p = a.play(); if (p && p.catch) p.catch(() => { if (fb) fb(); });
+  }
+  function sayDone() { beep([880, 880, 1320], 0.22, 0.1); setTimeout(() => say('xong'), 750); }
 
   const MIN_REC = 12;   // giây quay tối thiểu trước khi cho "Dừng quay sớm" (cần đủ bước để tính)
   const DONE_HOLD = 2.5; // giây giữ bảng "ĐÃ ĐO XONG" trên màn đo trước khi sang màn xem lại
   // Kỹ thuật viên bấm Quay ở màn đo (video.js nối nút #recgo vào đây)
   function recGo() {
     if (!S.running || S.recAt != null) return;
-    audioOn(); beep([660], 0.18, 0);
+    audioOn(); say('batdau', () => beep([660], 0.18, 0)); S.said = {};
     S.recAt = performance.now() / 1000 - S.t0; S.recT0 = performance.now() / 1000; S.frames = []; S.nrec = 0; S.recLive = true;
     if ($('autorec').checked) recStart();
     $('recgo').disabled = true; $('recgo').style.display = 'none'; $('early').style.display = '';
@@ -101,6 +109,7 @@
     show('L2'); layout(); lvReset();
     $('who').textContent = S.sub.name; angShow(true);
     S.t0 = performance.now() / 1000;
+    audioOn(); vLoad(); say('chuanbi');   // "Sang màn đo": mời khách giữ tốc độ, chuẩn bị đo
     let recDone = false, doneAt = 0, shown = false, stab = false;
     $('donebn').hidden = true; $('early').style.display = 'none'; $('early').disabled = true;
     $('recgo').style.display = ''; $('recgo').disabled = false; $('recgo').textContent = '● Quay ' + App.durTxt(CFG.total);
@@ -123,6 +132,9 @@
         document.querySelector('.cd em').textContent = 'CÒN LẠI';
         $('count').textContent = mmss(left); $('progf').style.width = Math.min(100, re / CFG.total * 100) + '%';
         lvRec(Math.max(0, Math.ceil(left)), Math.max(0, left / CFG.total));
+        // nhắc thời gian còn lại (chỉ khi lần quay đủ dài để câu nhắc có nghĩa; câu "Bắt đầu đo" dài ~3 giây)
+        if (CFG.total >= 45 && left <= 30 && left > 25 && !S.said.c30) { S.said.c30 = true; say('con30'); }
+        if (CFG.total >= 20 && left <= 10 && left > 6 && !S.said.c10) { S.said.c10 = true; say('con10'); }
         setPhase('ĐANG THU HÌNH · còn ' + Math.max(0, Math.ceil(left)) + ' giây', 'rec');
         $('early').disabled = re < MIN_REC;
         if (left <= 0 || (S.endNow && re >= MIN_REC)) { recDone = true; doneAt = el; $('early').disabled = true; lvRec(null); $('count').textContent = mmss(0); $('progf').style.width = '100%'; recEnd(); }
