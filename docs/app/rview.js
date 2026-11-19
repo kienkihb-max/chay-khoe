@@ -6,7 +6,7 @@
   // hàm ở file nạp sau: gọi qua App khi chạy
   function drawResultCv(...a) { return App.drawResultCv(...a); }
   // hàm của file này (khai báo function được nâng lên đầu nên đưa ra ngay)
-  Object.assign(App, { rvData, rvCad, drawHero, rvSide, drawResult, pdfPage1, renderView });
+  Object.assign(App, { rvData, rvCad, drawHero, rvSide, drawResult, pdfPage1, renderView, rvFact });
   // ---------- Màn kết quả dạng thẻ (#rview), theo docs/mockup/ket-qua.html ----------
   // Câu mô tả từng chỉ số: app/rvdesc.js (trung tính, không kết luận; bác sĩ 15/11/2026).
   // Thứ tự thẻ = thứ tự trên ảnh tải về; ảnh chỉ đủ chỗ 16 thẻ nên chỉ số phụ (khuỷu) để cuối.
@@ -180,7 +180,7 @@
     if (!on) { box.innerHTML = ''; return; }
     const sc = scores(R), tt = sc.total != null ? tierOf(sc.total) : null, ph = S.photos || {}, sub = R.sub || {};
     const side = rvSide(R, ph), rows = App.rvRows(R), dt = R.when ? new Date(R.when) : new Date();
-    const foot = App.rvFoot(R, rows), view = R.back ? 'Ngang + sau' : 'Ngang';
+    const foot = App.rvFoot(R, rows), view = R.back ? 'Ngang + sau' : 'Ngang', fact = rvFact(R);
     const dl = [['Mã khách', sub.id], ['Họ tên', sub.name], ['Chiều cao', sub.height ? sub.height + ' cm' : ''], ['Ngày đo', pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear()],
       ['Tốc độ máy', ((R.speed || App.SPEED) * 3.6).toFixed(0) + ' km/h'], ['Góc quay', view]];
     const cell = (x, l) => '<span class="c' + (rvMuted(x) ? ' dim' : '') + '" data-l="' + l + '">' + escA(x.t) + '</span>';
@@ -193,7 +193,8 @@
       '<div class="main"><div class="left"><button type="button" class="ph" aria-label="Phóng to ảnh"><canvas id="rvhero" width="900" height="1200"></canvas>' +
       '<span class="cap">' + (side === 'L' ? 'Chân trái' : 'Chân phải') + ' · Chạm đất</span></button></div>' +
       '<div class="right"><div class="score"><div class="lb">Điểm dáng chạy</div><div class="n' + (sc.total != null ? '' : ' na') + '">' + (sc.total != null ? sc.total + '<small>/100</small>' : '–') + '</div>' +
-      (tt ? '<span class="badge">' + (App.RV_BADGE[tt.key] || tt.name) + '</span>' : '') + '<p>' + App.rvScoreLine(sc.total) + '</p></div>' +
+      (tt ? '<span class="badge">' + (App.RV_BADGE[tt.key] || tt.name) + '</span>' : '') + '<p>' + App.rvScoreLine(sc.total) + '</p>' +
+      (fact ? '<aside class="fact"><b>Bạn có biết?</b><p>' + escA(fact.t) + ' <cite>(' + escA(fact.src) + ')</cite></p></aside>' : '') + '</div>' +
       '<div class="tb" role="table">' + App.rvGroups(rows).map((g) => '<div class="rg ' + (g.key === 'C' ? 'g1' : 'g2') + '"><h3>' + g.title + '</h3><div class="r hd"><span>Chỉ số</span>' +
         (g.key === 'C' ? '<span>Giá trị</span>' : '<span>Trái</span><span>Phải</span>') + '<span>Tham chiếu</span></div>' + g.rows.map(tr).join('') + '</div>').join('') +
       (foot ? '<p class="fn">' + escA(foot) + '</p>' : '') + '</div>' +
@@ -206,6 +207,13 @@
     box.querySelector('.doc button').onclick = () => $('notebtn').click();
     rvNote();
     if (!noteObs) { noteObs = new MutationObserver(rvNote); noteObs.observe($('notebtn'), { childList: true, characterData: true, subtree: true }); }
+  }
+  // "Bạn có biết?": một fact có nghiên cứu gắn với chỉ số lệch nhất (docs/facts.js). Dùng chung màn #rview và ảnh tải về (rvsheet.js).
+  function rvFact(R) {
+    if (!window.Facts || !R || !R.res) return null;
+    const get = (k) => { const D = rvData(R, k); return D ? D.legs.filter((l) => !l.dim && rvOk(l.v) && !(k === 'cadence' && D.redo)).map((l) => ({ v: l.v, lv: Score.level(k, l.v) })) : []; };
+    const hasStrike = ['L', 'R'].some((s) => R.res[s] && R.res[s].extra && R.res[s].extra.strike);
+    return Facts.pick(get, (k) => (REF[k] || {}).lo, hasStrike);
   }
   function drawResult(R) {
     renderRedo(R);

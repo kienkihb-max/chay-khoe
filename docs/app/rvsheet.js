@@ -35,21 +35,35 @@
     c.fillStyle = note ? INK : MUT; font('400', 20);
     c.save(); c.beginPath(); c.rect(HX, 972, HW, 66); c.clip(); wrap(c, note || 'Chưa có ghi chú.', HX + 24, 998, HW - 48, 26); c.restore();
     // ---- phải: ô điểm ----
-    const RX = 620, RW = 1252;
-    const g = c.createLinearGradient(RX, 196, RX + RW, 396); g.addColorStop(0, TC.brand); g.addColorStop(1, '#2f6b3f');
-    c.fillStyle = g; rr(c, RX, 196, RW, 196, 22); c.fill(); c.strokeStyle = TC.accent; c.lineWidth = 3; c.stroke();
-    c.fillStyle = '#d6ecc9'; font('700', 20); c.fillText('ĐIỂM DÁNG CHẠY', RX + 36, 238);
-    c.fillStyle = sc.total != null ? '#fff' : '#d6ecc9'; font('800', sc.total != null ? 120 : 64); const st = sc.total != null ? String(sc.total) : '–'; c.fillText(st, RX + 30, 358);
-    let nx = RX + 30 + c.measureText(st).width + 10;
-    if (sc.total != null) { c.fillStyle = '#d6ecc9'; font('700', 34); c.fillText('/100', nx, 358); nx += c.measureText('/100').width; }
+    const RX = 620, RW = 1252, fact = App.rvFact(R); let SH = 196;   // SH: cao ô điểm; có fact thì cao thêm cho dòng "Bạn có biết?"
+    // đo trước: dòng nhận xét điểm có thể xuống 2 dòng, fact 2–3 dòng; ô điểm cao theo nội dung
+    const lines = (txt, f, w) => { font(f[0], f[1]); let n = 1, ln = ''; for (const wd of (window.I18N ? I18N.t(txt) : txt).split(' ')) { const t = ln ? ln + ' ' + wd : wd; if (c.measureText(t).width > w && ln) { n++; ln = wd; } else ln = t; } return n; };
+    const st = sc.total != null ? String(sc.total) : '–';
+    font('800', sc.total != null ? 120 : 64); let nx = RX + 30 + c.measureText(st).width + 10;
+    if (sc.total != null) { font('700', 34); nx += c.measureText('/100').width; }
     nx = Math.max(nx + 40, RX + 380);
+    const TW = RX + RW - 36 - nx, sy = tt ? 316 : 290, sl = App.rvScoreLine(sc.total), sn = lines(sl, ['500', 26], TW);
+    // fact chạy hết bề ngang ô điểm, dưới số điểm: 1–2 dòng
+    const FX = RX + 36, FW = RW - 72; font('800', 17); const lw = c.measureText('BẠN CÓ BIẾT?').width + 14, ftx = fact ? fact.t + ' (' + fact.src + ')' : '';
+    const sep = Math.max(380, sy + (sn - 1) * 34 + 22), fy = sep + 30, fn = fact ? lines(ftx, ['400', 19], FW - lw) : 0;
+    SH = fact ? fy + (fn - 1) * 25 + 20 - 196 : 196;
+    const g = c.createLinearGradient(RX, 196, RX + RW, 196 + SH); g.addColorStop(0, TC.brand); g.addColorStop(1, '#2f6b3f');
+    c.fillStyle = g; rr(c, RX, 196, RW, SH, 22); c.fill(); c.strokeStyle = TC.accent; c.lineWidth = 3; c.stroke();
+    c.fillStyle = '#d6ecc9'; font('700', 20); c.fillText('ĐIỂM DÁNG CHẠY', RX + 36, 238);
+    c.fillStyle = sc.total != null ? '#fff' : '#d6ecc9'; font('800', sc.total != null ? 120 : 64); c.fillText(st, RX + 30, 358);
+    if (sc.total != null) { c.fillStyle = '#d6ecc9'; font('700', 34); const w0 = (font('800', 120), c.measureText(st).width); font('700', 34); c.fillText('/100', RX + 40 + w0, 358); }
     if (tt) {
       const b = App.RV_BADGE[tt.key] || tt.name; font('800', 24); const bw = c.measureText(b).width + 40;
       c.fillStyle = TC.accent; rr(c, nx, 228, bw, 44, 22); c.fill(); c.fillStyle = TC.brand; c.fillText(b, nx + 20, 259);
     }
-    c.fillStyle = '#eaf5e3'; font('500', 26); wrap(c, App.rvScoreLine(sc.total), nx, tt ? 316 : 290, RX + RW - 36 - nx, 34);
+    c.fillStyle = '#eaf5e3'; font('500', 26); wrap(c, sl, nx, sy, TW, 34);
+    if (fact) {   // "Bạn có biết?": một fact có nghiên cứu gắn với chỉ số lệch nhất (facts.js, chọn ở rview.js rvFact)
+      c.strokeStyle = 'rgba(214,236,201,.35)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(FX, sep); c.lineTo(FX + FW, sep); c.stroke();
+      c.fillStyle = TC.accent; font('800', 17); c.fillText('BẠN CÓ BIẾT?', FX, fy);
+      c.fillStyle = '#eaf5e3'; font('400', 19); wrap(c, ftx, FX + lw, fy, FW - lw, 25);
+    }
     // ---- bảng 5 chỉ số, hai nhóm: Chỉ số chung (Giá trị | Tham chiếu) và So sánh chân (Trái | Phải | Tham chiếu); '*' = số mờ chưa đủ tin cậy ----
-    const TY = 412, RH = 64, HH2 = 40, GAP = 10, cols = [RX, RX + 430, RX + 640, RX + 850], CW = [430, 210, 210, RW - 850];
+    const TY = 196 + SH + 20, RH = fact ? 58 : 64, HH2 = fact ? 36 : 40, GAP = 10, cols = [RX, RX + 430, RX + 640, RX + 850], CW = [430, 210, 210, RW - 850];
     const groups = App.rvGroups(rows), foot = App.rvFoot(R, rows), FH = foot ? 30 : 0;
     card(RX, TY, RW, groups.length * HH2 + RH * rows.length + GAP * (groups.length - 1) + FH + 6);
     let gy = TY;

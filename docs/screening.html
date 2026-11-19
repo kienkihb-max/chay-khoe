@@ -163,6 +163,11 @@ input:focus{outline:none;border-color:var(--moss2);box-shadow:0 0 0 4px rgba(var
 #rview .kl,#rview .doc{background:var(--white);border-radius:18px;box-shadow:0 2px 12px var(--shadow);padding:18px 24px}
 #rview .kl h2,#rview .doc h2{font-size:20px;margin:0 0 8px;color:var(--moss)}
 #rview .kl ul{margin:0;padding-left:22px}
+#rview .score .fact{grid-column:1/-1;display:flex;gap:12px;align-items:baseline;margin-top:12px;padding-top:12px;border-top:1px solid rgba(214,236,201,.35)}
+#rview .score .fact b{flex:none;font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--leaf)}
+#rview .score .fact p{margin:0;font-size:16px;line-height:1.5;color:#eaf5e3}
+#rview .score .fact cite{font-style:italic;opacity:.8;white-space:nowrap}
+@media (max-width:700px){#rview .score .fact{flex-direction:column;gap:4px}}
 #rview .kl li{margin:4px 0}
 #rview .kl li::marker{color:var(--moss2)}
 #rview .doc p{margin:0 0 12px;white-space:pre-wrap}
@@ -415,6 +420,7 @@ body:not(.bs) #l3acts .grp{display:none}
 <script src="angle.js"></script>
 <script src="score.js"></script>
 <script src="stable.js"></script>
+<script src="facts.js"></script>
 <script src="sync.js"></script>
 <script src="chips.js"></script>
 <!-- app.js cũ đã tách thành docs/app/*.js; phải nạp đúng thứ tự này (xem đầu app/core.js) -->
