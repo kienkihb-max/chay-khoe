@@ -4,7 +4,7 @@
   const { $, CONTACT, REF, BACK_DETAIL, GREEN, AMBER, TC, S, rating, f1, f0, cval, cadLow, cvals, rr, scores,
     scoreCol, tierText, exercises, conclusion, pdfPage1, extraRows, drawBackPhoto } = App;
   // hàm của file này (khai báo function được nâng lên đầu nên đưa ra ngay)
-  Object.assign(App, { wrap, makePdf });
+  Object.assign(App, { wrap, makePdf, pdfPages: (R) => [drawPage2(R), ...drawPage3(R), drawPage4(R)] });
   // ---------- PDF trả khách (2 trang: kết quả + giải thích) ----------
   const MEANING = {
     cadence: 'Số bước chân mỗi phút. Bước ngắn và nhanh hơn thường giúp giảm lực va đập lên gối và hông.',
@@ -94,23 +94,38 @@
     }
     rows.push({ label: 'Kiểu tiếp đất', unit: '', a: R.res.L ? R.res.L.extra.strike : '–', b: R.res.R ? R.res.R.extra.strike : '–', ref: '', st: '', ok: true });
     extraRows(R).forEach((x) => rows.push(x));
-    const n = rows.length, top = 128, rh = Math.min(48, Math.floor((900) / (n + 1)));
-    const X = [48, 760, 1000, 1240, 1500];
-    c.fillStyle = '#14202B'; c.font = '700 22px ' + FF;
-    ['Chỉ số', 'Chân trái', 'Chân phải', 'Bình thường', 'Đánh giá'].forEach((t, i) => c.fillText(t, X[i] + 10, top + 4));
+    // Chữ to cho khách đọc (bác sĩ Kiên 19/11/2026): tách 2 trang. Trang 1 = chỉ số chính (đến Kiểu tiếp đất), trang 2 = chỉ số bổ sung.
+    const nMain = keys.length + 1;
+    return [sheet3(R, rows.slice(0, nMain), 'Bảng số đo chi tiết', false), sheet3(R, rows.slice(nMain), 'Bảng số đo chi tiết · chỉ số bổ sung', true)];
+  }
+  function sheet3(R, rows, title, notes) {
+    const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080;
+    const c = cv.getContext('2d'), FF = Themes.font;
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 1920, 1080);
+    const g = c.createLinearGradient(0, 0, 1920, 0); g.addColorStop(0, TC.brand); g.addColorStop(1, TC.brand2);
+    c.fillStyle = g; c.fillRect(0, 0, 1920, 110);
+    c.fillStyle = '#fff'; c.font = '700 42px ' + FF; c.fillText(title, 48, 68);
+    c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 24px ' + FF; c.fillText('Hanoi Running Lab', 1872, 52);
+    c.fillStyle = TC.soft; c.font = '19px ' + FF; c.fillText(R.sub.name, 1872, 84); c.textAlign = 'left';
+    // trạng thái hai chân giống nhau thì chỉ ghi một lần
+    const stTxt = (t) => { const p = String(t || '').split(' / '); return p.length === 2 && p[0] === p[1] ? p[0] : t; };
+    const top = 176, bottom = notes ? 980 : 1036, n = Math.max(rows.length, 1), rh = Math.min(84, Math.floor((bottom - top) / n));
+    const X = [48, 770, 1000, 1230, 1470], FS = Math.max(24, Math.min(32, rh - 30));
+    c.fillStyle = '#14202B'; c.font = '700 26px ' + FF;
+    ['Chỉ số', 'Chân trái', 'Chân phải', 'Bình thường', 'Đánh giá'].forEach((t, i) => c.fillText(t, X[i] + 14, top - 18));
     rows.forEach((r, i) => {
-      const y = top + 14 + i * rh;
-      c.fillStyle = i % 2 ? '#fff' : TC.pale; c.fillRect(48, y, 1824, rh - 2);
-      const fs = Math.max(15, Math.min(22, rh - 22));
-      c.font = fs + 'px ' + FF; c.fillStyle = '#14202B'; c.fillText(r.label + (r.unit ? ' (' + r.unit + ')' : ''), X[0] + 10, y + rh * 0.68, 690);
-      c.font = '700 ' + fs + 'px ' + FF;
-      if (r.common) { c.fillText(r.a, X[1] + 10, y + rh * 0.68, 480); } else { c.fillText(r.a, X[1] + 10, y + rh * 0.68, 230); c.fillText(r.b, X[2] + 10, y + rh * 0.68, 230); }
-      c.font = fs + 'px ' + FF; c.fillStyle = '#5B6B77'; c.fillText(r.ref, X[3] + 10, y + rh * 0.68, 250);
-      c.fillStyle = r.ok ? GREEN : AMBER; c.font = '700 ' + fs + 'px ' + FF; c.fillText(r.st, X[4] + 10, y + rh * 0.68, 370);
+      const y = top + i * rh, by = y + rh * 0.64;
+      c.fillStyle = i % 2 ? '#fff' : TC.pale; c.fillRect(48, y, 1824, rh - 3);
+      c.font = '500 ' + FS + 'px ' + FF; c.fillStyle = '#14202B'; c.fillText(r.label + (r.unit ? ' (' + r.unit + ')' : ''), X[0] + 14, by, X[1] - X[0] - 28);
+      c.font = '800 ' + (FS + 4) + 'px ' + FF;
+      if (r.common) c.fillText(r.a, X[1] + 14, by, X[3] - X[1] - 28); else { c.fillText(r.a, X[1] + 14, by, X[2] - X[1] - 24); c.fillText(r.b, X[2] + 14, by, X[3] - X[2] - 24); }
+      c.font = FS + 'px ' + FF; c.fillStyle = '#5B6B77'; c.fillText(r.ref, X[3] + 14, by, X[4] - X[3] - 24);
+      c.fillStyle = r.ok ? GREEN : AMBER; c.font = '700 ' + FS + 'px ' + FF; c.fillText(stTxt(r.st), X[4] + 14, by, 1872 - X[4] - 24);
     });
-    c.fillStyle = '#7A8791'; c.font = '16px ' + FF;
-    c.fillText('Mốc thời gian chạm đất/bay ước lượng từ video 30 khung/giây (sai số khoảng ±33 ms). Các chỉ số không có khoảng bình thường chỉ để theo dõi. Chân xa camera kém tin cậy hơn.', 48, 1040, 1824);
-    c.fillText('Không đo được từ camera ngang: gối vào trong, hông tụt, bàn chân xoay trong/ngoài, bước chéo, bề rộng bước (cần thêm camera sau). Chỉ mang tính tham khảo, không thay thế bác sĩ.', 48, 1064, 1824);
+    if (notes) {
+      c.fillStyle = '#5B6B77'; c.font = '20px ' + FF;
+      wrap(c, 'Mốc thời gian chạm đất/bay ước lượng từ video 30 khung/giây (sai số khoảng ±33 ms). Các chỉ số không có khoảng bình thường chỉ để theo dõi. Chân xa camera kém tin cậy hơn. Không đo được từ camera ngang: gối vào trong, hông tụt, bàn chân xoay trong/ngoài, bước chéo, bề rộng bước (cần thêm camera sau). Chỉ mang tính tham khảo, không thay thế bác sĩ.', 48, 1012, 1824, 28);
+    }
     return cv;
   }
   function drawPage4(R) {
@@ -214,7 +229,7 @@
   function makePdf(R) {
     // chỉ trang của góc đã quay: ngang = ý nghĩa + bảng chi tiết + điểm/bài tập; sau lưng = trang Nhìn từ sau
     const cvs = [pdfPage1(R)];
-    if (R.comb) cvs.push(drawPage2(R), drawPage3(R));
+    if (R.comb) cvs.push(drawPage2(R), ...drawPage3(R));
     if (R.back) cvs.push(drawPageBack(R));
     if (R.comb) cvs.push(drawPage4(R));
     return buildPdf(cvs.map((cv) => ({ jpg: jpegBytes(cv), w: 1920, h: 1080 })));
