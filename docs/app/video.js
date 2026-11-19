@@ -18,7 +18,7 @@
     const km = +$('vspeed').value || 10; App.SPEED = km / 3.6;
     S.sub = takeSub();
     S.lastLm = null; S.frames = []; S.late = []; S.result = null; S.error = null; S.computing = false; S.abort = false; S.running = true; S.photosReady = false;
-    show('L2'); layout(); lvReset(); $('early').style.display = 'none'; $('recgo').style.display = 'none'; $('donebn').hidden = true;
+    show('L2'); layout(); lvReset(); $('early').style.display = 'none'; $('recgo').style.display = 'none'; $('donebn').hidden = true; $('annbn').hidden = true;
     $('who').textContent = S.sub.name; angShow(true);
     document.querySelector('.cd em').textContent = 'TIẾN ĐỘ'; $('count').textContent = '0%'; $('progf').style.width = '0%'; $('fpsb').textContent = '';
     setPhase('Đang mở video...', 'wn');
@@ -84,7 +84,7 @@
   }
   $('early').addEventListener('click', () => { S.endNow = true; });
   $('recgo').addEventListener('click', () => { if (S.running && S.recAt == null) App.recGo(); });
-  $('cancel').addEventListener('click', () => { if (!confirm('Dừng đo và không lưu kết quả của lần này?')) return; if (REC.mr) recStop(false); S.abort = true; S.running = false; S.recLive = false; clearInterval(S.timer); show('L1'); refreshL1(); });
+  $('cancel').addEventListener('click', () => { if (!confirm('Dừng đo và không lưu kết quả của lần này?')) return; if (REC.mr) recStop(false); S.abort = true; S.running = false; S.recLive = false; $('annbn').hidden = true; clearInterval(S.timer); show('L1'); refreshL1(); });
   // Chọn tay góc quay (đổi giữa lần đo, hoặc khi app không nhận được góc thì đo lại với góc đã chọn)
   $('angchg').addEventListener('click', () => { if (BACK_ON && S.running && S.take && !S.computing && !S.result) setTake(S.take === 'back' ? 'side' : 'back', true); });
   $('angpick').addEventListener('click', (e) => { const b = e.target.closest('button[data-a]'); if (!b || $('go').disabled) return; S.angMan = b.dataset.a; $('go').click(); });

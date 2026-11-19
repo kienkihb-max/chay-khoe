@@ -91,7 +91,7 @@ input:focus{outline:none;border-color:var(--moss2);box-shadow:0 0 0 4px rgba(var
 .guidet{position:absolute;left:0;right:0;bottom:92px;text-align:center;font-size:14px;color:var(--leaf-soft);opacity:.9;pointer-events:none}
 #adv select{width:100%;height:50px;border:1px solid var(--fline);border-radius:10px;background:#fff;color:#14202B;font-size:16px;padding:0 10px}
 #early,#recgo{margin-left:12px;height:44px;border-radius:10px;border:0;color:#fff;font-weight:700;padding:0 18px;font-size:16px;cursor:pointer}#early{background:#3a4a3e}#early:hover:not(:disabled){background:#4b5f50}#recgo{background:#D32F2F;height:52px;font-size:19px;padding:0 26px;box-shadow:0 0 0 3px rgba(255,255,255,.25)}#recgo:hover:not(:disabled){background:#B71C1C}#early:disabled,#recgo:disabled{background:#3a4a3e;color:#9db0a1;cursor:default;box-shadow:none}
-#donebn{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:5;background:rgba(15,61,34,.94);border:4px solid var(--leaf);border-radius:28px;padding:34px 60px;text-align:center;box-shadow:0 12px 60px rgba(0,0,0,.55);pointer-events:none}#donebn[hidden]{display:none}#donebn b{display:block;font-size:72px;line-height:1.05;font-weight:900;letter-spacing:.02em;color:#fff}#donebn span{display:block;margin-top:12px;font-size:26px;font-weight:600;color:var(--leaf-soft)}
+#annbn,#donebn{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:5;background:rgba(15,61,34,.94);border:4px solid var(--leaf);border-radius:28px;padding:34px 60px;text-align:center;box-shadow:0 12px 60px rgba(0,0,0,.55);pointer-events:none}#annbn[hidden],#donebn[hidden]{display:none}#annbn b,#donebn b{display:block;font-size:72px;line-height:1.05;font-weight:900;letter-spacing:.02em;color:#fff}#annbn span,#donebn span{display:block;margin-top:12px;font-size:26px;font-weight:600;color:var(--leaf-soft)}
 #L2{background:rgb(var(--dk));color:#fff}
 #v2,#ov{position:absolute;inset:0;width:100%;height:100%}
 #v2{object-fit:contain}
@@ -382,7 +382,8 @@ body:not(.bs) #l3acts .grp{display:none}
   <div id="chip"><span id="who"></span><small id="idl"></small><button id="angchg" hidden title="Đổi góc quay (chọn tay)">Đổi</button></div>
   <div class="cd"><div id="count">2:00</div><em>CÒN LẠI</em></div>
   <div id="fpsb"></div>
-  <div id="donebn" hidden><b>ĐÃ ĐO XONG</b><span>Khách có thể giảm tốc và dừng</span></div>
+  <div id="annbn" hidden><b></b><span></span></div>
+  <div id="donebn" hidden><b>ĐÃ ĐO XONG</b><span>Bạn có thể giảm tốc và dừng</span></div>
   <div id="bar"><div id="ph">...</div><button id="recgo" disabled>● Quay 1 phút</button><button id="early" disabled>Dừng quay sớm</button><button id="cancel">Dừng, không lưu</button></div>
   <div id="prog"><div id="progf"></div></div>
 </section>

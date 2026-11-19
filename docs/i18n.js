@@ -61,9 +61,9 @@
     [`● Quay `, `● Record `], [`Dừng quay sớm`, `Stop recording early`], [`SẴN SÀNG`, `READY`],
     [`CHƯA QUAY · chưa thấy người chạy trong khung hình`, `NOT RECORDING · no runner in the frame yet`],
     [`CHƯA QUAY · nhịp chạy đã ổn định`, `NOT RECORDING · cadence is steady`], [` · bấm Quay khi sẵn sàng`, ` · press Record when ready`],
-    [`CHƯA QUAY · chờ khách chạy ổn định`, `NOT RECORDING · waiting for the runner to settle`],
-    [`ĐANG THU HÌNH · còn `, `RECORDING · `], [`ĐÃ ĐO XONG · khách có thể dừng`, `MEASUREMENT DONE · the runner can stop`], [` · đang tính kết quả...`, ` · calculating result...`],
-    [`ĐÃ ĐO XONG`, `MEASUREMENT DONE`], [`Khách có thể giảm tốc và dừng`, `The runner can slow down and stop`],
+    [`CHƯA QUAY · chờ bạn chạy ổn định`, `NOT RECORDING · waiting for you to settle`],
+    [`ĐANG THU HÌNH · còn `, `RECORDING · `], [`ĐÃ ĐO XONG · bạn có thể dừng`, `MEASUREMENT DONE · you can stop`], [` · đang tính kết quả...`, ` · calculating result...`],
+    [`ĐÃ ĐO XONG`, `MEASUREMENT DONE`], [`CHUẨN BỊ ĐO`, `GET READY`], [`Giữ tốc độ này, chạy thoải mái`, `Keep this pace, run relaxed`], [`BẮT ĐẦU ĐO`, `RECORDING`], [`Giữ nhịp chạy đều`, `Keep a steady rhythm`], [`CÒN 30 GIÂY`, `30 SECONDS LEFT`], [`CÒN 10 GIÂY`, `10 SECONDS LEFT`], [`Bạn có thể giảm tốc và dừng`, `You can slow down and stop`],
     [` giây ổn định nhất`, ` steadiest seconds`], [`Tải video `, `Download video: `],
     // ===== "Bạn có biết?" (facts.js) =====
     [`BẠN CÓ BIẾT?`, `DID YOU KNOW?`], [`Bạn có biết?`, `Did you know?`],
