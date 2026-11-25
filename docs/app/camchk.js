@@ -22,26 +22,32 @@
     SROLL: [1.5, 3], SPITCH: [3, 6],   // cảm biến: nghiêng ngang, chếch lên/xuống (độ)
   };
   const VIS = 0.5;
-  let buf = [], rollH = [], last = 0, box = null, grav = null, gravAt = 0, motionOn = false;
-
-  function ui() {
-    if (box) return box;
-    box = document.createElement('div'); box.id = 'camchk'; box.hidden = true;
-    box.innerHTML = '<h4>KIỂM TRA GÓC MÁY</h4><ul></ul><p></p>';
-    const L2 = $('L2'); if (L2) L2.appendChild(box);
-    return box;
-  }
+  let grav = null, gravAt = 0, motionOn = false;
   // Cảm biến trọng lực (máy chạy app cũng là máy quay). iOS cần xin quyền trong cú bấm: gọi camMotion() từ nút "Sang màn đo".
   function camMotion() {
     if (motionOn || typeof window.DeviceMotionEvent === 'undefined' || !('ontouchstart' in window)) return;
     const on = () => { motionOn = true; window.addEventListener('devicemotion', (e) => { const g = e.accelerationIncludingGravity; if (g && g.x != null) { grav = [g.x, g.y, g.z]; gravAt = performance.now(); } }); };
     try { if (typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().then((r) => { if (r === 'granted') on(); }).catch(() => {}); else on(); } catch (e) { /* không có cảm biến */ }
   }
-  function camReset() { buf = []; rollH = []; last = 0; const b = ui(); b.hidden = true; }
-  function camShow(on) { ui().hidden = !on; }
+  // Một bảng kiểm tra = một "máy đo" riêng (dữ liệu, ô hiển thị). Hai bảng: L1 (màn nhập, lúc khách đứng yên — bước 1 gộp đặt máy +
+  // đứng yên, bác sĩ Kiên 25/11/2026) và L2 (màn đo lúc chờ, khách đang chạy: đo thêm được độ nghiêng từ bàn chân).
+  // o.parent(): nơi gắn bảng; o.id; o.key: tên biến trong S giữ số đo gần nhất; o.title; o.extra(): các dòng thêm [mức, tên, chữ];
+  // o.noRoll: chữ hiện ở dòng Nghiêng ngang khi chưa đo được (vd lúc đứng yên); o.foot(bad, mid): câu cuối bảng.
+  function makeChk(o) {
+  let buf = [], rollH = [], last = 0, box = null;
+  function ui() {
+    if (box) return box;
+    const par = o.parent(); if (!par) return null;
+    box = document.createElement('div'); box.id = o.id; box.className = 'camchk'; box.hidden = true;
+    box.innerHTML = '<h4>' + o.title + '</h4><ul></ul><p></p>';
+    if (o.mount) o.mount(box, par); else par.appendChild(box);
+    return box;
+  }
+  function reset() { buf = []; rollH = []; last = 0; const b = ui(); if (b) b.hidden = true; }
+  function setShow(on) { const b = ui(); if (b) b.hidden = !on; }
   // lm: 33 điểm chuẩn hoá 0–1 (MediaPipe); t: giây
-  function camFeed(lm, vw, vh, t) {
-    if (!lm || !vw) return;
+  function feed(lm, vw, vh, t) {
+    if (!lm || !vw) { if (t - last >= 0.5) { last = t; render(); } return; }
     const P = (i) => [lm[i].x * vw, lm[i].y * vh], ok = (i) => lm[i] && (lm[i].visibility == null || lm[i].visibility >= VIS);
     const o = { t };
     if ([11, 12, 23, 24].every(ok)) {
@@ -54,9 +60,6 @@
     buf.push(o); while (buf.length && buf[0].t < t - CAM.WIN) buf.shift();
     if (t - last >= 0.5) { last = t; render(); }
   }
-  const med = (a) => { if (!a.length) return NaN; const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
-  const lv = (v, th) => (v <= th[0] ? 'ok' : v <= th[1] ? 'mid' : 'bad');
-  const f1 = (v) => v.toFixed(1).replace('.', ',');
   function measure() {
     const r = {}, ws = buf.map((o) => o.w).filter((v) => v != null), tors = buf.map((o) => o.tor).filter(Boolean);
     if (ws.length >= 20) r.w = med(ws);
@@ -93,13 +96,13 @@
     return r;
   }
   function render() {
-    const b = ui(); if (b.hidden) return;
+    const b = ui(); if (!b || b.hidden) return;
     const r = measure(), rows = [];
     const row = (st, k, txt) => rows.push('<li data-lv="' + st + '"><i></i><b>' + k + '</b><span>' + txt + '</span></li>');
     if (r.w == null) row('na', 'Đặt chéo', 'chưa thấy rõ vai, hông');
     else { const st = lv(r.w, CAM.YAW); row(st, 'Đặt chéo', st === 'ok' ? 'vuông góc, tốt' : st === 'mid' ? 'hơi chéo · xoay máy cho vuông góc với hướng chạy' : 'chéo nhiều · xoay máy vuông góc với hướng chạy'); }
     const sroll = r.sroll != null ? ' · cảm biến ' + f1(Math.abs(r.sroll)) + '°' : '';
-    if (r.roll == null && r.sroll == null) row('na', 'Nghiêng ngang', 'chờ thêm vài bước chạy');
+    if (r.roll == null && r.sroll == null) row('na', 'Nghiêng ngang', o.noRoll || 'chờ thêm vài bước chạy');
     else {
       const v = r.roll != null ? Math.abs(r.roll) : Math.abs(r.sroll), st = r.roll != null ? lv(v, CAM.ROLL) : lv(v, CAM.SROLL);
       row(st, 'Nghiêng ngang', (r.roll != null ? 'mặt băng chạy nghiêng ' + f1(v) + '°' : 'cảm biến ' + f1(v) + '°') + (r.roll != null ? sroll : '') + (st === 'ok' ? '' : ' · chỉnh chân máy cho cân'));
@@ -114,12 +117,21 @@
     if (r.size == null) row('na', 'Khoảng cách', 'chưa thấy đủ người');
     else { const st = r.size < CAM.SIZE[0] ? (r.size < CAM.SIZE[0] - 0.1 ? 'bad' : 'mid') : r.size > CAM.SIZE[1] ? 'bad' : 'ok';
       row(st, 'Khoảng cách', st === 'ok' ? 'vừa khung' : r.size > CAM.SIZE[1] ? 'sát quá, dễ mất đầu / bàn chân · lùi máy ra' : 'xa quá, người nhỏ · tiến máy lại gần'); }
+    if (o.extra) for (const [st, k, txt] of o.extra()) row(st, k, txt);
     b.querySelector('ul').innerHTML = rows.join('');
-    const bad = rows.some((x) => /data-lv="bad"/.test(x)), mid = rows.some((x) => /data-lv="mid"/.test(x));
+    const bad = rows.some((x) => /data-lv="bad"/.test(x)), mid = rows.some((x) => /data-lv="(mid|wait)"/.test(x));
     b.dataset.lv = bad ? 'bad' : mid ? 'mid' : 'ok';
-    b.querySelector('p').textContent = bad ? 'Nên chỉnh máy trước khi bấm Quay: số đo có thể lệch.' : mid ? 'Có thể quay, nhưng chỉnh lại sẽ chính xác hơn.' : 'Góc máy tốt.';
-    S.cam = r;   // giữ số đo gần nhất (lúc bấm Quay) để xem lại
+    b.querySelector('p').textContent = o.foot ? o.foot(bad, mid) : bad ? 'Nên chỉnh máy trước khi bấm Quay: số đo có thể lệch.' : mid ? 'Có thể quay, nhưng chỉnh lại sẽ chính xác hơn.' : 'Góc máy tốt.';
+    S[o.key] = r;   // giữ số đo gần nhất (L2: lúc bấm Quay) để xem lại
   }
+  return { reset, show: setShow, feed, render, box: () => box };
+  }
+  const med = (a) => { if (!a.length) return NaN; const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+  const lv = (v, th) => (v <= th[0] ? 'ok' : v <= th[1] ? 'mid' : 'bad');
+  const f1 = (v) => v.toFixed(1).replace('.', ',');
+  // Bảng màn đo (L2): khách đang chạy
+  const chk2 = makeChk({ parent: () => $('L2'), id: 'camchk', key: 'cam', title: 'KIỂM TRA GÓC MÁY' });
+  const camReset = chk2.reset, camShow = chk2.show, camFeed = chk2.feed;
   // Lỗi góc máy MỨC ĐỎ trong số đo lúc bấm Quay (R.cam), để ghi cảnh báo "kết quả kém tin cậy do góc máy" vào kết quả.
   function camIssues(cam) {
     if (!cam) return [];
@@ -131,5 +143,5 @@
     if (cam.size != null && (cam.size < CAM.SIZE[0] - 0.1 || cam.size > CAM.SIZE[1])) out.push(cam.size > CAM.SIZE[1] ? 'người sát khung' : 'người quá nhỏ trong khung');
     return out;
   }
-  Object.assign(App, { CAM, camReset, camShow, camFeed, camMotion, camIssues });
+  Object.assign(App, { CAM, makeChk, camReset, camShow, camFeed, camMotion, camIssues });
 })(window.App);

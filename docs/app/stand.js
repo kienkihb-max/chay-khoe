@@ -12,20 +12,19 @@
   const { $, S } = App;
   const HOLD = 3, VIS = 0.5, STILL = 0.05;   // giây đứng yên; độ rõ tối thiểu; dao động tối đa (tỉ lệ chiều dài thân)
   const FEET = { L: { heel: 29, toe: 31, ank: 27 }, R: { heel: 30, toe: 32, ank: 28 } };
-  let buf = [], busy = false, badge = null;
-
-  function ui() {
-    if (badge) return badge;
-    const v = $('v1'); if (!v || !v.parentNode) return null;
-    badge = document.createElement('div'); badge.id = 'standst'; v.parentNode.appendChild(badge);
-    return badge;
-  }
+  let buf = [], busy = false, stState = 'none';
   const f1 = (v) => (v >= 0 ? '' : '−') + Math.abs(v).toFixed(1).replace('.', ',');
-  function show(txt, cls) { const b = ui(); if (!b) return; b.textContent = txt; b.className = cls || ''; b.hidden = false; }
-  function render() {
-    if (S.stand) show('✓ Đã lấy tư thế đứng · bàn chân T ' + f1(S.stand.L) + '° · P ' + f1(S.stand.R) + '°  (đứng yên lại để lấy lại)', 'ok');
-    else show('Bước đầu: mời khách đứng yên giữa băng chạy 3 giây, hai bàn chân đặt phẳng', '');
-  }
+  // BƯỚC 1 gộp (bác sĩ Kiên 25/11/2026): một bảng trên khung camera ở màn nhập vừa kiểm tra góc máy (đặt chéo, chếch, khoảng cách;
+  // nghiêng ngang nếu có cảm biến) vừa báo tư thế đứng yên. Độ nghiêng từ bàn chân chỉ đo được khi khách chạy (bảng ở màn đo).
+  const chk = App.makeChk({
+    parent: () => { const v = $('v1'); return v && v.parentNode; }, id: 'camchk1', key: 'camL1',
+    mount: (box, par) => par.parentNode.insertBefore(box, par.nextSibling),   // ngay dưới khung camera, không che người
+    title: 'BƯỚC 1 · ĐẶT MÁY VÀ ĐỨNG YÊN', noRoll: 'kiểm tra lại ở màn đo khi khách chạy',
+    extra: () => [S.stand ? ['ok', 'Đứng yên 3 giây', '✓ đã lấy · bàn chân T ' + f1(S.stand.L) + '° · P ' + f1(S.stand.R) + '°']
+      : stState === 'wait' ? ['wait', 'Đứng yên 3 giây', 'đang lấy… giữ yên'] : ['mid', 'Đứng yên 3 giây', 'mời khách đứng yên giữa băng chạy, hai bàn chân đặt phẳng']],
+    foot: (bad, mid) => (bad ? 'Chỉnh máy theo dòng màu đỏ, rồi mời khách đứng yên 3 giây.' : !S.stand ? 'Máy ổn thì mời khách đứng yên 3 giây; xong bật máy chạy.' : mid ? 'Đã lấy tư thế đứng. Có thể chỉnh máy thêm cho chính xác.' : 'Xong bước 1: bật máy chạy, khởi động, rồi bấm Sang màn đo.'),
+  });
+  function render() { chk.render(); }
   const med = (a) => { const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
   function feed(lm, vw, vh, t) {
     const ok = (i) => lm && lm[i] && (lm[i].visibility == null || lm[i].visibility >= VIS);
@@ -56,20 +55,22 @@
     if (busy) return;
     const L1 = $('L1'), v = $('v1');
     const on = L1 && L1.classList.contains('show') && S.mode !== 'file' && !S.running && S.camReady && (S.poseReady || S.pose) && v && v.readyState >= 2 && v.videoWidth;
-    const b = ui(); if (b) b.hidden = !(L1 && L1.classList.contains('show') && S.mode !== 'file');
+    chk.show(!!(L1 && L1.classList.contains('show') && S.mode !== 'file'));
     if (!on) return;
     busy = true;
     try {
       const r = await App.detect(v);
       const st = feed(r && r.poseLandmarks, v.videoWidth, v.videoHeight, performance.now() / 1000);
-      if (st === 'wait' && !S.stand) show('Đang lấy tư thế đứng… giữ yên', 'wait');
-      else render();
+      stState = st === 'wait' ? 'wait' : st === 'got' ? 'got' : 'none';
+      chk.feed(r && r.poseLandmarks, v.videoWidth, v.videoHeight, performance.now() / 1000);
     } catch (e) { /* bỏ qua khung lỗi */ }
     busy = false;
   }
   setInterval(tick, 160);
   // "Sang màn đo": gắn tư thế đứng vào lần đo này, xoá để khách sau đứng lại
-  function standTake() { const s = S.stand || null; S.stand = null; buf = []; return s; }
+  function standTake() { const s = S.stand || null; S.stand = null; buf = []; stState = 'none'; return s; }
+  // cảm biến nghiêng (máy tính bảng / điện thoại): iOS cần xin quyền trong một cú chạm, xin ở lần chạm đầu tiên vào màn nhập
+  document.addEventListener('pointerdown', () => App.camMotion(), { once: true });
   // Trừ góc đứng vào góc bàn chân lúc chạm đất và phân loại lại kiểu đáp đất (ngưỡng Altman & Davis). gait.js đã xoay hệ trục khi máy
   // nghiêng (extra.tiltUsed): góc đứng đo trên hình nên cộng cùng phần xoay (d·tilt) trước khi trừ.
   function applyStand(res, stand) {
