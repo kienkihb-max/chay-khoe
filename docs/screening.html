@@ -186,6 +186,9 @@ input:focus{outline:none;border-color:var(--moss2);box-shadow:0 0 0 4px rgba(var
 #rview .ffact cite{font-style:italic}
 #rview .tfact cite{margin-top:auto;padding-top:12px;font-size:17px;color:#CFE8C2}
 #rview .fn{margin:10px 4px 0;font-size:15px;color:var(--mut)}
+#rview .summ{margin:14px 0 0;padding:12px 18px;background:var(--white);border-left:6px solid var(--moss2);border-radius:0;font-size:clamp(16px,1.15vw,20px);line-height:1.45;color:var(--ink)}
+#rview .summ b{color:var(--moss)}
+#rview .summ span{color:var(--mut);font-size:.85em}
 #rview .more{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:22px;margin-top:22px;align-items:start}
 @media (max-width:1100px){#rview .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}#rview .main{grid-template-columns:minmax(260px,34%) minmax(0,1fr)}}
 @media (max-width:820px){#rview .main,#rview .more{grid-template-columns:1fr}#rview .left{display:grid;grid-template-columns:1fr 1fr;align-items:start}}
@@ -335,7 +338,7 @@ body:not(.bs) #l3acts .grp{display:none}
     <div><div class="eyebrow">HANOI RUNNING LAB</div><h1>Đánh giá<br>dáng chạy</h1></div>
     <p class="lead" id="subt">Phân tích chuyển động bằng AI, đánh giá cân bằng hai chân. Quay 1 phút, máy chọn 30 giây ổn định nhất để phân tích.</p>
     <div class="steps">
-      <div><span>1</span>Khách lên máy chạy thử, nhập thông tin</div>
+      <div><span>1</span>Khách đứng yên giữa băng chạy 3 giây (app tự lấy tư thế đứng), rồi chạy thử; nhập thông tin</div>
       <div><span>2</span>Khách lên tốc độ đo: bấm Sang màn đo</div>
       <div><span>3</span>Thấy chạy ổn định: bấm Quay 1 phút</div>
       <div><span>4</span>Nhận kết quả và video 30 giây</div>
@@ -458,6 +461,7 @@ body:not(.bs) #l3acts .grp{display:none}
 <script src="app/form.js"></script>
 <script src="app/live.js"></script>
 <script src="app/camchk.js"></script>
+<script src="app/stand.js"></script>
 <script src="app/run.js"></script>
 <script src="app/video.js"></script>
 <script src="app/analyse.js"></script>

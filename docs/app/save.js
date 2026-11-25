@@ -110,8 +110,9 @@
       '<canvas id="rvc" width="' + (back ? 640 : 1188) + '" height="' + (back ? 640 : 438) + '"></canvas>' +
       '<div class="rvnums">' + nums + '</div>' +
       (errs.length ? '<div class="rvw"></div>' : '') + (poorFrameWarn(R) ? '<div class="poorframe" id="rvpoor"></div>' : '') +
-      '<div class="rvbtn"><button class="alt" id="rvback">Quay lại</button><button class="go" id="rvok">Chốt góc này</button></div></div>';
-    $('rvt').textContent = 'Xem lại góc ' + ANG_NAME[R.angle] + ' · ' + R.sub.name;
+      '<p class="rvq"><b>Kiểm tra nhanh:</b> khung xương trên ảnh có bám đúng hông, gối, cổ chân, gót và mũi chân của khách không? Nếu lệch khỏi người, lẫn chân trái và phải, hoặc có cảnh báo màu cam, hãy bấm Quay lại để đo lại.</p>' +
+      '<div class="rvbtn"><button class="alt" id="rvback">Sai · Quay lại</button><button class="go" id="rvok">Đúng · Chốt kết quả</button></div></div>';
+    $('rvt').textContent = 'Kiểm tra nhanh góc ' + ANG_NAME[R.angle] + ' · ' + R.sub.name;
     if (errs.length) el.querySelector('.rvw').textContent = errs.join(' · ');
     if (poorFrameWarn(R)) $('rvpoor').textContent = poorFrameWarn(R);
     const c = $('rvc').getContext('2d');

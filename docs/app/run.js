@@ -92,6 +92,9 @@
   // Kỹ thuật viên bấm Quay ở màn đo (video.js nối nút #recgo vào đây)
   function recGo() {
     if (!S.running || S.recAt != null) return;
+    // Bước đặt máy (bác sĩ Kiên 25/11/2026): còn mục đỏ ở bảng Kiểm tra góc máy thì hỏi lại trước khi quay
+    const bad = App.camIssues ? App.camIssues(S.cam) : [];
+    if (bad.length && !confirm('Góc máy chưa chuẩn: ' + bad.join(', ') + '.\nKết quả sẽ kém tin cậy. Nên chỉnh máy theo bảng Kiểm tra góc máy.\n\nBấm OK để vẫn quay, Cancel để chỉnh máy.')) return;
     audioOn(); say('batdau', () => beep([660], 0.18, 0)); announce('batdau'); S.said = {};
     S.recAt = performance.now() / 1000 - S.t0; S.recT0 = performance.now() / 1000; S.frames = []; S.nrec = 0; S.recLive = true;
     if ($('autorec').checked) recStart();
@@ -118,6 +121,7 @@
   async function startRun() {
     App.camMotion();   // xin quyền cảm biến nghiêng ngay trong cú bấm (iOS), trước mọi lệnh chờ
     S.sub = takeSub();
+    S.standRun = App.standTake ? App.standTake() : null;   // tư thế đứng yên lấy ở màn nhập (stand.js)
     if (REC.mr) { await recStop(true, $('name').value.trim()); }
     if (S.stream) { v2.removeAttribute('src'); v2.srcObject = S.stream; v2.play().catch(() => {}); }
     S.lastLm = null; S.frames = []; S.late = []; S.nrec = 0; S.jobs = []; S.result = null; S.error = null; S.computing = false; S.abort = false; S.running = true;
@@ -138,7 +142,10 @@
         if (el - S.lastChk >= 1) { S.lastChk = el; const r = stableCheck(); S.curCad = r.cad; stab = r.ok; }
         lvRec(null);
         const cad = S.curCad ? ' (nhịp ~' + Math.round(S.curCad) + ')' : '';
+        const cb = document.getElementById('camchk'), clv = cb && !cb.hidden ? cb.dataset.lv : null;
+        $('recgo').classList.toggle('ready', clv === 'ok' && stab);   // nút Quay nổi bật khi góc máy xanh và nhịp đã ổn định
         if (!S.lastLm) setPhase('CHƯA QUAY · chưa thấy người chạy trong khung hình', 'wn');
+        else if (clv === 'bad') setPhase('CHƯA QUAY · bước 1: chỉnh máy theo bảng Kiểm tra góc máy', 'wn');
         else if (stab) setPhase('CHƯA QUAY · nhịp chạy đã ổn định' + cad + ' · bấm Quay khi sẵn sàng', 'ok');
         else setPhase('CHƯA QUAY · chờ bạn chạy ổn định' + cad, '');
         return;

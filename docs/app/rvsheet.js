@@ -24,6 +24,14 @@
       font('700', 28); c.fillStyle = INK; const t = String(v || '–'); c.fillText(t, x, 174, 420);
       x += Math.max(160, Math.min(420, c.measureText(t).width) + 56);
     }
+    // câu tóm tắt (bên phải dải thông tin, tối đa 2 dòng)
+    const summ = App.rvSummary ? App.rvSummary(R) : '';
+    if (summ) {
+      const sx = Math.max(x + 10, 820), sw = 1872 - sx;
+      c.save(); c.beginPath(); c.rect(sx - 4, 116, sw + 8, 80); c.clip();
+      c.fillStyle = TC.brand; font('800', 18); c.fillText('TÓM TẮT', sx, 138);
+      c.fillStyle = INK; font('600', 20); wrap(c, summ + ' Bác sĩ kết luận sau khi khám.', sx, 162, sw, 24); c.restore();
+    }
     // ---- bố cục số to (bác sĩ Kiên 19/11/2026): trái = ô điểm + ảnh khung xương (+ ghi chú bác sĩ nếu có); phải = 5 thẻ chỉ số + "Bạn có biết?" ----
     const lines = (txt, f, w) => { font(f[0], f[1]); let n = 1, ln = ''; for (const wd of (window.I18N ? I18N.t(txt) : txt).split(' ')) { const t = ln ? ln + ' ' + wd : wd; if (c.measureText(t).width > w && ln) { n++; ln = wd; } else ln = t; } return n; };
     const LX = 48, LW = 540, TOP = 196, BOT = 1022;   // chừa dòng 'Bạn có biết?' nhỏ dưới các thẻ (bác sĩ Kiên 25/11/2026)

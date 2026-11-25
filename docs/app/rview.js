@@ -6,7 +6,7 @@
   // hàm ở file nạp sau: gọi qua App khi chạy
   function drawResultCv(...a) { return App.drawResultCv(...a); }
   // hàm của file này (khai báo function được nâng lên đầu nên đưa ra ngay)
-  Object.assign(App, { rvData, rvCad, drawHero, drawHero2, rvSide, drawResult, pdfPage1, renderView, rvFact, rvTiles });
+  Object.assign(App, { rvData, rvCad, drawHero, drawHero2, rvSummary, rvSide, drawResult, pdfPage1, renderView, rvFact, rvTiles });
   // ---------- Màn kết quả dạng thẻ (#rview), theo docs/mockup/ket-qua.html ----------
   // Câu mô tả từng chỉ số: app/rvdesc.js (trung tính, không kết luận; bác sĩ 15/11/2026).
   // Thứ tự thẻ = thứ tự trên ảnh tải về; ảnh chỉ đủ chỗ 16 thẻ nên chỉ số phụ (khuỷu) để cuối.
@@ -261,7 +261,9 @@
       gauge(t) + '<p class="rf">Tham chiếu: <b>' + escA(t.ref) + '</b>' + (t.src ? ' <em>· ' + escA(t.src) + '</em>' : '') + '</p><span class="stc">' + RV_ST[t.st] + '</span></section>';
     // Ô góc dưới phải: một mã QR to (nhóm Zalo nhận kết quả); "Bạn có biết?" thành một dòng nhỏ dưới các thẻ (bác sĩ Kiên 25/11/2026)
     const qr = (cls) => '<a class="' + cls + '" href="' + escA(App.QR.url) + '" target="_blank" rel="noopener"><img src="' + escA(App.QR.src) + '" alt="Mã QR nhóm Zalo nhận kết quả" width="330" height="330"><b>Quét mã QR để nhận kết quả</b></a>';
+    const summ = rvSummary(R);
     box.innerHTML = '<header class="strip"><h1>Báo cáo dáng chạy</h1><dl>' + dl.map(([a, b]) => '<div><dt>' + a + '</dt><dd>' + escA(b || '–') + '</dd></div>').join('') + '</dl></header>' +
+      (summ ? '<p class="summ"><b>Tóm tắt:</b> ' + escA(summ) + ' <span>Bác sĩ kết luận sau khi khám.</span></p>' : '') +
       '<div class="main"><div class="left"><div class="score"><div class="lb">Điểm dáng chạy</div><div class="n' + (sc.total != null ? '' : ' na') + '">' + (sc.total != null ? sc.total + '<small>/100</small>' : '–') + '</div>' +
       (tt ? '<span class="badge">' + (App.RV_BADGE[tt.key] || tt.name) + '</span>' : '') + '<p>' + App.rvScoreLine(sc.total) + '</p>' + '</div>' +
       '<button type="button" class="ph" aria-label="Phóng to ảnh"><canvas id="rvhero" width="1200" height="1200"></canvas></button></div>' +
@@ -319,6 +321,15 @@
   // Mục bình thường (trong khoảng, để tham khảo) xếp trước, mục màu vàng / bất thường (thấp, cao) xuống dưới (bác sĩ Kiên 25/11/2026).
   // Sắp ổn định: cùng nhóm thì giữ thứ tự RV_TILE_ORDER.
   const rvAbn = (t) => (t.st === 'lo' || t.st === 'hi' ? (t.sev === 'bad' ? 2 : 1) : 0);
+  // Câu tóm tắt đầu báo cáo (bác sĩ Kiên 25/11/2026): đếm thẻ trong khoảng tham chiếu, nêu tên thẻ thấp/cao. Trung tính, không kết luận:
+  // kết luận là việc của bác sĩ sau khám. Dùng chung màn #rview và ảnh tải về / trang 1 PDF (rvsheet.js).
+  function rvSummary(R) {
+    const tiles = rvTiles(R), rated = tiles.filter((t) => t.st !== 'nb'), bad = rated.filter((t) => t.st === 'lo' || t.st === 'hi');
+    if (!rated.length) return '';
+    const nm = (t) => t.h.toLowerCase() + (t.st === 'lo' ? ' thấp hơn' : ' cao hơn') + ' tham chiếu';
+    const head = (rated.length - bad.length) + '/' + rated.length + ' chỉ số trong khoảng tham chiếu.';
+    return bad.length ? head + ' Cần chú ý: ' + bad.map(nm).join('; ') + '.' : head + ' Chưa thấy chỉ số nào ngoài khoảng tham chiếu.';
+  }
   // "Bạn có biết?": một fact có nghiên cứu gắn với chỉ số lệch nhất (docs/facts.js). Dùng chung màn #rview và ảnh tải về (rvsheet.js).
   function rvFact(R) {
     if (!window.Facts || !R || !R.res) return null;

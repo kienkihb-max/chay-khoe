@@ -77,9 +77,11 @@
         // PF = P đã ghi lại theo chân thật (findSteps gỡ chỗ MediaPipe tráo nhãn trái/phải). Ảnh minh hoạ phải vẽ bằng PF,
         // vẽ bằng P thô thì ở khung bị tráo nhãn khung xương "chân trái" nằm trên chân phải hoặc ghép gối chân này với bàn chân kia.
         const { res, errs, P: PF } = Gait.computeBoth(P, FPS, S.sub.height, App.SPEED);
+        const stand = S.recAt != null ? S.standRun || null : null;   // tư thế đứng lấy ở màn nhập (stand.js), chỉ cho lần quay trực tiếp
+        if (stand) App.applyStand(res, stand);
         const comb = Gait.combine(res, App.SPEED);
         let ex = null; try { ex = Gait.computeExtra(P, FPS, res, comb.common, App.SPEED); } catch (e) { ex = null; }
-        S.result = { angle: 'side', res, errs, comb, P: PF || P, N, t0, sub: S.sub, ex, fat: null, q: qualityCheck(frames, FPS, res, comb), cam: S.recAt != null ? S.camAt || null : null };   // cam: số đo góc máy lúc bấm Quay (camchk.js)
+        S.result = { angle: 'side', res, errs, comb, P: PF || P, N, t0, sub: S.sub, ex, fat: null, q: qualityCheck(frames, FPS, res, comb), cam: S.recAt != null ? S.camAt || null : null, stand };   // cam: số đo góc máy lúc bấm Quay (camchk.js)
         S.photos = {};
         pickPhotos(frames, S.result).then(() => { S.photosReady = true; });
       } catch (e) { S.error = e.message; }
