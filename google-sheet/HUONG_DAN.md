@@ -10,6 +10,16 @@
 
 Lưu ý: ai biết URL này đều ghi được vào sheet, nên đừng đăng URL công khai. Sửa Code.gs thì phải Triển khai lại (phiên bản mới).
 
+## Cập nhật 25/11/2026: sheet gọn 6 cột
+
+Tab **Kết quả** chỉ còn: Họ tên · SĐT/Zalo · Thời gian scan · Kết quả rút gọn · PDF (bấm "📄 Mở PDF") · Mã. File PDF trên Drive đặt tên theo tên khách + ngày đo, ví dụ `Hồ Phương 25-11-2026.pdf`. Không còn gửi ảnh PNG. Tab cũ (nhiều cột) giữ nguyên.
+
+Để áp dụng (làm một lần, khoảng 2 phút):
+1. Mở Google Sheet → **Tiện ích mở rộng → Apps Script**.
+2. Xoá hết code cũ, dán toàn bộ `Code.gs` mới, bấm **Lưu**.
+3. Chọn hàm `authorize` → bấm **Chạy** (cấp quyền nếu Google hỏi). Tab "Kết quả" được tạo.
+4. **Triển khai → Quản lý các bản triển khai** → bấm biểu tượng bút chì ở bản đang dùng → **Phiên bản: Phiên bản mới** → **Triển khai**. Giữ nguyên bản triển khai cũ thì URL không đổi, app không phải sửa gì.
+
 ## Module gửi `docs/sync.js`
 
 - `Sync.push(headers, row, files)` gửi một người (dòng + file PDF/PNG lên Drive); `Sync.pending()` số mục chưa gửi; `Sync.flush()` gửi lại ngay.

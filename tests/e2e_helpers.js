@@ -9,7 +9,7 @@ const TODO = {
   mockFailFlag: '__mockSyncFail',
 };
 // 11 cột Sheet = SHEET_COLS trong docs/app.js (Code.gs tự thêm cột PDF + Ảnh kết quả ở cuối)
-const SHEET_HEADERS = ['Mã', 'Thời gian', 'Họ tên', 'SĐT/Zalo', 'Điểm', 'Hạng', 'Điểm trái', 'Điểm phải', 'Đau/chấn thương', 'Kết luận', 'Ghi chú bác sĩ'];
+const SHEET_HEADERS = ['Họ tên', 'SĐT/Zalo', 'Thời gian scan', 'Kết quả rút gọn', 'Mã'];   // SHEET_COLS (docs/app/sheet.js, 25/11/2026); Code.gs thêm cột PDF
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1HbknKhSQ1VpO6J11HzoLZMF1TYDDXtCsnUzV2dYw-0U';
 
 // Ghi lại mọi chữ/ảnh vẽ lên canvas (ảnh kết quả #res là canvas nên không đọc được bằng DOM).

@@ -78,6 +78,7 @@
       if (cadLow(R)) parts.unshift('Nhịp bước: cần đo lại (dưới ' + CAD_REDO + ' bước/phút, số không ghi)');
       row.flags = parts.join(' | ');
     }
+    try { row.short = App.shortResult ? App.shortResult(R, row) : ''; } catch (e) { row.short = ''; }   // cột 'Kết quả rút gọn' trên Google Sheet
     const cc = R.comb ? conclusion(R) : { text: '', adv: [] }; row.conclusion = cc.text; row.advice = cc.adv.join(' | ');
     S.rows.push(row); S.nextId++;
     try { localStorage.setItem('gait_rows', JSON.stringify(S.rows)); } catch (e) { /* bỏ qua */ }
