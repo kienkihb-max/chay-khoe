@@ -159,12 +159,15 @@
   // bản ghi cũ chưa có q.poor và góc sau (không có q) thì tính lại từ R. Trả '' nếu ổn.
   function poorFrameWarn(R) {
     const why = R && R.q && Array.isArray(R.q.poor) ? R.q.poor : framePoor(R);
-    return why.length ? 'Khung hình kém: ' + why.join(', ') + '. Thử đo lại: đủ sáng, quay trọn người từ đầu đến chân, mặc quần áo khác màu nền.' : '';
+    const cam = App.camIssues ? App.camIssues(R && R.cam) : [];   // góc máy lúc bấm Quay ở mức đỏ (camchk.js)
+    const a = why.length ? 'Khung hình kém: ' + why.join(', ') + '. Thử đo lại: đủ sáng, quay trọn người từ đầu đến chân, mặc quần áo khác màu nền.' : '';
+    const b = cam.length ? 'Kết quả kém tin cậy do góc máy: ' + cam.join(', ') + '. Nên chỉnh máy theo bảng kiểm tra góc máy rồi đo lại.' : '';
+    return [a, b].filter(Boolean).join(' ');
   }
   const EXL = ['contact_ms', 'hip_flex', 'heel_kick', 'arm_swing', 'elbow', 'head_fwd'];
   function detailHTML(R) {
     const keys = ['cadence', 'vert_osc', 'trunk', 'knee_ic', 'shank_ic', 'overstride', 'knee_mid', 'hip_ext', 'knee_swing'];
-    const q = R.q ? '<p style="margin:0 0 8px;color:#5B6B77">Chẩn đoán: ' + R.q.fps + ' khung/giây phân tích · nhận diện ' + Math.round(R.q.det * 100) + '% khung hình (' + R.q.frames + ' khung)' + (R.q.slow > 1 ? ' · video quay chậm gấp ' + R.q.slow : '') + (R.q.bad ? ' · <b style="color:#D9503F">KHÔNG ĐÁNG TIN: ' + R.q.why.join('; ') + '</b>' : poorFrameWarn(R) ? ' · <b style="color:' + AMBER + '">chưa đạt: khung hình kém</b>' : ' · đạt kiểm tra độ tin cậy') + '</p>' : '';
+    const q = R.q ? '<p style="margin:0 0 8px;color:#5B6B77">Chẩn đoán: ' + R.q.fps + ' khung/giây phân tích · nhận diện ' + Math.round(R.q.det * 100) + '% khung hình (' + R.q.frames + ' khung)' + (R.q.slow > 1 ? ' · video quay chậm gấp ' + R.q.slow : '') + (() => { const e = ['L', 'R'].map((sd) => R.res && R.res[sd] && R.res[sd].extra).find((x) => x && Number.isFinite(x.tilt)); return e ? ' · mặt băng chạy trên hình nghiêng ' + f1(Math.abs(e.tilt)) + '°' + (e.tiltUsed ? ' (đã hiệu chỉnh góc)' : '') : ''; })() + (R.q.bad ? ' · <b style="color:#D9503F">KHÔNG ĐÁNG TIN: ' + R.q.why.join('; ') + '</b>' : poorFrameWarn(R) ? ' · <b style="color:' + AMBER + '">chưa đạt: khung hình kém</b>' : ' · đạt kiểm tra độ tin cậy') + '</p>' : '';
     const sc3 = scores(R), d = (v) => (v != null ? v : '–');
     // đo cả hai góc: điểm chung = trung bình 50/50 hai góc, ghi thêm điểm riêng từng góc
     const per = sc3.side && sc3.back ? ' · góc ngang ' + d(sc3.side.total) + ' · góc sau ' + d(sc3.back.total) : '';

@@ -40,17 +40,20 @@
     const f = (k, v) => (k === 'cadence' ? f0(v) : k === 'knee_ic' || k === 'trunk' ? (k === 'knee_ic' ? f0(v) : f1(v)) : f1(v));
     const unit = (k) => (REF[k] ? REF[k].unit : '');
     let y = 140; const rh = 128;
-    rows.forEach((row, i) => {
-      const yy = y + i * rh;
-      c.fillStyle = i % 2 ? '#fff' : TC.pale; c.fillRect(48, yy, 1824, rh - 8);
-      c.fillStyle = '#14202B'; c.font = '700 26px ' + FF; c.fillText(row.t, 68, yy + 40);
-      c.fillStyle = '#5B6B77'; c.font = '21px ' + FF; wrap(c, MEANING[row.k], 68, yy + 74, 820, 28);
-      // giá trị + đánh giá (cột phải)
+    // tính giá trị + đánh giá trước, rồi xếp mục bình thường lên trên, mục ngoài khoảng (màu vàng) xuống dưới (bác sĩ Kiên 25/11/2026)
+    const ev = rows.map((row, i) => {
       let val = '', st = [], ok = true;
       if (row.k === 'cadence' && cadLow(R)) { val = '– (cần đo lại)'; ok = false; st.push({ t: 'Cần đo lại', ok: false, k: row.k }); }
       else if (!row.per) { const q = rating(row.k, cm[row.k]); val = f(row.k, cm[row.k]) + ' ' + unit(row.k); ok = q.ok; st.push({ t: q.txt, ok: q.ok, k: row.k }); }
       else if (row.k === 'strike') { val = ['L', 'R'].map((s) => (r[s] ? (s === 'L' ? 'Trái: ' : 'Phải: ') + r[s].extra.strike : '')).filter(Boolean).join('   '); }
       else { val = ['L', 'R'].map((s) => (r[s] ? (s === 'L' ? 'Trái ' : 'Phải ') + f(row.k, r[s].metrics[row.k]) : '')).filter(Boolean).join('   ') + ' ' + unit(row.k); ['L', 'R'].forEach((s) => { if (r[s]) { const q = rating(row.k, r[s].metrics[row.k]); st.push({ t: q.txt, ok: q.ok, k: row.k, s }); if (!q.ok) ok = false; } }); }
+      return { row, val, st, ok, i };
+    }).sort((a, b) => (a.ok === b.ok ? a.i - b.i : a.ok ? -1 : 1));
+    ev.forEach(({ row, val, st, ok }, i) => {
+      const yy = y + i * rh;
+      c.fillStyle = i % 2 ? '#fff' : TC.pale; c.fillRect(48, yy, 1824, rh - 8);
+      c.fillStyle = '#14202B'; c.font = '700 26px ' + FF; c.fillText(row.t, 68, yy + 40);
+      c.fillStyle = '#5B6B77'; c.font = '21px ' + FF; wrap(c, MEANING[row.k], 68, yy + 74, 820, 28);
       c.fillStyle = ok ? GREEN : AMBER; c.font = '700 30px ' + FF; c.fillText(val, 940, yy + 38, 920);
       // khoảng bình thường
       c.fillStyle = '#14202B'; c.font = '600 20px ' + FF;
@@ -97,8 +100,8 @@
     }
     rows.push({ label: 'Kiểu tiếp đất', unit: '', a: R.res.L ? R.res.L.extra.strike : '–', b: R.res.R ? R.res.R.extra.strike : '–', ref: '', st: '', ok: true });
     extraRows(R).forEach((x) => rows.push(x));
-    // Chữ to, dễ thấy chỉ số bất thường (bác sĩ Kiên 19/11/2026): xếp các chỉ số NGOÀI khoảng lên trước (nền cam, nhãn ▼ Thấp / ▲ Cao),
-    // rồi tới chỉ số trong khoảng và chỉ số chỉ để theo dõi. Mỗi trang tối đa PER dòng.
+    // Chữ to, dễ thấy chỉ số bất thường (bác sĩ Kiên 19/11/2026): tách trang chỉ số trong khoảng / để theo dõi và trang chỉ số
+    // NGOÀI khoảng (nền cam, nhãn ▼ Thấp / ▲ Cao). Mỗi trang tối đa PER dòng.
     const legSt = (t) => { t = String(t || '').trim(); return /thấp/.test(t) ? 'lo' : /cao|thay đổi nhiều/.test(t) ? 'hi' : /trong khoảng|ổn định/.test(t) ? 'ok' : /đo lại/i.test(t) ? 're' : ''; };
     rows.forEach((r) => {
       const p = String(r.st || '').split(' / ');
@@ -109,8 +112,9 @@
     const att = rows.filter((r) => r.kind === 'att'), ok = rows.filter((r) => r.kind === 'ok'), track = rows.filter((r) => r.kind === 'track');
     const PER = 8, pages = [];
     const chunk = (arr, title) => { for (let k = 0; k < arr.length; k += PER) pages.push({ rows: arr.slice(k, k + PER), title: title + (arr.length > PER ? ' (' + (k / PER + 1) + '/' + Math.ceil(arr.length / PER) + ')' : '') }); };
-    chunk(att, 'Chỉ số cần chú ý');
+    // Bình thường lên trước, chỉ số cần chú ý (nền cam) xuống sau (bác sĩ Kiên 25/11/2026)
     chunk(ok.concat(track), 'Chỉ số bình thường và để theo dõi');
+    chunk(att, 'Chỉ số cần chú ý');
     if (!pages.length) pages.push({ rows: [], title: 'Bảng số đo chi tiết' });
     pages[pages.length - 1].notes = true;
     return pages.map((pg) => sheet3(R, pg.rows, pg.title, pg.notes, att.length));

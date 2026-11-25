@@ -79,7 +79,7 @@
         const { res, errs, P: PF } = Gait.computeBoth(P, FPS, S.sub.height, App.SPEED);
         const comb = Gait.combine(res, App.SPEED);
         let ex = null; try { ex = Gait.computeExtra(P, FPS, res, comb.common, App.SPEED); } catch (e) { ex = null; }
-        S.result = { angle: 'side', res, errs, comb, P: PF || P, N, t0, sub: S.sub, ex, fat: null, q: qualityCheck(frames, FPS, res, comb) };
+        S.result = { angle: 'side', res, errs, comb, P: PF || P, N, t0, sub: S.sub, ex, fat: null, q: qualityCheck(frames, FPS, res, comb), cam: S.recAt != null ? S.camAt || null : null };   // cam: số đo góc máy lúc bấm Quay (camchk.js)
         S.photos = {};
         pickPhotos(frames, S.result).then(() => { S.photosReady = true; });
       } catch (e) { S.error = e.message; }
@@ -96,7 +96,12 @@
       const fps = S.fps || CFG.fps, mid = Math.floor(ic.length / 2);
       const near = (i) => { const tt = R.t0 + i / fps; let best = null, bd = 1e9; for (const f of withImg) { const d = Math.abs(f.t - tt); if (d < bd) { bd = d; best = f; } } return { best, bd }; };
       let i = ic[mid], pk = near(i);
-      for (const c of ic.slice().sort((p, q) => Math.abs(p - ic[mid]) - Math.abs(q - ic[mid]))) { const n = near(c); if (n.best && n.bd < 0.5 / fps) { i = c; pk = n; break; } }
+      // Ảnh đẹp nhất (bác sĩ Kiên 25/11/2026): trong các lần chạm đất có ảnh đúng khung, chọn lần máy thấy rõ chân đó nhất
+      // (độ rõ trung bình hông–gối–cổ chân–gót–mũi, landmark gốc của khung); bằng nhau thì lấy lần gần giữa đoạn thu.
+      const legVis = (f) => { const raw = f.lm; if (!raw) return 0; const js = ['hip', 'knee', 'ank', 'heel', 'toe'].map((k) => Gait.IDX[s][k]).filter((j) => j != null && raw[j]);
+        return js.length ? js.reduce((a, j) => a + (raw[j].v != null ? raw[j].v : 1), 0) / js.length : 0; };
+      let bestV = -1;
+      for (const c of ic.slice().sort((p, q) => Math.abs(p - ic[mid]) - Math.abs(q - ic[mid]))) { const n = near(c); if (n.best && n.bd < 0.5 / fps) { const v = legVis(n.best); if (v > bestV + 0.02) { bestV = v; i = c; pk = n; } } }
       const best = pk.best;
       if (!best) continue;
       if (pk.bd >= 0.5 / fps) i = Math.max(0, Math.min(R.N - 1, Math.round((best.t - R.t0) * fps)));

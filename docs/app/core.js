@@ -29,6 +29,9 @@ window.App = {};
   const LOGO = new Image(); LOGO.onload = () => { if (S.result && $('L3').classList.contains('show')) drawResult(S.result); }; LOGO.src = 'logo.png';   // logo trên ảnh kết quả
   const CONTACT = 'bacsikien.com  ·  0345 901 772';
   const ZALO = 'https://zalo.me/0345901772';   // Zalo bác sĩ: nút "Đặt lịch đánh giá chuyên sâu" và nút gửi thông tin dự phòng
+  // Mã QR nhóm Zalo "Nhận kết quả AI Scan" (bác sĩ Kiên 25/11/2026): hiện ở màn kết quả, ảnh tải về và trang 1 PDF.
+  const QR = { url: 'https://zaloapp.com/qr/g/ijujnqiczzxbgvwv48io?src=qr', src: 'img/qr-zalo-ket-qua.png', label: 'Quét mã nhận kết quả', sub: 'Nhóm Zalo SAVITA × Hanoi Running Lab' };
+  const QRIMG = new Image(); QRIMG.onload = () => { if (S.result && $('L3').classList.contains('show')) drawResult(S.result); }; QRIMG.src = QR.src;
   // Chế độ bác sĩ: mở link có ?bs=1 thì hiện "Thêm ghi chú" + "Chi tiết (bác sĩ)" và nhớ trong máy; ?bs=0 tắt.
   // Chỉ là ẩn nút cho gọn, KHÔNG phải bảo mật: ai biết link vẫn bật được.
   const DOCTOR = (() => {
@@ -148,6 +151,6 @@ window.App = {};
   }
   $('recbtn').addEventListener('click', () => { if (REC.mr) recStop(true, $('name').value.trim()); else recStart(); });
 
-  Object.assign(App, { $, Q, CFG, LOGO, CONTACT, ZALO, REF, CAD_REDO, BACK_DETAIL, BLUE, ORANGE, GREEN, AMBER,
+  Object.assign(App, { $, Q, CFG, LOGO, CONTACT, ZALO, QR, QRIMG, REF, CAD_REDO, BACK_DETAIL, BLUE, ORANGE, GREEN, AMBER,
     TIER_RED, TC, LINKS, S, ANG_NAME, BACK_ON, ANG_WAIT, angMsg, show, pad, idStr, REC });
 })(window.App);

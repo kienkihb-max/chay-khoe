@@ -96,6 +96,7 @@
     S.recAt = performance.now() / 1000 - S.t0; S.recT0 = performance.now() / 1000; S.frames = []; S.nrec = 0; S.recLive = true;
     if ($('autorec').checked) recStart();
     $('recgo').disabled = true; $('recgo').style.display = 'none'; $('early').style.display = '';
+    S.camAt = S.cam || null; App.camShow(false);   // giữ số đo góc máy lúc bấm Quay
   }
   // Quay xong: báo dừng, chọn đoạn ổn định nhất (stable.js) rồi mới phân tích đúng đoạn đó
   function recEnd() {
@@ -115,12 +116,13 @@
   //   3. Quay CFG.total giây (mặc định 60). Hết giờ: bíp + bảng "ĐÃ ĐO XONG" để khách dừng.
   //   4. Máy chọn CFG.clip giây (mặc định 30) ổn định nhất để phân tích và cắt video trả khách (capture.js); kết quả hiện như cũ.
   async function startRun() {
+    App.camMotion();   // xin quyền cảm biến nghiêng ngay trong cú bấm (iOS), trước mọi lệnh chờ
     S.sub = takeSub();
     if (REC.mr) { await recStop(true, $('name').value.trim()); }
     if (S.stream) { v2.removeAttribute('src'); v2.srcObject = S.stream; v2.play().catch(() => {}); }
     S.lastLm = null; S.frames = []; S.late = []; S.nrec = 0; S.jobs = []; S.result = null; S.error = null; S.computing = false; S.abort = false; S.running = true;
     S.recAt = null; S.recLive = false; S.win = null; S.endNow = false; S.hipBuf = []; S.lastChk = 0; S.curCad = 0;
-    show('L2'); layout(); lvReset();
+    show('L2'); layout(); lvReset(); App.camReset(); App.camShow(true);   // bảng kiểm tra góc máy chỉ hiện lúc CHỜ
     $('who').textContent = S.sub.name; angShow(true);
     S.t0 = performance.now() / 1000;
     audioOn(); vLoad(); say('chuanbi'); announce('chuanbi');   // "Sang màn đo": mời khách giữ tốc độ, chuẩn bị đo
@@ -175,6 +177,7 @@
         if (S.recAt == null) {   // số liệu cho dòng gợi ý "nhịp đã ổn định" ở trạng thái chờ; chỉ giữ ~40 giây gần nhất
           const hy = lm ? (lm[23].visibility >= Gait.VIS_MIN && lm[24].visibility >= Gait.VIS_MIN ? (lm[23].y + lm[24].y) / 2 : lm[23].visibility >= lm[24].visibility ? lm[23].y : lm[24].y) : NaN;
           S.hipBuf.push({ t: el, y: hy }); if (S.hipBuf.length > 2600) S.hipBuf.splice(0, 800);
+          App.camFeed(lm0, vw, vh, el);
         }
         if (S.recLive) {
           const rec = { t, lm: lm0 ? lm0.map((q) => ({ x: q.x * vw, y: q.y * vh, v: q.visibility == null ? 1 : q.visibility })) : null, vw, vh, blob: null };

@@ -10,6 +10,8 @@
   };
   // Ngưỡng tin cậy điểm khớp (visibility 0..1): dưới mức này điểm bị coi là mờ, khung đó bỏ khỏi tính; chỉnh ở đây.
   const VIS_MIN = 0.6;
+  // Máy quay nghiêng từ mức này (độ, đo theo mặt băng chạy) thì xoay hệ trục trước khi tính góc; dưới mức này coi là sai số đo.
+  const TILT_MIN = 1.5;
   // Chân xa camera: điểm 0,3–0,6 vẫn nhận cho một bước nếu qua kiểm tra hợp lý (độ dài đùi/cẳng, không nhảy, hai gối không chập).
   const VIS_LOW = 0.3;
   // Chân có ít hơn MIN_STEPS bước rõ (mọi điểm chân ≥ VIS_MIN lúc chạm đất) = "dưới ngưỡng tin cậy": vẫn hiện số kèm ±X
@@ -360,7 +362,15 @@
       }
       for (const A of ['x', 'y', 'v']) { P[A][L.hip][i] = P0[A][hipJ[i]][i]; P[A][R.hip][i] = P0[A][hipJ[i]][i]; }
     }
-    return { P, steps, pxcm, Ls, Lt, d, ground: { a: ga, b: gb, g0, tol } };
+    // Điểm giữa hai hông (toạ độ x gốc, chưa ghi đè): P ở trên ghi hông rõ hơn (thường hông gần máy) vào cả hai ô hông, nên khi khung
+    // chậu xoay theo bước, hông gần máy lúc ra trước lúc lùi sau làm "bàn chân trước hông" của hai chân lệch nhau giả (chân xa thường
+    // bị tính xa hơn). Điểm giữa hai hông gần trọng tâm hơn, dùng làm mốc cho cả hai chân (bác sĩ Kiên 25/11/2026).
+    const hipMidX = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const a = P0.x[L.hip][i], b = P0.x[R.hip][i];
+      hipMidX[i] = Number.isFinite(a) && Number.isFinite(b) && P0.v[L.hip][i] >= VIS_LOW && P0.v[R.hip][i] >= VIS_LOW ? (a + b) / 2 : P0.x[hipJ[i]][i];
+    }
+    return { P, steps, pxcm, Ls, Lt, d, hipMidX, ground: { a: ga, b: gb, g0, tol } };
   }
 
   // ---------- đo một bên ----------
@@ -427,6 +437,8 @@
       S[k] = { x: smooth(interpNaN(medfilt(xs, w)), fps, fc), y: smooth(interpNaN(medfilt(ys, w)), fps, fc) };
     }
     constrainBones(S, P, ids, N);
+    // Mốc "bàn chân trước hông" = điểm giữa hai hông (findSteps: st.hipMidX), lọc như hông.
+    const hipMidX = st.hipMidX ? smooth(interpNaN(medfilt(Float64Array.from(st.hipMidX), mw)), fps) : S.hip.x;
     const [nx0] = masked(0);
     const noseX = interpNaN(nx0);
     const diffs = new Float64Array(N);
@@ -439,16 +451,24 @@
     const deg = (r) => (r * 180) / Math.PI;
     const kneeFlex = new Float64Array(N), trunk = new Float64Array(N), shank = new Float64Array(N);
     const thigh = new Float64Array(N), foot = new Float64Array(N), rel = new Float64Array(N);
+    // Máy quay nghiêng: mặt băng chạy trên hình có độ dốc (findSteps: ground.b, px/px). Góc so với phương thẳng đứng / mặt sàn
+    // (cẳng chân, đùi, thân, bàn chân) và khoảng cách ngang được đo trong hệ trục đã xoay cho mặt băng chạy nằm ngang.
+    // Chỉ xoay khi nghiêng từ TILT_MIN độ: dưới mức đó coi là sai số đo (bác sĩ Kiên 25/11/2026). Góc gối, gập hông không đổi.
+    const tiltDeg = st.ground && Number.isFinite(st.ground.b) ? Math.atan(st.ground.b) * 180 / Math.PI : 0;
+    const tilt = Math.abs(tiltDeg) >= TILT_MIN ? tiltDeg * Math.PI / 180 : 0, cT = Math.cos(tilt), sT = Math.sin(tilt);
+    const rx = (dx, dy) => dx * cT + dy * sT, ry = (dx, dy) => -dx * sT + dy * cT;   // toạ độ sau khi xoay mặt băng chạy về nằm ngang
     for (let i = 0; i < N; i++) {
       const v1x = S.hip.x[i] - S.knee.x[i], v1y = S.hip.y[i] - S.knee.y[i];
       const v2x = S.ank.x[i] - S.knee.x[i], v2y = S.ank.y[i] - S.knee.y[i];
       const c = (v1x * v2x + v1y * v2y) / (Math.hypot(v1x, v1y) * Math.hypot(v2x, v2y) + 1e-9);
       kneeFlex[i] = 180 - deg(Math.acos(Math.max(-1, Math.min(1, c))));
-      trunk[i] = deg(Math.atan2(d * (S.sh.x[i] - S.hip.x[i]), -(S.sh.y[i] - S.hip.y[i])));
-      shank[i] = deg(Math.atan2(d * (S.ank.x[i] - S.knee.x[i]), S.ank.y[i] - S.knee.y[i]));
-      thigh[i] = deg(Math.atan2(d * (S.knee.x[i] - S.hip.x[i]), S.knee.y[i] - S.hip.y[i]));
-      foot[i] = deg(Math.atan2(S.heel.y[i] - S.toe.y[i], d * (S.toe.x[i] - S.heel.x[i])));
-      rel[i] = d * (S.ank.x[i] - S.hip.x[i]);
+      const V = (a, b) => [a.x[i] - b.x[i], a.y[i] - b.y[i]];
+      const tr = V(S.sh, S.hip), sk = V(S.ank, S.knee), tg = V(S.knee, S.hip), ft = V(S.toe, S.heel);
+      trunk[i] = deg(Math.atan2(d * rx(tr[0], tr[1]), -ry(tr[0], tr[1])));
+      shank[i] = deg(Math.atan2(d * rx(sk[0], sk[1]), ry(sk[0], sk[1])));
+      thigh[i] = deg(Math.atan2(d * rx(tg[0], tg[1]), ry(tg[0], tg[1])));
+      foot[i] = deg(Math.atan2(-ry(ft[0], ft[1]), d * rx(ft[0], ft[1])));
+      rel[i] = d * rx(S.ank.x[i] - hipMidX[i], S.ank.y[i] - S.hip.y[i]);
     }
 
     // ---- Nhịp và chu kỳ ----
@@ -576,7 +596,7 @@
       };
     }
     const extra = {
-      side, vis, strike, fsa: fsaMed, nSteps: ic.length, stepQ, lowConf, spread, icSuspect, suspectReason, flags,
+      side, vis, strike, fsa: fsaMed, tilt: tiltDeg, tiltUsed: tilt !== 0, nSteps: ic.length, stepQ, lowConf, spread, icSuspect, suspectReason, flags,
       badFrac: badFrac(P, keys.map((k) => ids[k]), N), cadIC, cadFFT, pxcm, d,
     };
     const arrays = { S, ic, to, kinds, kneeFlex, trunk, d, rel, pxcm };
